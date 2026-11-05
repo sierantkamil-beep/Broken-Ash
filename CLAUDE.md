@@ -15,6 +15,7 @@ until the two players have reviewed it.
 | Tone | Dark fantasy: gore, profanity, moral grey, named characters die in the story (Game of Thrones-like). Five acts on the curve normal → downer → cruel → doom → hope → doom & cruelty → hope → **happy ending**. | Dinusie felt made for children; the users chose this curve. |
 | Companions | Never die in combat (downed companions get up after the fight); deaths are story events only. | User request. |
 | Paths (classes) | 8: 2 melee, 4 magic, 2 ranged. No healers or pure tanks; every path deals damage, sustains itself and has co-op combos. | Always exactly two players; support roles would be boring. |
+| Culture | Elven realm with **East Asian–inspired aesthetics** (pagodas, vermilion, lanterns, blossoms, curved blades). Eight peoples with distinct looks, architecture and customs, one per path. Human invaders look European. Invented names and customs only; no real-world gods, clans or fake script. | User request; makes the world unique. |
 | Building | Core pillar: the players build, furnish and defend their fortress (Ostoja). | The users love building. |
 | Language | Player-facing content in **Polish**; code, comments, docs, data keys in English. | User request. |
 | Polish grammar | Avoid gendered verb forms where possible; counts via `plural()`. | Players are different genders; three plural forms. |

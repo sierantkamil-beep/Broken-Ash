@@ -1,4 +1,4 @@
-# Broken Ash — design document (draft 2)
+# Broken Ash — design document (draft 3)
 
 > Status: **for review**. Nothing here is coded yet. Mark up anything you hate; everything is negotiable
 > except the pillars.
@@ -6,6 +6,10 @@
 > Draft 2 changes: five acts following the agreed emotional curve, a happy ending, eight paths
 > (2 melee, 4 magic, 2 ranged, no healers), building as a core pillar, companions no longer die in
 > combat, free assets only.
+>
+> Draft 3 changes: East Asian–inspired elven cultures. Eight peoples, each with its own look, architecture,
+> customs and path; vermilion red as the realm's sacred colour; the World-Ash blossoms red; peoples you
+> win over unlock their building style; human invaders as the European contrast.
 
 ## 0. Pillars
 
@@ -31,8 +35,8 @@
 
 ### The realm: Aeldrith (*Aeldrith*)
 For three thousand years the elves of Aeldrith lived under the **World-Ash** (*Jesion Świata*), a tree
-whose sap (*Żywica*) kept them young, beautiful and undying. The kingdom was rich, cruel and very sure of
-itself.
+the size of a mountain whose **red blossoms** fell over the realm every spring. Its sap (*Żywica*), red as
+lacquer, kept them young, beautiful and undying. The kingdom was rich, cruel and very sure of itself.
 
 Nineteen years ago **Queen Ysolde** split the World-Ash with a single axe stroke in front of the whole
 court. Nobody knows why. Since then:
@@ -52,6 +56,44 @@ The secret (revealed in Act 4): the World-Ash never gave life for free. Every ce
 elven children** into its roots, and the priests delivered them. Ysolde broke the tree when it asked for
 her daughter **Elia**. She is the villain of everyone's story, and she was right.
 
+### The look of Aeldrith
+Aeldrith is an elven realm built on **East Asian aesthetics**: tiered pagodas with curved roofs,
+vermilion gates, paper lanterns, blossom groves, moon bridges, rock gardens, lacquer, silk, masks,
+curved swords. It mixes Japanese and Chinese influences with elven grace and is never a copy of a real
+country.
+
+- **Colour:** vermilion red is sacred, because it's the colour of the sap, the blossoms and blood. The
+  realm's palette is **black lacquer, ash grey, vermilion and old gold**. Since the tree broke, the
+  blossoms fall grey and the red is now mostly blood.
+- **Contrast:** the human invaders of the **Iron March** (*Żelazna Marchia*) look European: steel plate,
+  crossbows, stone keeps, siege engines. You can see in every fight that they come from somewhere else.
+- **Rule:** inspired by, not borrowed. No real-world gods, clans, place names or historical figures,
+  and no fake Asian script used as decoration. Every name, people and custom is invented for Aeldrith.
+
+### Peoples of Aeldrith
+The realm is a patchwork of elven peoples (*ludy* and *klany*), each with its own lands, architecture,
+customs and fighting style. Each people is home to one of the eight paths (§4). You choose your
+character's **people of origin** at creation, independently of your path.
+
+| People | Lands & architecture | Customs | Path born there |
+|---|---|---|---|
+| **The Lacquer Court** (*Lakowy Dwór*) | The capital **Lirendhal**: tiered vermilion pagodas on stone terraces, lantern streets, paper-screen halls, palace gardens with koi ponds. | Masks, silk, rank shown by robe colour, poetry duels, tea ceremonies that sometimes double as poisonings. Calligraphers write law, and blood-scribes write spells. | **Blood**: sigils painted with a brush dipped in your own blood. |
+| **The Thorn Clan** (*Klan Ciernia*) | The **North-Grove**: wooden keeps with curved roofs among red-blossom groves, training yards, ancestor halls. Ithiel's people. | A warrior oath, **the Oath of the Thorn**, that values loyalty over life. It's why Ithiel walks to his own execution. Duels, ritual tea before battle, poems written on the eve of death. | **Thorn**: a pair of curved blades, one long and one short, with a lightning draw-and-cut. |
+| **The Bark Monasteries** (*Klasztory Kory*) | Mountain fortress-temples on terraced cliffs, bronze bells, stone stairways in the clouds. | Warrior monks, vows of silence, meditation in the snow, heavy lacquered armour bound with living bark. | **Bark**: huge two-handed blades and iron-studded war-clubs. |
+| **The Reed Folk** (*Lud Trzcin*) | **Hollowmere**: a river city on stilts, moon bridges, bamboo walkways, boat markets, floating lantern festivals. | Fishers, smugglers, poisoners and spies. Black-clad night runners, smoke and silence. | **Sting**: throwing knives, darts, blowpipes, poisons, smoke. |
+| **The Dusk Riders** (*Jeźdźcy Zmierzchu*) | The **grey steppe**: felt tents, wooden watchtowers, sky-burial hills, horse herds. | Nomad archers who hunt at dusk, tattoos of every kill, songs instead of written history. | **Dusk**: asymmetric longbows, stealth, traps. |
+| **The Ember Folk** (*Lud Żaru*) | Volcanic forge-shrines behind rows of vermilion gates, black-stone smithies, hot springs. | The realm's swordsmiths. Fire festivals, and paper talismans that burn with a prayer written on them. | **Ash**: talismans that burst into flame, burning ground, explosions. |
+| **The Wind Clan** (*Klan Wiatru*) | Cliff-pagodas above a sea of clouds, rope bridges, wind chimes, kite towers. | Messengers and scholars who read storms, war-fans, kites flown into battle. | **Storm**: lightning, wind, war-fans, blinks. |
+| **The Lantern-Keepers** (*Strażnicy Latarni*) | Ancestor shrines lit by thousands of lanterns, bone pagodas, spirit tablets in the fog. Gwendr's people. | The festival of the dead, lanterns to guide souls home. Since the tree broke, they have tended the Greyed instead of fighting them. | **Graves**: lanterns that bind spirits, raising the dead. |
+
+Two more powers stand outside the peoples:
+- **The Priests of the Root** (*Kapłani Korzenia*): white robes, red cords, shaved heads, and shrines
+  of red gates around the stump. They serve the tree and no people.
+- **The Iron March** (*Żelazna Marchia*): Margrave Harrow's human army, the European contrast.
+
+Every region has its own enemies in its own style. The Greyed wear what they wore in life, so the
+capital has lacquered Greyed courtiers and the steppe has Greyed riders.
+
 ### Tone rules
 | Topic | Rule |
 |---|---|
@@ -62,6 +104,7 @@ her daughter **Elia**. She is the villain of everyone's story, and she was right
 | **Moral choices** | No "good" and "evil" bar. Choices trade one loss for another. |
 | **Humour** | Black humour from characters, never from the narrator. The game is grim, not humourless. |
 | **Children** | Children can be in danger (the tithe is the plot), but child deaths happen off-screen. |
+| **Culture** | East Asian–inspired, never a parody: peoples are written as people, with their own grudges, honour and hypocrisy, not as exotic decoration. |
 | **The ending** | Happy. The realm heals, the people who survived get a future, your fortress becomes a town. Who is alive to see it depends on you. |
 | **Polish grammar** | Player-facing text avoids gendered forms where possible ("Giniesz"), as in Dinusie. NPCs may address each player with the right form once we know the characters' genders (chosen at creation). |
 
@@ -73,8 +116,12 @@ Both players are **Ashbound** (*Popielni*): elven convicts branded with ash on t
 they are already legally dead. The game opens with both of you in the dungeons under **Sorrowmere Keep**,
 sentenced to the stump: being bled for Żywica until you die.
 
-You pick your own name, look, path and your crime (*Twoja zbrodnia*). The crime is a small backstory
-choice (murder, desertion, heresy, theft of sap) that unlocks a few unique dialogue lines and one side quest.
+You pick your own name, look, **people of origin**, path and your crime (*Twoja zbrodnia*):
+- **People** sets your starting look (clothes, tattoos, hair, mask), a few dialogue options with your own
+  people, and how they greet you. Any people can walk any path, though a Reed Folk elf on the Path of the
+  Thorn will hear about it from the Thorn Clan.
+- **Crime** is a small backstory choice (murder, desertion, heresy, theft of sap) that unlocks a few
+  unique dialogue lines and one side quest.
 
 Why two convicts? Because nobody will miss you, so you get sent into every shitty job the story needs.
 
@@ -99,20 +146,35 @@ Normal → downer → CRUEL → DOOM → Hope → DOOM AND CRUELTY → another r
 
 Rough length: 25–30 hours with side quests. Act 1 is the vertical slice.
 
+**Where it happens.** Each act travels through different peoples' lands, so the world keeps changing:
+- Act 1: the Thorn Clan's North-Grove.
+- Act 2: the Lacquer Court's capital.
+- Act 3: the Reed Folk's Hollowmere, then Ostoja on the border between the Bark mountains and the Dusk
+  steppe.
+- Act 4: Ostoja, where the lords of every people gather.
+- Act 5: the whole realm, then the roots.
+
+**Alliances.** From Act 3 on, each people has a side-quest line that wins them over. An allied people:
+- sends warriors to Ostoja's walls and to the final march;
+- teaches its building style (§7);
+- opens its unique items and its path's rarest runes.
+
+You can't win all eight before the end, so you choose whose trust is worth earning.
+
 ### Cast — who lives, who dies
 Companions **never die in combat**: when they're downed they get back up after the fight. Every death
 below is a story event.
 
 | # | Character | Who they are | Fate |
 |---|---|---|---|
-| 1 | **Lord Ithiel Sorrowmere** | Old honourable warden of the North-Grove. Frees you from the dungeon because he needs people with nothing to lose. Kind, funny, the father figure. | **Always dies in Act 2.** Beheaded on a forged charge. You can't save him, only choose how you spend the day (Choice 1). |
+| 1 | **Lord Ithiel Sorrowmere** | Old lord of the Thorn Clan and warden of the North-Grove. Frees you from the dungeon because he needs people with nothing to lose. Kind, funny, the father figure. Bound by the Oath of the Thorn. | **Always dies in Act 2.** Beheaded on a forged charge. You can't save him, only choose how you spend the day (Choice 1). |
 | 2 | **Maeve "Rdza" (Rust)** | Half-elf sellsword, the foulest mouth in the realm, travels with you from Act 1. Comic relief and the most likeable person in the game. | **Dies or lives at Hollowmere** (Choice 2, Act 3). If she lives, she stays to the end. |
 | 3 | **Fennick** | 15-year-old squire of Ithiel. Idolises Maeve, follows you after Ithiel's death. | If Hollowmere's lower city was drowned (his family died), he **opens Ostoja's gate to the enemy in Act 4** and dies in the fighting. Otherwise he's knighted in the epilogue. |
 | 4 | **Brother Corvane** | Priest of the Root, gentle, helpful, brings you medicine and secrets. | **The traitor.** Forged the charge against Ithiel, plans the Ash Feast. Whether you catch him decides who dies at the feast (Choice 3). |
 | 5 | **Prince Taerin** | Ysolde's son, nervous, decent, hates his mother. The heir everyone wants to control. | Dies poisoned at the Ash Feast unless Corvane is exposed. If he lives, he grows into a king worth having. |
 | 6 | **Queen Ysolde** | Broke the World-Ash. Cold, brilliant, completely alone. Hunted by everyone, including you, until Act 5. | Becomes your ally in Act 5 (the ray of hope). **Lives** and is reunited with Elia. |
 | 7 | **Margrave Harrow** | Human warlord. Brutal, honest, keeps his word. | Enemy in Acts 1–4. In Act 5 he marches with you **if** you spared his scouts in Act 1; otherwise his army stands in your way. |
-| 8 | **Gwendr the Ash-Witch** | Ancient elf living in the stump's shadow; the only one outside the priesthood who knows about the tithe. | Joins Ostoja in Act 3. **Always dies in Act 4**, killed by the priests for telling you the truth. |
+| 8 | **Gwendr the Ash-Witch** | Ancient Lantern-Keeper living in the stump's shadow; the only one outside the priesthood who knows about the tithe. | Joins Ostoja in Act 3. **Always dies in Act 4**, killed by the priests for telling you the truth. |
 | 9 | **The Rootfather** | Head of the priesthood. Soft-spoken, sincere, monstrous. | The final villain. Takes the children in Act 4; dies at the roots in Act 5. |
 | 10 | **Elia** | Ysolde's daughter, alive and trapped in the roots for nineteen years. Heard only as a voice until the end. | **Lives.** Rescued in the finale. |
 
@@ -196,16 +258,16 @@ watching the other's health bar. Every path:
 
 Reviving a downed partner is universal (hold F), not a class skill.
 
-| Path | Type | Fantasy | Resource | Sustain |
-|---|---|---|---|---|
-| ★ **Path of the Thorn** (*Ścieżka Ciernia*) | Melee | Dual blades, bleeds, finishers that dismember. Fast and fragile, lives on dodging. | Fury, builds on hits | Heals from bleed ticks |
-| **Path of Bark** (*Ścieżka Kory*) | Melee | Heavy two-handed weapons, roots, thorny armour. Slow, huge hits, hard to kill. | Stamina | Bark shield that grows with damage taken |
-| ★ **Path of Blood** (*Ścieżka Krwi*) | Magic | Blood mage: pays **health** for spells, drinks from wounds. Very gory. | Health | Drinks from bleeding enemies |
-| **Path of Ash** (*Ścieżka Popiołu*) | Magic | Fire and ash: burning ground, explosions, area denial. | Heat (overheat = backfire) | Burning enemies drop embers that heal |
-| **Path of Storm** (*Ścieżka Burzy*) | Magic | Lightning and wind: the most mobile caster, chains, blinks, knock-ups. | Charge, built by moving | Static shield |
-| **Path of Graves** (*Ścieżka Grobów*) | Magic | Raises the Greyed to fight for you; corpses are resources. | Ash, gathered from corpses | Drains life from minions |
-| **Path of Dusk** (*Ścieżka Zmierzchu*) | Ranged | Longbow, stealth, traps, headshots from the dark. | Focus | Stealth regenerates health |
-| **Path of the Sting** (*Ścieżka Żądła*) | Ranged | Throwing knives, javelins, blowpipe darts, poisons. Mid-range and always moving. | Poison doses | Antidote reflex: cleanses and heals |
+| Path | Type | Home people | Fantasy | Resource | Sustain |
+|---|---|---|---|---|---|
+| ★ **Path of the Thorn** (*Ścieżka Ciernia*) | Melee | Thorn Clan | Paired curved blades (long + short), draw-and-cut strikes, bleeds, finishers that dismember. Fast and fragile, lives on dodging. | Fury, builds on hits | Heals from bleed ticks |
+| **Path of Bark** (*Ścieżka Kory*) | Melee | Bark Monasteries | Huge two-handed blades and war-clubs, roots, lacquer-and-bark armour. Slow, huge hits, hard to kill. | Stamina | Bark shield that grows with damage taken |
+| ★ **Path of Blood** (*Ścieżka Krwi*) | Magic | Lacquer Court | Blood-scribe: paints sigils with a brush and **their own blood**, drinks from wounds. Very gory. | Health | Drinks from bleeding enemies |
+| **Path of Ash** (*Ścieżka Popiołu*) | Magic | Ember Folk | Paper talismans that burst into flame, burning ground, explosions, area denial. | Heat (overheat = backfire) | Burning enemies drop embers that heal |
+| **Path of Storm** (*Ścieżka Burzy*) | Magic | Wind Clan | War-fans that throw lightning and wind: the most mobile caster, chains, blinks, knock-ups. | Charge, built by moving | Static shield |
+| **Path of Graves** (*Ścieżka Grobów*) | Magic | Lantern-Keepers | Spirit lanterns that bind the dead; raises the Greyed to fight for you; corpses are resources. | Ash, gathered from corpses | Drains life from minions |
+| **Path of Dusk** (*Ścieżka Zmierzchu*) | Ranged | Dusk Riders | Asymmetric longbow, stealth, traps, headshots from the dark. | Focus | Stealth regenerates health |
+| **Path of the Sting** (*Ścieżka Żądła*) | Ranged | Reed Folk | Throwing knives, darts, blowpipes, poisons, smoke. Mid-range and always moving. | Poison doses | Antidote reflex: cleanses and heals |
 
 ★ = in the vertical slice. Thorn × Blood is the first combo: Blood drinks from enemies the Thorn has bled.
 
@@ -248,7 +310,10 @@ Reviving a downed partner is universal (hold F), not a class skill.
 Slots: weapon (main + off-hand or two-handed), head, chest, hands, legs, boots, amulet, 2 rings,
 **relic**.
 
-- **Rarity:** common (grey), fine (white), rare (blue), **ashen** (red, uniques).
+- **Look:** gear shows each people's craft: lacquered lamellar armour, silk robes, demon-faced half masks
+  in the head slot, Ember-forged curved blades, Wind Clan war-fans, Lantern-Keeper spirit lanterns. The
+  Iron March drops steel plate and crossbows that look out of place on purpose.
+- **Rarity:** common (grey), fine (white), rare (blue), **ashen** (vermilion, uniques).
 - **Affixes:** 1–4 random affixes on fine/rare items, drawn from a pool per slot. Fewer, stronger
   affixes than Dinusie: "+15% bleed damage", not "+1 strength".
 - **Ashen uniques** change how a skill *works* (e.g. *Kaelith's Gutting Knife*: your dodge leaves a
@@ -309,8 +374,28 @@ Building is a core pillar. It grows in three steps with the story:
   happier and working better.
 - **Defences:** palisades, stone walls, towers, gatehouses, spike pits, braziers. Guard posts where NPC
   guards stand.
-- **Decoration:** furniture, carpets, banners, lighting (torches matter in a dark game), boss trophies,
-  and each player's own room to furnish however they like.
+- **Decoration:** furniture, tatami-like mats, folding screens, banners, lighting (paper lanterns and
+  braziers matter in a dark game), boss trophies, and each player's own room to furnish however they like.
+- **Gardens:** plant blossom trees, bamboo, pine; build koi ponds, rock gardens, moon bridges and stone
+  lanterns. Seeds from the alchemy system grow the trees.
+
+### Building styles from the peoples
+You start with plain timber and a bamboo palisade. Every people you ally with (§3) teaches its style, and
+styles can be mixed freely:
+
+| People | Unlocks |
+|---|---|
+| Thorn Clan | Curved-roof wooden keeps, training yard, ancestor hall, blossom groves |
+| Lacquer Court | Tiered vermilion pagodas, lacquered halls, paper screens, lantern streets, tea house |
+| Bark Monasteries | Stone terraces, bell towers, massive stone walls and gatehouses |
+| Reed Folk | Stilt houses, bamboo walkways, moon bridges, water gardens, boat docks |
+| Dusk Riders | Felt tents, horse pens, wooden watchtowers, archery ranges |
+| Ember Folk | Black-stone forge-shrines, rows of vermilion gates, hot springs, better smithy |
+| Wind Clan | Tall slender pagoda towers, wind chimes, kite towers (extend the view over the map) |
+| Lantern-Keepers | Lantern shrines, spirit tablets, bone pagodas, the festival of lanterns over Ostoja |
+
+Iron March pieces (stone keep, iron portcullis) can be looted from Harrow's camps, for players who want a
+stranger fortress.
 
 ### How it plays
 - **Build mode (B):** a ghost preview shows where a piece goes, green or red. Placing costs materials;
@@ -362,6 +447,12 @@ Characters about 96–128 px tall on a 1080p screen (Dinusie's were 32 px).
 and nothing whose license forbids redistribution. Every asset gets a line in `CREDITS.md` (author, link,
 license, changes).
 
+**East Asian look:** free assets in this style with a clear open license are rare. A first search found
+mostly paid packs and free models with unclear licenses. So pagodas, curved roofs, vermilion gates,
+lanterns and blossom trees will mostly be **made by us in Blender**. They are simple, repetitive shapes
+(roof tiers, posts, beams) that a script can generate in many variants. That fits option B below. Each
+people gets its own colour palette and trim on the same base pieces.
+
 ### Shortlist
 | Option | What | License | Pros | Cons |
 |---|---|---|---|---|
@@ -371,10 +462,11 @@ license, changes).
 Gore decals (blood pools, splatter, gibs) can come from either option (rendered in B) or from a CC0 pack
 on OpenGameArt.
 
-**Recommendation:** use **B for building pieces and props** (modular kits are exactly what building
-needs) and **A for characters and monsters** at the start. Look at it in-game together, then move
-characters to B too if Flare's style doesn't fit. Both produce the same isometric sprites, so switching
-is a content change, not a code rewrite.
+**Recommendation:** use **B** for all elven architecture, props and elven characters, with our own
+scripted pagoda and roof modules, Quaternius/Kenney CC0 bodies with new elven heads, and the Thorn and
+Ember blade designs. Use **A (Flare)** for the **Iron March** humans and generic monsters: its European
+medieval look is exactly the contrast the invaders need. Both produce the same isometric sprites, so
+switching is a content change, not a code rewrite.
 
 ### Audio
 Keep Dinusie's audio engine (buses, limiter, positional panning) and procedural SFX where they fit (hits,
@@ -423,3 +515,7 @@ Every milestone ends with a playtest and a bug-fix pass before the next one star
 3. Should Ostoja's raids outside the story be on by default, off, or a setting?
 4. Building: is a second storey enough, or do you want cellars and multi-level castles?
 5. Which path does each of you want to play first? (The slice has Thorn + Blood.)
+6. Should the mix lean more Japanese, more Chinese, or stay half and half? Should any people lean
+   elsewhere (e.g. Korean or Southeast Asian influences for the Reed Folk)?
+7. Character names: keep the elven-sounding names (Ithiel, Ysolde), or give each people its own naming
+   style so you can tell where someone is from by their name?
