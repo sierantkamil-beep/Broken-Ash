@@ -1,11 +1,11 @@
 """
 Clips we draw ourselves from a character's rotations instead of paying PixelLab for them:
-idle (a one-pixel breath), hit (a flinch) and death (a fall). Pixels are only moved, never invented,
+idle (a one-pixel breath), hit (a flinch), death (a fall) and the dodge roll. Pixels are only moved, never invented,
 so they match the generated art exactly.
 
   python tools/pixellab/derive.py body_male body_female
 reads  tools/pixellab/src/<key>/_rotations/<direction>.png
-writes tools/pixellab/src/<key>/{idle,hit,death}/<direction>/<n>.png
+writes tools/pixellab/src/<key>/{idle,hit,death,roll}/<direction>/<n>.png
 """
 import os
 import sys
@@ -71,6 +71,18 @@ def derive(key):
                 f = g
             frames.append(f)
         save(frames, key, "death", d)
+
+        # Dodge roll: tuck (squash) and tumble one full turn around the body's middle, on the same
+        # big canvas with the feet where the standing pose has them.
+        mid = (centre[0], centre[1] - (y1 - y0) / 2)
+        roll = []
+        for i in range(6):
+            tuck = base.resize((size, int(size * 0.7)), Image.NEAREST)
+            t = Image.new("RGBA", base.size)
+            t.alpha_composite(tuck, (0, int(size * 0.3 * 0.75)))
+            angle = -side * 60 * i
+            roll.append(t.rotate(angle, resample=Image.NEAREST, center=mid) if i else base)
+        save(roll, key, "roll", d)
     print(key, "idle/hit/death written")
 
 

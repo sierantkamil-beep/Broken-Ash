@@ -36,7 +36,7 @@ export function atlasMeta(scene: Phaser.Scene, key: string | null): AtlasMeta {
  * The frame to show for an animation: clips that a set lacks borrow the closest one it has
  * (a dodge without a roll clip runs, a skill without its own clip uses the attack).
  */
-const STAND_IN: Record<string, string[]> = { roll: ["run"], skill1: ["attack"], skill2: ["skill1", "attack"], hit: ["idle"], death: ["hit", "idle"], attack: ["idle"] };
+const STAND_IN: Record<string, string[]> = { strike: ["cast", "attack"], cast: ["strike", "attack"], roll: ["run"], skill1: ["attack"], skill2: ["skill1", "attack"], hit: ["idle"], death: ["hit", "idle"], attack: ["idle"] };
 export function resolveAnim(scene: Phaser.Scene, atlas: string, anim: string): string {
   const tex = scene.textures.get(atlas);
   const has = (a: string) => tex.has(`${a}/0/0`);

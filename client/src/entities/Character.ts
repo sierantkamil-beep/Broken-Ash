@@ -98,7 +98,17 @@ export class Character {
     if (!skill) return;
     const now = this.scene.time.now;
     const windup = skill.windup * 1000;
-    this.action = { anim: skill.anim, start: now, dur: windup + 320, strikeAt: windup };
+    this.action = { anim: this.skillAnim(skill.anim), start: now, dur: windup + 320, strikeAt: windup };
+  }
+
+  /**
+   * The shared bodies have two attack moves, a weapon strike and a spell cast; a path's skills use
+   * the one that fits it (melee strikes, magic and ranged cast). Sets with their own per-skill clips
+   * (the older renders) keep them.
+   */
+  private skillAnim(anim: string): string {
+    if (this.atlas && this.scene.textures.get(this.atlas).has(`${anim}/0/0`)) return anim;
+    return PATHS[this.path].type === "melee" ? "strike" : "cast";
   }
 
   playHit() {
