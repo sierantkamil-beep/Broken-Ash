@@ -4,7 +4,6 @@
   "type": "module",
   "scripts": {
     "dev": "concurrently -k -n server,client,app -c green,cyan,magenta \"pnpm --filter @broken-ash/server dev\" \"pnpm --filter @broken-ash/client dev\" \"pnpm --filter @broken-ash/desktop dev\"",
-    "dev:web": "concurrently -k -n server,client -c green,cyan \"pnpm --filter @broken-ash/server dev\" \"pnpm --filter @broken-ash/client dev\"",
     "build": "pnpm -r build",
     "test": "vitest run",
     "typecheck": "pnpm -r typecheck",
@@ -13,7 +12,8 @@
     "art": "python3 tools/art/render.py && python3 tools/art/ground.py",
     "audio": "python3 tools/audio/build.py",
     "catalogue": "tsx tools/catalogue/catalogue.ts",
-    "chars": "python3 tools/art/characters.py"
+    "chars": "python3 tools/art/characters.py",
+    "e2e": "pnpm --filter @broken-ash/client build && pnpm --filter @broken-ash/desktop build && node tools/e2e/play.cjs"
   },
   "devDependencies": {
     "concurrently": "9.2.5",

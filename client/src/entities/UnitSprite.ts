@@ -89,11 +89,16 @@ export class UnitSprite {
   }
 
   update(now: number, delta: number) {
+    const v = this.view;
     if (!this.atlas) {
       this.atlas = atlasOr(this.scene, greyedKey(this.view.kind), ["shambler_greyed"]);
-      if (!this.atlas) return;
+      if (!this.atlas) {
+        // No sprite yet, but the position still matters (aiming, effects, sounds).
+        const s = this.interp.sample(now);
+        if (s) this.screen = worldToScreen(s.x, s.y);
+        return;
+      }
     }
-    const v = this.view;
     const dir = directionIndex(v.facing);
     if (this.dead) {
       const f = Math.min(5, Math.floor((now - this.deathStart) / 110));

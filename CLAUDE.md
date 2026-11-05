@@ -36,6 +36,7 @@ for porting its systems.
 | Bodies | Each player picks a male or female body; every path is rendered for both. | User request. |
 | Combat | Skills are data (aimed shapes + effects + statuses), interpreted by the server; Greyed attacks are telegraphed on the ground; executions, downed/revive, wipes restart the wave. | design.md §5. |
 | Audio | **Synthesised into .ogg files** by `tools/audio/build.py` (numpy + ffmpeg); played through Phaser's Web Audio on three buses. | Original, re-tunable, nothing to license. |
+| Platform | **Windows desktop app only** (Electron). No browser version: the client is web tech inside Electron, never shipped or played in a browser. | User decision. |
 | Stack | pnpm workspaces, TypeScript 5.9, Phaser 3.90 (WebGL), Colyseus 0.16 embedded server, Electron Windows .exe. | Same as Dinusie so its systems port over. |
 | Netcode | Server-authoritative fixed 60 Hz simulation; the owning client **predicts** with the same `stepBody` and reconciles on every patch; remote players are interpolated 110 ms behind. Input credit (one step per tick) stops speed hacks. | Action combat needs instant movement. |
 | Security | Server validates every message (`sanitizeInput`, name sanitising, input credit). When accounts arrive: hashed passwords (scrypt), no plaintext "remember me". | Dinusie lacked this. |
@@ -75,15 +76,16 @@ tools/
           decals.py, ground.py, common.py.
   audio/  build.py (music, ambience, effects, combat sounds).
   catalogue/ catalogue.ts (writes docs/catalogue.md).
+  e2e/    play.cjs (two Electron windows host/join and fight; screenshots in tools/e2e/out).
 ```
 
 ## Commands
 
 ```
 pnpm install
-pnpm dev            # server + Vite + Electron window (click "Hostuj grę")
-pnpm dev:web        # server + Vite only (browser at :5173)
+pnpm dev            # the desktop app with hot reload (server + Vite + Electron window)
 pnpm test           # vitest
+pnpm e2e            # Electron end-to-end: host + join windows, prolog skip, a fight (Linux: xvfb-run -a pnpm e2e)
 pnpm typecheck      # tsc in every package
 pnpm desktop        # build client + run Electron
 pnpm dist:win       # Windows portable .exe + installer (CI does this on push to main)
@@ -93,8 +95,11 @@ pnpm catalogue      # regenerate docs/catalogue.md
 pnpm audio          # re-synthesise audio (needs: numpy + ffmpeg)
 ```
 
-Dev URL shortcut: `http://localhost:5173/?autojoin=1&name=X[&path=thorn&body=male&address=host]` joins directly;
-`window.__room` and `window.__game()` exist for automated checks.
+Automated checks drive the real Electron app (`tools/e2e/play.cjs`, Playwright's `_electron`): the
+shell passes `ASH_TEST_PARAMS` (e.g. `autohost=1&name=A&path=thorn&body=male`, or
+`autojoin=1&address=localhost`) to the page, and `ASH_USER_DATA` gives each window its own profile.
+`window.__room` and `window.__game()` exist for these checks. Under xvfb/CI Chromium needs software WebGL
+(`--use-gl=angle --use-angle=swiftshader`), which the harness passes.
 
 Art renders are cached in `tools/art/.cache` (gitignored); pass `--force` or delete it after changing a
 model. MakeHuman assets come from `python tools/art/mh_fetch.py` (gitignored `tools/art/.mh`). In bpy,

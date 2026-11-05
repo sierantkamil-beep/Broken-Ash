@@ -28,10 +28,12 @@ let hostReport: HostReport | undefined;
 let inGame = false;
 game.events.on("world-ready", (scene: WorldScene) => {
   world = scene;
-  // Dev shortcut: ?autojoin=1&name=X joins localhost directly (used by automated screenshot checks).
+  // Automated checks (tools/e2e): the desktop shell passes ?autohost=1 or ?autojoin=1&address=…
   const q = new URLSearchParams(location.search);
   if (q.get("path")) saveSettings({ path: q.get("path")!, body: (q.get("body") as "male" | "female") ?? settings.body });
-  if (q.get("autojoin")) void connect(q.get("address") ?? "localhost", q.get("name") ?? "Tester");
+  if (q.get("name")) nameInput.value = q.get("name")!;
+  if (q.get("autohost")) $("host-btn").click();
+  else if (q.get("autojoin")) void connect(q.get("address") ?? "localhost", q.get("name") ?? "Tester");
 });
 
 // ------------------------------------------------------------------ menu

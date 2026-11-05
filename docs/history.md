@@ -54,3 +54,12 @@ What each milestone actually built. The plan is `docs/design.md` §11.
   groans, the Tapper's roar, war horn, revive/downed, execution, victory) and a drum-driven fight theme.
 - **Balance simulation** (`server/src/game/sim.test.ts`): scripted bots; every path's sustained damage
   within ±30 % of the average; four pairs win the assault.
+
+### Desktop only, Windows build fixed
+- **Windows build**: the catalogue test resolved the repo root with `URL.pathname` (`D:\\D:\\...` on
+  Windows) and compared CRLF checkouts with LF output; now `fileURLToPath`, line endings normalised,
+  byte-order sorting. The empty `main.yml` workflow (failing every push) is removed.
+- **No browser game**: `dev:web` and the browser instructions are gone; `pnpm dev` runs the desktop app.
+  Automated checks drive two real Electron windows (`pnpm e2e`): one hosts with the embedded server,
+  the other joins, both skip the prolog and fight.
+- Fixed: Greyed whose sprite atlas hadn't loaded yet reported position (0, 0) to aiming and effects.

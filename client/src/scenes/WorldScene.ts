@@ -392,6 +392,8 @@ export class WorldScene extends Phaser.Scene {
     const tele = [];
     for (const u of this.units.values()) {
       u.update(time, delta);
+      // A faint cold glow on each of the dead, so grey bodies on grey stone still read at night.
+      lights.push({ x: u.screen.x, y: u.screen.y - 30, radius: u.view.kind === "tapper" ? 240 : 150, color: 0x9aa4b8, intensity: 0.28, seed: 3 });
       if (u.view.kind === "tapper") boss = u.view;
       if (u.view.state === "windup" && u.view.atk) {
         const def = GREYED[(u.view.kind === "thrall" ? "shambler" : u.view.kind) as GreyedKind];

@@ -9,3 +9,4 @@ tools/art/.cache/
 tools/art/.mh/
 tools/audio/.cache/
 __pycache__/
+tools/e2e/out/

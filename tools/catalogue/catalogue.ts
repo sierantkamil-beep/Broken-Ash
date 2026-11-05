@@ -6,9 +6,12 @@
  */
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import ts from "typescript";
 
-export const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..", "..");
+// fileURLToPath, not URL.pathname: on Windows the pathname is "/D:/..." and resolves to "D:\D:\...".
+const HERE = fileURLToPath(import.meta.url);
+export const ROOT = path.resolve(path.dirname(HERE), "..", "..");
 export const OUT = path.join(ROOT, "docs", "catalogue.md");
 
 const PACKAGES: { dir: string; title: string; about: string }[] = [
@@ -37,7 +40,7 @@ interface FileInfo {
 function walk(dir: string, ext: RegExp): string[] {
   if (!fs.existsSync(dir)) return [];
   const out: string[] = [];
-  for (const e of fs.readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+  for (const e of fs.readdirSync(dir, { withFileTypes: true }).sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))) {
     if (e.name === "node_modules" || e.name.startsWith(".")) continue;
     const p = path.join(dir, e.name);
     if (e.isDirectory()) out.push(...walk(p, ext));
@@ -73,7 +76,8 @@ function kindOf(node: ts.Node): string {
 }
 
 function analyse(file: string): FileInfo {
-  const text = fs.readFileSync(file, "utf8");
+  // Line endings vary with the checkout (Windows CI uses CRLF); the catalogue must not.
+  const text = fs.readFileSync(file, "utf8").replace(/\r\n/g, "\n");
   const sf = ts.createSourceFile(file, text, ts.ScriptTarget.ES2022, true);
   const rel = path.relative(ROOT, file).split(path.sep).join("/");
   const exports: ExportInfo[] = [];
@@ -123,7 +127,7 @@ function analyse(file: string): FileInfo {
 function pythonTools(): string[] {
   const lines: string[] = [];
   for (const file of walk(path.join(ROOT, "tools"), /\.py$/)) {
-    const text = fs.readFileSync(file, "utf8");
+    const text = fs.readFileSync(file, "utf8").replace(/\r\n/g, "\n");
     const rel = path.relative(ROOT, file).split(path.sep).join("/");
     const doc = /^"""([\s\S]*?)"""/m.exec(text)?.[1] ?? "";
     const defs = [...text.matchAll(/^def ([a-zA-Z]\w*)\(/gm)].map((m) => m[1]);
@@ -181,7 +185,7 @@ export function buildCatalogue(): string {
   return out.join("\n");
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
+if (process.argv[1] && path.resolve(process.argv[1]) === HERE) {
   fs.writeFileSync(OUT, buildCatalogue());
   console.log(`wrote ${path.relative(ROOT, OUT)}`);
 }

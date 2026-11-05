@@ -11,6 +11,8 @@ let report: HostReport | null = null;
 
 // A fixed name keeps saves in %APPDATA%/Broken Ash no matter how the app was launched.
 app.setName("Broken Ash");
+// Automated checks run two copies side by side; each needs its own profile folder.
+if (process.env.ASH_USER_DATA) app.setPath("userData", process.env.ASH_USER_DATA);
 // Groups the taskbar button and notifications under our own app id instead of "Electron".
 if (process.platform === "win32") app.setAppUserModelId("com.brokenash.game");
 
@@ -59,7 +61,9 @@ function createWindow() {
 
   // ASH_DEV_URL points at the Vite dev server for hot reload during development.
   const devUrl = process.env.ASH_DEV_URL;
-  const target = devUrl ?? "app://game/index.html";
+  // ASH_TEST_PARAMS (automated checks only): e.g. "autohost=1&name=A&path=thorn&body=male".
+  const params = process.env.ASH_TEST_PARAMS ? `?${process.env.ASH_TEST_PARAMS}` : "";
+  const target = (devUrl ?? "app://game/index.html") + params;
   void win.loadURL(target);
   if (devUrl) {
     // Vite may still be starting when Electron opens; keep retrying until it answers.

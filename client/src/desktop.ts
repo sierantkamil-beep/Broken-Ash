@@ -10,7 +10,7 @@ export interface HostReport {
   cgnat: boolean;
 }
 
-/** API exposed by the Electron preload script. Absent when running in a normal browser. */
+/** API exposed by the Electron preload script (the game only runs inside the desktop app). */
 export interface DesktopBridge {
   startHost(): Promise<HostReport>;
 }

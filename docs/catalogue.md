@@ -89,16 +89,16 @@ Colyseus server. `game/` is the network-free simulation; `rooms/` forwards messa
 | File | Purpose | Exports | Depends on |
 |---|---|---|---|
 | `server/src/game/Combat.ts` | Damage-over-time caps (dps), so stacking stays strong but bounded. | `Projectile`, `Zone`, `Arena`, `fighters`, `fighterById`, `partnerOf`, `targetable`, `foesOf`, `addStatus`, `speedOf`, `tickStatuses`, `DamageOpts`, `dealDamage`, `heal`, `gainResource`, `canCast`, `startCast`, `tickCasts`, `tickProjectiles`, `push`, `tickZones`, `unitAttackHits` | `server/src/game/fighters`, @broken-ash/shared |
-| `server/src/game/fighters.ts` | A status on a fighter. | `Status`, `Fighter`, `CastState`, `PlayerSim`, `UnitSim`, `fighterPos` | @broken-ash/shared |
 | `server/src/game/Pathing.ts` | Flow fields: for a goal cell, every reachable cell's walking distance to it (8-connected, no corner cutting). | `FlowField` | @broken-ash/shared |
 | `server/src/game/Units.ts` | A thrall raised by the Path of Graves: a Shambler's body fighting on the players' side. | `thrallDef`, `makeUnit`, `tickUnits` | `server/src/game/Combat`, `server/src/game/Pathing`, `server/src/game/fighters`, @broken-ash/shared |
 | `server/src/game/World.ts` | Burst allowance after a lag spike, in steps. | `RunningCinematic`, `JoinRequest`, `Phase`, `World`, `sanitizeName` | `server/src/game/Combat`, `server/src/game/Pathing`, `server/src/game/Units`, `server/src/game/fighters`, @broken-ash/shared |
+| `server/src/game/fighters.ts` | A status on a fighter. | `Status`, `Fighter`, `CastState`, `PlayerSim`, `UnitSim`, `fighterPos` | @broken-ash/shared |
 | `server/src/index.ts` | — | — | `server/src/startServer`, @broken-ash/shared |
 | `server/src/rooms/WorldRoom.ts` | Thin network layer: forwards validated messages to the World and mirrors its state into the schema. | `WorldRoom` | `server/src/game/World`, `server/src/schema/WorldState`, @broken-ash/shared, @colyseus/core |
 | `server/src/schema/WorldState.ts` | Synced player state. | `PlayerState`, `UnitState`, `WorldState` | @colyseus/schema |
 | `server/src/startServer.ts` | Starts the authoritative game server. | `RunningServer`, `ServerOptions`, `startServer` | `server/src/rooms/WorldRoom`, @broken-ash/shared, @colyseus/core, @colyseus/ws-transport, node:http, node:os |
 
-Tests: `server/src/game/Combat.test.ts`, `server/src/game/sim.test.ts`, `server/src/game/World.test.ts`
+Tests: `server/src/game/Combat.test.ts`, `server/src/game/World.test.ts`, `server/src/game/sim.test.ts`
 
 <details><summary>Exported symbols</summary>
 
@@ -110,12 +110,12 @@ Tests: `server/src/game/Combat.test.ts`, `server/src/game/sim.test.ts`, `server/
 - `canCast` (function, `server/src/game/Combat.ts`) — Can this skill be cast now?
 - `push` (function, `server/src/game/Combat.ts`) — Shoves a fighter (knockback), stopping at walls.
 - `unitAttackHits` (function, `server/src/game/Combat.ts`) — Shapes of the Greyed's attacks use the same hit test; the landing point is locked at wind-up.
-- `Status` (interface, `server/src/game/fighters.ts`) — A status on a fighter.
-- `Fighter` (interface, `server/src/game/fighters.ts`) — Anything that can be hit: players, the Greyed, thralls.
 - `FlowField` (class, `server/src/game/Pathing.ts`) — Flow fields: for a goal cell, every reachable cell's walking distance to it (8-connected, no corner cutting).
 - `thrallDef` (function, `server/src/game/Units.ts`) — A thrall raised by the Path of Graves: a Shambler's body fighting on the players' side.
 - `tickUnits` (function, `server/src/game/Units.ts`) — The Greyed's (and thralls') behaviour: pick the nearest foe, walk the flow field to them, and when an attack is in range, lock its aim and telegraph it for its wind-up before it lands.
 - `World` (class, `server/src/game/World.ts`) — The authoritative simulation for one area.
+- `Status` (interface, `server/src/game/fighters.ts`) — A status on a fighter.
+- `Fighter` (interface, `server/src/game/fighters.ts`) — Anything that can be hit: players, the Greyed, thralls.
 - `WorldRoom` (class, `server/src/rooms/WorldRoom.ts`) — Thin network layer: forwards validated messages to the World and mirrors its state into the schema.
 - `PlayerState` (class, `server/src/schema/WorldState.ts`) — Synced player state.
 - `UnitState` (class, `server/src/schema/WorldState.ts`) — A Greyed (or a thrall raised by the Path of Graves).
@@ -144,14 +144,14 @@ Phaser 3 + Vite client: rendering, prediction, cinematics, audio, DOM UI.
 | `client/src/scenes/WorldScene.ts` | The synced player fields (mirror of server/src/schema/WorldState.ts). | `WorldScene` | `client/src/assets/atlases`, `client/src/audio/AudioDirector`, `client/src/cinematic/CinematicPlayer`, `client/src/entities/Character`, `client/src/entities/UnitSprite`, `client/src/fx/Vfx`, `client/src/net`, `client/src/net/Interpolation`, `client/src/net/Prediction`, `client/src/ui/Hud`, `client/src/ui/dom`, `client/src/world/GroundLayer`, `client/src/world/Lighting`, `client/src/world/Petals`, `client/src/world/PropLayer`, @broken-ash/shared, phaser |
 | `client/src/settings.ts` | Per-player preferences, kept in localStorage (wrapped: storage can be unavailable). | `Settings`, `settings`, `saveSettings`, `onSettingsChange` | — |
 | `client/src/ui/Creator.ts` | Character creation on the title screen: body, people of origin, path. | `setupCreator` | `client/src/settings`, `client/src/ui/dom`, @broken-ash/shared |
+| `client/src/ui/Hud.ts` | The DOM HUD: your bars and skill bar, your partner, the boss, being downed. | `MeView`, `Hud` | `client/src/ui/dom`, @broken-ash/shared |
 | `client/src/ui/dom.ts` | Shows a small tooltip next to the cursor while hovering `target`. | `$`, `el`, `tooltip`, `escapeHtml`, `scoped`, `endSession` | — |
 | `client/src/ui/hostReport.ts` | What the partner types (clickable to copy). | `HostLine`, `partnerAddress`, `hostLines`, `renderHostLines` | `client/src/desktop`, `client/src/ui/dom`, @broken-ash/shared |
-| `client/src/ui/Hud.ts` | The DOM HUD: your bars and skill bar, your partner, the boss, being downed. | `MeView`, `Hud` | `client/src/ui/dom`, @broken-ash/shared |
-| `client/src/world/frames.ts` | The pivot of an atlas frame in pixels (tools/art writes it into the atlas JSON). | `framePivot`, `hasFrame` | phaser |
 | `client/src/world/GroundLayer.ts` | Which ground draws its soft, feathered rim over which: higher priority creeps over lower (moss over flagstones, flagstones over the pond's edge). | `GroundLayer` | `client/src/world/frames`, @broken-ash/shared, phaser |
 | `client/src/world/Lighting.ts` | Screen position (px). | `LightSource`, `DEPTH_LIGHT`, `Lighting` | phaser |
 | `client/src/world/Petals.ts` | Red blossom petals drifting down across the view. | `Petals` | phaser |
 | `client/src/world/PropLayer.ts` | Props tall enough to hide a player standing behind them; they fade while someone is back there. | `PropLayer` | `client/src/settings`, `client/src/world/Lighting`, `client/src/world/frames`, @broken-ash/shared, phaser |
+| `client/src/world/frames.ts` | The pivot of an atlas frame in pixels (tools/art writes it into the atlas JSON). | `framePivot`, `hasFrame` | phaser |
 
 Tests: `client/src/net/Prediction.test.ts`, `client/src/net.test.ts`, `client/src/ui/hostReport.test.ts`
 
@@ -163,7 +163,7 @@ Tests: `client/src/net/Prediction.test.ts`, `client/src/net.test.ts`, `client/sr
 - `AudioDirector` (class, `client/src/audio/AudioDirector.ts`) — Music, ambience and effects on three volume buses.
 - `CinematicPlayer` (class, `client/src/cinematic/CinematicPlayer.ts`) — Plays a cinematic timeline from shared data: drives the camera, the DOM overlay (letterbox, fades, title card, subtitles) and fires sounds/shakes/flashes as their moments pass.
 - `HostReport` (interface, `client/src/desktop.ts`) — What the desktop app found out when it started hosting (mirrors desktop/src/network.ts).
-- `DesktopBridge` (interface, `client/src/desktop.ts`) — API exposed by the Electron preload script.
+- `DesktopBridge` (interface, `client/src/desktop.ts`) — API exposed by the Electron preload script (the game only runs inside the desktop app).
 - `ANIM_FRAMES` (const, `client/src/entities/Character.ts`) — Frame counts per animation (tools/art/anims.py FRAMES).
 - `Character` (class, `client/src/entities/Character.ts`) — A player on screen: the rendered sprite for their path and body, a soft blob shadow, a name tag, footsteps, and the animation choice (idle / run / roll / casting / hit / downed).
 - `UnitView` (interface, `client/src/entities/UnitSprite.ts`) — The synced unit fields (server/src/schema/WorldState.ts UnitState).
@@ -176,16 +176,16 @@ Tests: `client/src/net/Prediction.test.ts`, `client/src/net.test.ts`, `client/sr
 - `BootScene` (class, `client/src/scenes/BootScene.ts`) — Loads the atlases (rendered by tools/art) and the sounds (tools/audio), with a thin progress line.
 - `Settings` (interface, `client/src/settings.ts`) — Per-player preferences, kept in localStorage (wrapped: storage can be unavailable).
 - `setupCreator` (function, `client/src/ui/Creator.ts`) — Character creation on the title screen: body, people of origin, path.
+- `Hud` (class, `client/src/ui/Hud.ts`) — The DOM HUD: your bars and skill bar, your partner, the boss, being downed.
 - `tooltip` (function, `client/src/ui/dom.ts`) — Shows a small tooltip next to the cursor while hovering `target`.
 - `scoped` (const, `client/src/ui/dom.ts`) — Listener options tied to the current game session.
 - `partnerAddress` (function, `client/src/ui/hostReport.ts`) — The address as the partner should type it: the default port is filled in on their side.
 - `hostLines` (function, `client/src/ui/hostReport.ts`) — Every way the partner can reach this host, best first, plus what to fix when the internet way failed.
 - `renderHostLines` (function, `client/src/ui/hostReport.ts`) — Renders the lines; clicking an address copies it.
-- `Hud` (class, `client/src/ui/Hud.ts`) — The DOM HUD: your bars and skill bar, your partner, the boss, being downed.
-- `framePivot` (function, `client/src/world/frames.ts`) — The pivot of an atlas frame in pixels (tools/art writes it into the atlas JSON).
 - `GroundLayer` (class, `client/src/world/GroundLayer.ts`) — Bakes the whole ground into one render texture once: hard diamonds first, then soft rims by priority.
 - `Lighting` (class, `client/src/world/Lighting.ts`) — Night: a render texture filled with the ambient colour, with every light stamped in additively, then multiplied over the scene.
 - `Petals` (class, `client/src/world/Petals.ts`) — Red blossom petals drifting down across the view.
+- `framePivot` (function, `client/src/world/frames.ts`) — The pivot of an atlas frame in pixels (tools/art writes it into the atlas JSON).
 
 </details>
 
@@ -218,7 +218,7 @@ This catalogue's generator.
 
 | File | Purpose | Exports | Depends on |
 |---|---|---|---|
-| `tools/catalogue/catalogue.ts` | Builds docs/catalogue.md: a map of every source file in the repo — what it is for, what it exports (with each export's one-line doc), what it depends on — plus the Python tools and generated assets. | `ROOT`, `OUT`, `buildCatalogue` | node:fs, node:path, typescript |
+| `tools/catalogue/catalogue.ts` | Builds docs/catalogue.md: a map of every source file in the repo — what it is for, what it exports (with each export's one-line doc), what it depends on — plus the Python tools and generated assets. | `ROOT`, `OUT`, `buildCatalogue` | node:fs, node:path, node:url, typescript |
 
 Tests: `tools/catalogue/catalogue.test.ts`
 
@@ -232,8 +232,8 @@ Tests: `tools/catalogue/catalogue.test.ts`
 | `tools/art/decals.py` | Painted decals: blood (flat, projected to the iso view) and the Soramei crest for banners. | `to_iso`, `blood_pool`, `blood_plane`, `crest_path` |
 | `tools/art/ground.py` | Ground textures and small effect sprites, painted with numpy (no Blender needed). | `periodic_noise`, `shade`, `mix`, `rgb`, `petals`, `flagstones`, `moss_ground`, `gravel`, `dirt`, `water`, `sample`, `diamond`, `fx_frames`, `main` |
 | `tools/art/materials.py` | Procedural materials (Cycles). | `srgb`, `material`, `image_material` |
-| `tools/art/mh_fetch.py` | Fetches the MakeHuman assets the character pipeline uses into tools/art/.mh (gitignored). | `main` |
 | `tools/art/mh.py` | Builds skinned elf bodies in Blender from the MakeHuman CC0 base mesh (tools/art/mh_fetch.py). | `morph`, `to_blender`, `build`, `reset_pose`, `rotate`, `shift` |
+| `tools/art/mh_fetch.py` | Fetches the MakeHuman assets the character pipeline uses into tools/art/.mh (gitignored). | `main` |
 | `tools/art/models.py` | Procedural models for props and characters. | `link`, `mesh_obj`, `box`, `cyl`, `sphere`, `empty`, `modifier`, `curved_roof`, `tiled_roof_material`, `rocky`, `stone_material`, `mossy_stone_material`, `build_stone_lantern`, `build_paper_lantern`, `build_gate`, `build_blossom_tree`, `build_shrine`, `build_wall`, `build_rock`, `build_bamboo`, `build_banner`, `build_humanoid`, `pose` |
 | `tools/art/outfits.py` | Outfits, hair and weapons for the eight paths, built on a MakeHuman body from mh.py. | `cloth`, `silk`, `leather`, `lacquer`, `lamellar`, `metal`, `skin_material`, `hair_material`, `region_shell`, `robe`, `attach`, `joint`, `bone_head`, `bone_tail`, `palm`, `grip_axes`, `oriented`, `curve_blade`, `join`, `hold`, `scalp_filter`, `hair`, `base_layers`, `sash`, `wide_sleeves`, `mask`, `plate`, `build_path`, `war_fan`, `spirit_lantern`, `longbow`, `palette`, `build_greyed` |
 | `tools/art/render.py` | Renders every sprite with Blender (bpy) and packs them into atlases for the client. | `render_frame`, `props` |
@@ -242,5 +242,5 @@ Tests: `tools/catalogue/catalogue.test.ts`
 ## Generated assets
 
 - **`client/public/assets/audio/`** (54 files): `amb_night_wind`, `music_gate_fight`, `music_soramei_night`, `sfx_bell`, `sfx_blade`, `sfx_blade_heavy`, `sfx_blade_spin`, `sfx_blood`, `sfx_blood_heavy`, `sfx_blowpipe`, `sfx_bow`, `sfx_bow_heavy`, `sfx_burst`, `sfx_cin_split`, `sfx_dodge`, `sfx_downed`, `sfx_drink`, `sfx_execute`, `sfx_fire`, `sfx_fire_heavy`, `sfx_gate_bang`, `sfx_gong_small`, `sfx_gore`, `sfx_greyed_death`, `sfx_groan_0`, `sfx_groan_1`, `sfx_groan_2`, `sfx_hit_flesh`, `sfx_horn`, `sfx_poison`, `sfx_revive`, `sfx_roots`, `sfx_slam`, `sfx_smoke`, `sfx_spirit`, `sfx_spirit_heavy`, `sfx_step_soft_0`, `sfx_step_soft_1`, `sfx_step_soft_2`, `sfx_step_soft_3`, `sfx_step_stone_0`, `sfx_step_stone_1`, `sfx_step_stone_2`, `sfx_step_stone_3`, `sfx_tapper_roar`, `sfx_throw`, `sfx_thunder`, `sfx_title_gong`, `sfx_victory`, `sfx_whoosh`, `sfx_wind`, `ui_click`, `ui_confirm`, `ui_hover`
-- **`client/public/assets/chars/`** (3 files): `index`, `thorn_male`
+- **`client/public/assets/chars/`** (7 files): `blood_female`, `index`, `shambler_greyed`, `thorn_male`
 - **`client/public/assets/sprites/`** (6 files): `fx`, `ground`, `props`
