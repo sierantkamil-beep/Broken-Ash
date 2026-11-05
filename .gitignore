@@ -6,5 +6,6 @@ release/
 *.sqlite
 server/data/
 tools/art/.cache/
+tools/art/.mh/
 tools/audio/.cache/
 __pycache__/

@@ -16,4 +16,6 @@ export const MSG = {
   input: "input",
   /** client → server: vote to skip the running cinematic. */
   skip: "skip",
+  /** server → client: a batch of FxEvents (hits, casts, deaths...) for visuals and sound. */
+  fx: "fx",
 } as const;

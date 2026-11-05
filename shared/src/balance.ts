@@ -34,4 +34,50 @@ export const BALANCE = {
     /** Inputs processed per server step at most; lets a lagging client catch up without moving 10× faster. */
     maxInputsPerStep: 3,
   },
+  combat: {
+    /** A downed player bleeds out over this long, unless the partner revives them. */
+    bleedOut: 20,
+    /** Holding F next to a downed partner this long brings them back... */
+    reviveTime: 2.0,
+    /** ...at this share of their health. */
+    reviveHealth: 0.35,
+    /** How close you must be to revive or execute. */
+    interactRange: 1.6,
+    /** Both down: everyone gets up at the spawn after this long, and the current wave starts over. */
+    wipeDelay: 4,
+    /** A staggered enemy stands helpless this long: the window for an execution. */
+    staggerTime: 1.6,
+    /** An execution heals both players by this share of their health (design.md §5). */
+    executionHeal: 0.12,
+    /** Poise recovers this share per second when not hit. */
+    poiseRegen: 0.15,
+    /** Bleed ticks heal the Thorn who caused them by this share (Thorn's sustain). */
+    thornBleedHeal: 0.35,
+    /** Each hit taken grants Bark this share as shield (Bark's sustain), capped below. */
+    barkShieldOnHit: 0.3,
+    barkShieldCap: 60,
+    /** Fire damage dealt heals Ash by this share (Ash's sustain). */
+    ashFireHeal: 0.12,
+    /** Overheating sets you on fire and silences you this long. */
+    overheatSilence: 2.5,
+    /** Storm above this charge regenerates a static shield (Storm's sustain). */
+    stormShieldAt: 60,
+    stormShieldRate: 4,
+    /** Graves drains this share of max health per second per living thrall (Graves' sustain). */
+    gravesDrain: 0.012,
+    /** Dusk in stealth heals this share of max health per second (Dusk's sustain). */
+    duskStealthHeal: 0.06,
+    /** Damage taken by enemies under each debuff, as a multiplier bonus. */
+    weakenBonus: 0.2,
+    rootedBonus: 0.15,
+    /** Damage over time ticks this often. */
+    dotTick: 0.5,
+    /** A killing blow that overshoots by more than this share of max health tears the body apart (gore). */
+    goreOverkill: 0.25,
+    thrall: { hp: 60, damage: 9, speed: 2.4 },
+    /** Delay between waves. */
+    waveDelay: 4,
+    /** After the Tapper falls, the gate holds for this long before the night starts over (test loop). */
+    victoryHold: 25,
+  },
 } as const;

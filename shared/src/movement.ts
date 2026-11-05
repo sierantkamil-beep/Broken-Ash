@@ -29,6 +29,13 @@ export interface InputFrame {
   mx: number;
   my: number;
   dodge: boolean;
+  /** World-space aim angle (radians) and distance (cells) to the cursor. */
+  aim?: number;
+  aimDist?: number;
+  /** Skill slot pressed this frame (0 basic … 5), if any. */
+  cast?: number;
+  /** F held: revive a downed partner / execute a staggered enemy. */
+  act?: boolean;
 }
 
 export function newBody(x: number, y: number): Body {
@@ -41,14 +48,23 @@ export function sanitizeInput(raw: unknown): InputFrame | null {
   const r = raw as Record<string, unknown>;
   if (typeof r.seq !== "number" || !Number.isInteger(r.seq) || r.seq < 0) return null;
   const axis = (v: unknown) => (v === 1 || v === -1 ? v : 0);
-  return { seq: r.seq, mx: axis(r.mx), my: axis(r.my), dodge: r.dodge === true };
+  const f: InputFrame = { seq: r.seq, mx: axis(r.mx), my: axis(r.my), dodge: r.dodge === true };
+  if (typeof r.aim === "number" && Number.isFinite(r.aim)) f.aim = Math.atan2(Math.sin(r.aim), Math.cos(r.aim));
+  if (typeof r.aimDist === "number" && Number.isFinite(r.aimDist)) f.aimDist = Math.max(0, Math.min(20, r.aimDist));
+  if (typeof r.cast === "number" && Number.isInteger(r.cast) && r.cast >= 0 && r.cast <= 5) f.cast = r.cast;
+  if (r.act === true) f.act = true;
+  return f;
 }
 
 export function isInvulnerable(b: Body): boolean {
   return b.dodgeT > BALANCE.dodge.duration - BALANCE.dodge.iframes;
 }
 
-export function stepBody(b: Body, input: InputFrame, dt: number, grid: CollisionGrid): void {
+/**
+ * Advances a body one step. `speedMul` scales running (slows, haste, a path's speed; 0 = rooted);
+ * dodging is allowed only when `canDodge` (not rooted, downed or staggered).
+ */
+export function stepBody(b: Body, input: InputFrame, dt: number, grid: CollisionGrid, speedMul = 1, canDodge = true): void {
   const P = BALANCE.player;
   const D = BALANCE.dodge;
   const dir = screenDirToWorld(input.mx, input.my);
@@ -59,7 +75,7 @@ export function stepBody(b: Body, input: InputFrame, dt: number, grid: Collision
   if (b.sinceSpend >= P.staminaRegenDelay) b.stamina = Math.min(P.staminaMax, b.stamina + P.staminaRegen * dt);
 
   // Start a dodge: in the held direction, or the way you're facing when standing still.
-  if (input.dodge && b.dodgeT <= 0 && b.dodgeCd <= 0 && b.stamina >= D.cost) {
+  if (input.dodge && canDodge && b.dodgeT <= 0 && b.dodgeCd <= 0 && b.stamina >= D.cost) {
     const dx = moving ? dir.x : Math.cos(b.facing);
     const dy = moving ? dir.y : Math.sin(b.facing);
     b.dodgeT = D.duration;
@@ -79,12 +95,12 @@ export function stepBody(b: Body, input: InputFrame, dt: number, grid: Collision
     b.dodgeT = Math.max(0, b.dodgeT - dt);
     if (b.dodgeT === 0) b.dodgeCd = D.cooldown;
   } else {
-    const tx = dir.x * P.speed;
-    const ty = dir.y * P.speed;
+    const tx = dir.x * P.speed * speedMul;
+    const ty = dir.y * P.speed * speedMul;
     const rate = (moving ? P.accel : P.decel) * dt;
     b.vx = approach(b.vx, tx, rate);
     b.vy = approach(b.vy, ty, rate);
-    if (moving) b.facing = Math.atan2(dir.y, dir.x);
+    if (moving && speedMul > 0) b.facing = Math.atan2(dir.y, dir.x);
   }
 
   moveWithCollision(b, b.vx * dt, b.vy * dt, grid);
@@ -98,8 +114,7 @@ function approach(v: number, target: number, rate: number): number {
  * Moves a circle through the grid, sliding along walls. Each axis is resolved separately, in
  * sub-steps no longer than a quarter cell, so fast dodges can't tunnel through a wall.
  */
-export function moveWithCollision(b: { x: number; y: number; vx: number; vy: number }, dx: number, dy: number, grid: CollisionGrid): void {
-  const r = BALANCE.player.radius;
+export function moveWithCollision(b: { x: number; y: number; vx: number; vy: number }, dx: number, dy: number, grid: CollisionGrid, r: number = BALANCE.player.radius): void {
   const steps = Math.max(1, Math.ceil(Math.max(Math.abs(dx), Math.abs(dy)) / 0.25));
   for (let i = 0; i < steps; i++) {
     b.x += dx / steps;

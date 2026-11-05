@@ -9,3 +9,7 @@ export * from "./data/props.js";
 export * from "./data/cinematics.js";
 export * from "./maps/index.js";
 export * from "./types.js";
+export * from "./combat/types.js";
+export * from "./combat/geometry.js";
+export * from "./data/paths.js";
+export * from "./data/greyed.js";
