@@ -10,7 +10,12 @@ Output: client/public/assets/chars/<key>.webp + <key>.json (Phaser JSON-hash atl
 The atlas "meta" tells the client this is pixel art (nearest filtering), the scale it's drawn at,
 how many frames each animation has and how tall the figure stands, so nothing is hard-coded per set.
 
-Usage: python tools/pixellab/pack.py [key ...]   (no keys = every folder under src/)
+With --palette <file.json> every frame is snapped to that palette first (template animations aren't
+palette-locked) and the atlas meta gets "regions": which palette colours are skin, hair-and-cloth,
+leather trim and outline, so the client can recolour gear (client/src/assets/recolor.ts).
+
+Usage: python tools/pixellab/pack.py [--palette tools/pixellab/body_palette.json] [key ...]
+       (no keys = every folder under src/)
 """
 import json
 import os
@@ -40,9 +45,52 @@ def feet(im):
     return cx, y1
 
 
+def hex_rgb(h):
+    return tuple(int(h[i : i + 2], 16) for i in (1, 3, 5))
+
+
+def lum(c):
+    return 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]
+
+
+def classify(c):
+    """Which recolourable region a palette colour belongs to (see the client's recolor.ts)."""
+    r, g, b = c
+    if lum(c) < 14:
+        return "outline"
+    if r > 140 and r > g > b and r - b > 45:
+        return "skin"
+    if r > g >= b - 6 and r - b > 14:
+        return "trim"
+    if r - b > 30:
+        return "skin"
+    return "cloth"
+
+
+def snap(im, palette):
+    """Every opaque pixel to its nearest palette colour; alpha is made hard (pixel art has no blur)."""
+    px = im.load()
+    cache = {}
+    for y in range(im.height):
+        for x in range(im.width):
+            r, g, b, a = px[x, y]
+            if a < 128:
+                px[x, y] = (0, 0, 0, 0)
+                continue
+            k = (r, g, b)
+            if k not in cache:
+                cache[k] = min(palette, key=lambda p: (p[0] - r) ** 2 * 3 + (p[1] - g) ** 2 * 4 + (p[2] - b) ** 2 * 2)
+            px[x, y] = (*cache[k], 255)
+    return im
+
+
+PALETTE = None
+
+
 def frames_of(folder):
     names = sorted((f for f in os.listdir(folder) if f.endswith(".png")), key=lambda f: int("".join(c for c in f if c.isdigit()) or 0))
-    return [Image.open(os.path.join(folder, f)).convert("RGBA") for f in names]
+    ims = [Image.open(os.path.join(folder, f)).convert("RGBA") for f in names]
+    return [snap(im, PALETTE) for im in ims] if PALETTE else ims
 
 
 def pack(key):
@@ -52,7 +100,7 @@ def pack(key):
     height = 0
     for anim in sorted(os.listdir(src)):
         adir = os.path.join(src, anim)
-        if not os.path.isdir(adir):
+        if anim.startswith("_") or not os.path.isdir(adir):
             continue
         for i, d in enumerate(DIRS):
             ddir = os.path.join(adir, d)
@@ -112,6 +160,11 @@ def pack(key):
         "anims": counts,
         "height": height,
     }
+    if PALETTE:
+        regions = {}
+        for c in PALETTE:
+            regions.setdefault(classify(c), []).append("#%02x%02x%02x" % c)
+        meta["regions"] = regions
     out = {"frames": {}, "meta": meta}
     for name, im, pivot, px, py in placed:
         sheet.paste(im, (px, py))
@@ -138,7 +191,11 @@ def write_index():
 
 
 if __name__ == "__main__":
-    keys = sys.argv[1:] or sorted(d for d in os.listdir(SRC) if os.path.isdir(os.path.join(SRC, d)))
+    args = sys.argv[1:]
+    if args[:1] == ["--palette"]:
+        PALETTE = [hex_rgb(h) for h in json.load(open(args[1]))]
+        args = args[2:]
+    keys = args or sorted(d for d in os.listdir(SRC) if os.path.isdir(os.path.join(SRC, d)))
     for k in keys:
         pack(k)
     write_index()

@@ -1,0 +1,362 @@
+{
+  "thorn_male_base": [
+    {
+      "endpoint": "create-character-v3",
+      "body": {
+        "description": "dark fantasy elf swordsman, samurai-inspired warrior, black lacquered lamellar armour with vermilion red cords, long dark hair in a topknot, pointed elf ears, pale skin, a long curved katana in the right hand and a short curved blade on the hip, tattered dark red sash, grim scarred face",
+        "image_size": {
+          "width": 64,
+          "height": 64
+        },
+        "view": "high top-down",
+        "outline": "single color black outline",
+        "detail": "high detail",
+        "name": "Thorn male",
+        "no_background": true
+      },
+      "response": {
+        "usage": null,
+        "background_job_id": "7feca219-6a56-410e-be1f-bb33981556ff",
+        "character_id": "4879d162-ef6f-421f-a7e5-5ef97542e5e6",
+        "status": "processing",
+        "enhanced_prompt": null,
+        "enhance_usage": null
+      },
+      "at": "2026-11-05T23:28:55Z"
+    }
+  ],
+  "body_male_base": [
+    {
+      "endpoint": "create-character-v3",
+      "body": {
+        "description": "slim athletic elf man, base body for a paper-doll RPG: plain tight dark grey sleeveless tunic, dark grey trousers, simple brown leather belt, brown wrist wraps and soft brown boots, long black hair tied back, pointed elf ears, pale skin, empty hands, no weapon, no armour, no cape, neutral standing pose, dark fantasy",
+        "image_size": {
+          "width": 64,
+          "height": 64
+        },
+        "view": "high top-down",
+        "outline": "single color black outline",
+        "detail": "high detail",
+        "name": "Base body male",
+        "no_background": true
+      },
+      "response": {
+        "usage": null,
+        "background_job_id": "ace2838a-741b-4b46-b13d-6a1607f198e4",
+        "character_id": "b428afd7-fdc7-4021-8a22-8760ad962fc9",
+        "status": "processing",
+        "enhanced_prompt": null,
+        "enhance_usage": null
+      },
+      "at": "2026-11-05T23:37:34Z"
+    }
+  ],
+  "body_female_base": [
+    {
+      "endpoint": "create-character-v3",
+      "body": {
+        "description": "slim athletic elf woman, base body for a paper-doll RPG: plain tight dark grey sleeveless tunic, dark grey trousers, simple brown leather belt, brown wrist wraps and soft brown boots, long black hair tied back, pointed elf ears, pale skin, empty hands, no weapon, no armour, no cape, neutral standing pose, dark fantasy",
+        "image_size": {
+          "width": 64,
+          "height": 64
+        },
+        "view": "high top-down",
+        "outline": "single color black outline",
+        "detail": "high detail",
+        "name": "Base body female",
+        "no_background": true
+      },
+      "response": {
+        "usage": null,
+        "background_job_id": "61fae244-545b-4ddf-ad73-bec9efc45c30",
+        "character_id": "dda902fc-636a-4f90-a3bf-900d8488ee70",
+        "status": "processing",
+        "enhanced_prompt": null,
+        "enhance_usage": null
+      },
+      "at": "2026-11-05T23:40:24Z"
+    }
+  ],
+  "male_run": [
+    {
+      "endpoint": "characters/animations",
+      "body": {
+        "character_id": "b428afd7-fdc7-4021-8a22-8760ad962fc9",
+        "mode": "v3",
+        "animation_name": "run",
+        "action_description": "running forward at full speed, arms pumping, a smooth loopable run cycle",
+        "frame_count": 6,
+        "keep_first_frame": false,
+        "directions": [
+          "south"
+        ],
+        "target_palette": {
+          "colors": [
+            "#000000",
+            "#000104",
+            "#010205",
+            "#020208",
+            "#030406",
+            "#09090f",
+            "#0a0814",
+            "#0f0d1b",
+            "#0f0e16",
+            "#191625",
+            "#191720",
+            "#1f1e29",
+            "#251822",
+            "#25182f",
+            "#262532",
+            "#262535",
+            "#280c0f",
+            "#2d2d3e",
+            "#2e1414",
+            "#2f313e",
+            "#353538",
+            "#372123",
+            "#37242c",
+            "#393c47",
+            "#3a3e4c",
+            "#3c3136",
+            "#412625",
+            "#451f1e",
+            "#45312a",
+            "#454a54",
+            "#454a55",
+            "#456f59",
+            "#49151a",
+            "#492a24",
+            "#4c525c",
+            "#50555c",
+            "#525a63",
+            "#533a37",
+            "#5a3d2e",
+            "#5b2a20",
+            "#6a3925",
+            "#6b363b",
+            "#6c5e58",
+            "#6d747d",
+            "#6f4532",
+            "#713336",
+            "#724e48",
+            "#726e74",
+            "#756860",
+            "#797f8a",
+            "#7b432a",
+            "#80766c",
+            "#813e3e",
+            "#828892",
+            "#828a92",
+            "#864a2a",
+            "#898876",
+            "#8d7470",
+            "#8f989f",
+            "#904a42",
+            "#915a32",
+            "#92493a",
+            "#92877a",
+            "#953e30",
+            "#9d663e",
+            "#9faca7",
+            "#a19186",
+            "#a34d44",
+            "#a46434",
+            "#a4afb6",
+            "#a66b51",
+            "#ac4236",
+            "#ae907c",
+            "#b25b4c",
+            "#b34c3e",
+            "#b4bfc6",
+            "#b8654c",
+            "#bbcbd2",
+            "#bd6552",
+            "#bf8772",
+            "#c1cdd4",
+            "#c59f87",
+            "#ca745b",
+            "#cb7255",
+            "#cc5c44",
+            "#d0d2c8",
+            "#d0dade",
+            "#d38063",
+            "#d5e8ec",
+            "#d98160",
+            "#d98969",
+            "#dcd9d6",
+            "#e1916e",
+            "#e3b897",
+            "#e59a78",
+            "#eda57f",
+            "#f0b08a",
+            "#f7bf97",
+            "#f9c5a1"
+          ],
+          "name": "Broken Ash body"
+        }
+      },
+      "response": {
+        "background_job_ids": [
+          "ba0fc4a1-7104-4395-9ec2-009fd00bcdb6"
+        ],
+        "directions": [
+          "south"
+        ],
+        "animation_group_id": "9050c995-b053-426d-bbcd-cb1707758ab3",
+        "status": "processing",
+        "enhanced_prompt": null,
+        "enhance_usage": null
+      },
+      "at": "2026-11-05T23:44:04Z"
+    }
+  ],
+  "male_run_template": [
+    {
+      "endpoint": "characters/animations",
+      "body": {
+        "character_id": "b428afd7-fdc7-4021-8a22-8760ad962fc9",
+        "mode": "template",
+        "template_animation_id": "running-6-frames",
+        "animation_name": "run_template",
+        "directions": [
+          "south"
+        ]
+      },
+      "response": {
+        "background_job_ids": [
+          "0c126b49-1a73-413d-b9d5-df9935843be7"
+        ],
+        "directions": [
+          "south"
+        ],
+        "animation_group_id": "1a00b031-a116-40bd-94c2-101f8e38edd3",
+        "status": "processing",
+        "enhanced_prompt": null,
+        "enhance_usage": null
+      },
+      "at": "2026-11-05T23:45:46Z"
+    }
+  ],
+  "body_male_run": [
+    {
+      "body": {
+        "character_id": "b428afd7-fdc7-4021-8a22-8760ad962fc9",
+        "animation_name": "body_male_run",
+        "directions": [
+          "south-west"
+        ],
+        "mode": "template",
+        "template_animation_id": "running-6-frames"
+      },
+      "response": {
+        "background_job_ids": [
+          "0766ec14-cd51-43e1-80f9-c74f4cd7bd4c"
+        ],
+        "directions": [
+          "south-west"
+        ],
+        "animation_group_id": "a201eeed-4c12-415e-a679-c0cd269b151d",
+        "status": "processing",
+        "enhanced_prompt": null,
+        "enhance_usage": null
+      }
+    },
+    {
+      "body": {
+        "character_id": "b428afd7-fdc7-4021-8a22-8760ad962fc9",
+        "animation_name": "body_male_run",
+        "directions": [
+          "west"
+        ],
+        "mode": "template",
+        "template_animation_id": "running-6-frames",
+        "animation_group_id": "a201eeed-4c12-415e-a679-c0cd269b151d"
+      },
+      "response": {
+        "background_job_ids": [
+          "7810ed03-36a7-4223-803b-44d5b3bd8b16"
+        ],
+        "directions": [
+          "west"
+        ],
+        "animation_group_id": "a201eeed-4c12-415e-a679-c0cd269b151d",
+        "status": "processing",
+        "enhanced_prompt": null,
+        "enhance_usage": null
+      }
+    },
+    {
+      "body": {
+        "character_id": "b428afd7-fdc7-4021-8a22-8760ad962fc9",
+        "animation_name": "body_male_run",
+        "directions": [
+          "north-west"
+        ],
+        "mode": "template",
+        "template_animation_id": "running-6-frames",
+        "animation_group_id": "a201eeed-4c12-415e-a679-c0cd269b151d"
+      },
+      "response": {
+        "background_job_ids": [
+          "e88130bb-cedb-4ba5-a0c9-b207a8f3791a"
+        ],
+        "directions": [
+          "north-west"
+        ],
+        "animation_group_id": "a201eeed-4c12-415e-a679-c0cd269b151d",
+        "status": "processing",
+        "enhanced_prompt": null,
+        "enhance_usage": null
+      }
+    },
+    {
+      "body": {
+        "character_id": "b428afd7-fdc7-4021-8a22-8760ad962fc9",
+        "animation_name": "body_male_run",
+        "directions": [
+          "north"
+        ],
+        "mode": "template",
+        "template_animation_id": "running-6-frames",
+        "animation_group_id": "a201eeed-4c12-415e-a679-c0cd269b151d"
+      },
+      "response": {
+        "background_job_ids": [
+          "c29be301-076a-4ed7-8b0f-968f5ebf5d79"
+        ],
+        "directions": [
+          "north"
+        ],
+        "animation_group_id": "a201eeed-4c12-415e-a679-c0cd269b151d",
+        "status": "processing",
+        "enhanced_prompt": null,
+        "enhance_usage": null
+      }
+    }
+  ],
+  "body_female_run": [
+    {
+      "body": {
+        "character_id": "dda902fc-636a-4f90-a3bf-900d8488ee70",
+        "animation_name": "body_female_run",
+        "directions": [
+          "south"
+        ],
+        "mode": "template",
+        "template_animation_id": "running-6-frames"
+      },
+      "response": {
+        "background_job_ids": [
+          "d57350ab-81bd-4a36-8065-57c4799bba52"
+        ],
+        "directions": [
+          "south"
+        ],
+        "animation_group_id": "cf4c8732-d379-4fad-8b43-4848a1201b5c",
+        "status": "processing",
+        "enhanced_prompt": null,
+        "enhance_usage": null
+      }
+    }
+  ]
+}

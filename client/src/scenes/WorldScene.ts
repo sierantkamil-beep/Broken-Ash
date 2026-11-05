@@ -419,7 +419,8 @@ export class WorldScene extends Phaser.Scene {
       let zoom = PLAY_ZOOM * this.baseZoom() * this.userZoom;
       const px = this.me.char.pixelScale;
       // Pixel art stays crisp only when each art pixel covers a whole number of screen pixels.
-      if (px) zoom = Math.max(1, Math.round(zoom * px)) / px;
+      // Rounded with a bias upward: a small window would otherwise drop to 1:1 and shrink everyone.
+      if (px) zoom = Math.max(1, Math.round(zoom * px + 0.3)) / px;
       const next = Phaser.Math.Linear(cam.zoom, zoom, Math.min(1, delta / 250));
       cam.setZoom(Math.abs(next - zoom) < 0.004 ? zoom : next);
       cam.roundPixels = !!px && cam.zoom === zoom;

@@ -5,9 +5,9 @@
 
 ## Contents
 
-- [shared](#shared) — 18 files, 5 test files
+- [shared](#shared) — 19 files, 5 test files
 - [server](#server) — 9 files, 3 test files
-- [client](#client) — 23 files, 3 test files
+- [client](#client) — 24 files, 3 test files
 - [desktop](#desktop) — 3 files, 1 test files
 - [tools/catalogue](#toolscatalogue) — 1 files, 1 test files
 - [Python tools](#python-tools)
@@ -26,10 +26,11 @@ Pure game logic and data used by server and client. No Phaser, Colyseus or Node 
 | `shared/src/constants.ts` | Network and simulation constants shared by server and client. | `DEFAULT_PORT`, `ROOM_NAME`, `MAX_PLAYERS`, `SIM_HZ`, `SIM_DT`, `PATCH_HZ`, `INTERP_DELAY_MS`, `MAX_NAME_LENGTH`, `MSG` | — |
 | `shared/src/data/cinematics.ts` | Prolog — plays the first time the two of you enter the Soramei courtyard. | `CINEMATICS` | `shared/src/cinematic` |
 | `shared/src/data/greyed.ts` | Telegraph time: the shape glows on the ground this long before it lands. | `GreyedKind`, `EnemyAttack`, `EnemyDef`, `GREYED`, `Wave`, `GATE_ASSAULT` | `shared/src/combat/types` |
+| `shared/src/data/looks.ts` | How a path dresses the shared male/female body (a "look"): colour ramps, dark to light, that replace the body's cloth and leather-trim colours. | `Look`, `PATH_LOOKS` | `shared/src/combat/types` |
 | `shared/src/data/paths.ts` | The eight paths (design.md §4): 2 melee, 4 magic, 2 ranged. | `PATHS`, `PATH_IDS`, `PEOPLES` | `shared/src/combat/types` |
 | `shared/src/data/props.ts` | Prop catalogue: gameplay facts only (footprint, what blocks, lights). | `PropDef`, `PROPS`, `PropKind`, `PROP_KINDS` | — |
 | `shared/src/i18n.ts` | Polish plural forms: 1 → one, 2–4 (but not 12–14) → few, everything else → many. | `plural`, `count` | — |
-| `shared/src/index.ts` | — | * from "./constants.js", * from "./balance.js", * from "./iso.js", * from "./i18n.js", * from "./map.js", * from "./movement.js", * from "./cinematic.js", * from "./data/props.js", * from "./data/cinematics.js", * from "./maps/index.js", * from "./types.js", * from "./combat/types.js", * from "./combat/geometry.js", * from "./data/paths.js", * from "./data/greyed.js" | `shared/src/balance`, `shared/src/cinematic`, `shared/src/combat/geometry`, `shared/src/combat/types`, `shared/src/constants`, `shared/src/data/cinematics`, `shared/src/data/greyed`, `shared/src/data/paths`, `shared/src/data/props`, `shared/src/i18n`, `shared/src/iso`, `shared/src/map`, `shared/src/maps/index`, `shared/src/movement`, `shared/src/types` |
+| `shared/src/index.ts` | — | * from "./constants.js", * from "./balance.js", * from "./iso.js", * from "./i18n.js", * from "./map.js", * from "./movement.js", * from "./cinematic.js", * from "./data/props.js", * from "./data/cinematics.js", * from "./maps/index.js", * from "./types.js", * from "./combat/types.js", * from "./combat/geometry.js", * from "./data/paths.js", * from "./data/greyed.js", * from "./data/looks.js" | `shared/src/balance`, `shared/src/cinematic`, `shared/src/combat/geometry`, `shared/src/combat/types`, `shared/src/constants`, `shared/src/data/cinematics`, `shared/src/data/greyed`, `shared/src/data/looks`, `shared/src/data/paths`, `shared/src/data/props`, `shared/src/i18n`, `shared/src/iso`, `shared/src/map`, `shared/src/maps/index`, `shared/src/movement`, `shared/src/types` |
 | `shared/src/iso.ts` | Isometric (2:1 dimetric) projection. | `TILE_W`, `TILE_H`, `Z_PX`, `worldToScreen`, `screenToWorld`, `screenDirToWorld`, `DIRECTIONS`, `directionIndex`, `depthOf` | — |
 | `shared/src/map.ts` | An area of the world. | `AreaMap`, `GroundType`, `BLOCKING_GROUND`, `PropPlacement`, `CollisionGrid` | `shared/src/data/props` |
 | `shared/src/maps/builder.ts` | Small helper for writing maps as code: readable, deterministic, diffable. | `MapBuilder` | `shared/src/data/props`, `shared/src/map` |
@@ -57,6 +58,7 @@ Tests: `shared/src/cinematic.test.ts`, `shared/src/i18n.test.ts`, `shared/src/is
 - `PATCH_HZ` (const, `shared/src/constants.ts`) — How often the server sends state patches.
 - `GREYED` (const, `shared/src/data/greyed.ts`) — The Greyed (design.md §1): the dead who rise near the roots.
 - `GATE_ASSAULT` (const, `shared/src/data/greyed.ts`) — The night of the escape: the Greyed break through Soramei's vermilion gate in waves, then the Tapper himself comes for his runaway stock.
+- `Look` (interface, `shared/src/data/looks.ts`) — How a path dresses the shared male/female body (a "look"): colour ramps, dark to light, that replace the body's cloth and leather-trim colours.
 - `PropDef` (interface, `shared/src/data/props.ts`) — Prop catalogue: gameplay facts only (footprint, what blocks, lights).
 - `plural` (function, `shared/src/i18n.ts`) — Polish plural forms: 1 → one, 2–4 (but not 12–14) → few, everything else → many.
 - `count` (function, `shared/src/i18n.ts`) — "3 sekundy", "5 sekund".
@@ -130,10 +132,11 @@ Phaser 3 + Vite client: rendering, prediction, cinematics, audio, DOM UI.
 | File | Purpose | Exports | Depends on |
 |---|---|---|---|
 | `client/src/assets/atlases.ts` | Character atlases are big (one per path and body, one per Greyed), so they load on demand: only the two players' sets and the enemies actually present. | `AtlasMeta`, `atlasMeta`, `resolveAnim`, `charKey`, `greyedKey`, `ensureAtlas`, `atlasOr` | phaser |
+| `client/src/assets/recolor.ts` | Cloth tones this dark are shared with hair and outlines; this light, with eyes and buckles. | `recolorAtlas` | @broken-ash/shared, phaser |
 | `client/src/audio/AudioDirector.ts` | Every sound file the game loads (client/public/assets/audio, generated by tools/audio/build.py). | `AUDIO_KEYS`, `AudioDirector` | `client/src/settings`, phaser |
 | `client/src/cinematic/CinematicPlayer.ts` | Camera zoom that 1.0 in the data corresponds to (scales with the window height). | `CinematicHooks`, `CinematicPlayer` | `client/src/audio/AudioDirector`, `client/src/ui/dom`, @broken-ash/shared, phaser |
 | `client/src/desktop.ts` | What the desktop app found out when it started hosting (mirrors desktop/src/network.ts). | `HostReport`, `DesktopBridge`, `desktop` | — |
-| `client/src/entities/Character.ts` | Cells travelled per full run cycle: matches the stride of the drawn run, so feet don't slide. | `CharacterState`, `Character` | `client/src/assets/atlases`, `client/src/audio/AudioDirector`, @broken-ash/shared, phaser |
+| `client/src/entities/Character.ts` | The texture key of a body dressed in a path's look. | `CharacterState`, `Character` | `client/src/assets/atlases`, `client/src/assets/recolor`, `client/src/audio/AudioDirector`, @broken-ash/shared, phaser |
 | `client/src/entities/UnitSprite.ts` | The synced unit fields (server/src/schema/WorldState.ts UnitState). | `UnitView`, `UnitSprite` | `client/src/assets/atlases`, `client/src/net/Interpolation`, @broken-ash/shared, phaser |
 | `client/src/fx/Vfx.ts` | Look of each skill's visual (SkillDef.vfx). | `VfxHooks`, `Vfx`, `Telegraphs` | `client/src/settings`, @broken-ash/shared, phaser |
 | `client/src/main.ts` | — | — | `client/src/desktop`, `client/src/net`, `client/src/scenes/BootScene`, `client/src/scenes/WorldScene`, `client/src/settings`, `client/src/style.css`, `client/src/ui/Creator`, `client/src/ui/dom`, `client/src/ui/hostReport`, @fontsource/cormorant-garamond, @fontsource/shippori-mincho, phaser |
@@ -160,6 +163,7 @@ Tests: `client/src/net/Prediction.test.ts`, `client/src/net.test.ts`, `client/sr
 - `atlasMeta` (function, `client/src/assets/atlases.ts`) — What an atlas says about itself (its JSON "meta").
 - `ensureAtlas` (function, `client/src/assets/atlases.ts`) — Loads an atlas if it exists; resolves to whether it's usable.
 - `atlasOr` (function, `client/src/assets/atlases.ts`) — The best atlas available right now for a wanted key.
+- `recolorAtlas` (function, `client/src/assets/recolor.ts`) — A copy of a body atlas with its cloth and leather recoloured to a look.
 - `AUDIO_KEYS` (const, `client/src/audio/AudioDirector.ts`) — Every sound file the game loads (client/public/assets/audio, generated by tools/audio/build.py).
 - `AudioDirector` (class, `client/src/audio/AudioDirector.ts`) — Music, ambience and effects on three volume buses.
 - `CinematicPlayer` (class, `client/src/cinematic/CinematicPlayer.ts`) — Plays a cinematic timeline from shared data: drives the camera, the DOM overlay (letterbox, fades, title card, subtitles) and fires sounds/shakes/flashes as their moments pass.
@@ -238,10 +242,14 @@ Tests: `tools/catalogue/catalogue.test.ts`
 | `tools/art/outfits.py` | Outfits, hair and weapons for the eight paths, built on a MakeHuman body from mh.py. | `cloth`, `silk`, `leather`, `lacquer`, `lamellar`, `metal`, `skin_material`, `hair_material`, `region_shell`, `robe`, `attach`, `joint`, `bone_head`, `bone_tail`, `palm`, `grip_axes`, `oriented`, `curve_blade`, `join`, `hold`, `scalp_filter`, `hair`, `base_layers`, `sash`, `wide_sleeves`, `mask`, `plate`, `build_path`, `war_fan`, `spirit_lantern`, `longbow`, `palette`, `build_greyed` |
 | `tools/art/render.py` | Renders every sprite with Blender (bpy) and packs them into atlases for the client. | `render_frame`, `props` |
 | `tools/audio/build.py` | Synthesises the game's music, ambience and sound effects into .ogg files (numpy + ffmpeg). | `t_axis`, `midi`, `fft_filter`, `env`, `pluck`, `flute`, `drum`, `bell`, `reverb`, `pan`, `place`, `mixin`, `loop_seamless`, `master`, `write_ogg`, `scale_note`, `music_soramei_night`, `amb_night_wind`, `sfx_title_gong`, `sfx_cin_split`, `sfx_gate_bang`, `footstep`, `sfx_dodge`, `ui_click`, `ui_hover`, `ui_confirm`, `noise`, `sweep_band`, `blade`, `impact_flesh`, `splatter`, `fire`, `thunder`, `wind_gust`, `spirit`, `bow`, `throw`, `poison_hiss`, `roots_crack`, `groan`, `roar`, `horn`, `chime`, `heartbeat`, `music_gate_fight`, `combat_sfx`, `main` |
-| `tools/pixellab/pack.py` | Packs PixelLab output into the game's character atlas format. | `feet`, `frames_of`, `pack`, `write_index` |
+| `tools/pixellab/api.py` | Thin client for PixelLab's REST API (v2), used to build the game's sprites. | `call`, `log`, `wait` |
+| `tools/pixellab/derive.py` | Clips we draw ourselves from a character's rotations instead of paying PixelLab for them: idle (a one-pixel breath), hit (a flinch) and death (a fall). | `bbox`, `split_shift`, `save`, `derive` |
+| `tools/pixellab/pack.py` | Packs PixelLab output into the game's character atlas format. | `feet`, `hex_rgb`, `lum`, `classify`, `snap`, `frames_of`, `pack`, `write_index` |
+| `tools/pixellab/queue.py` | Runs animation requests one at a time (the trial plan allows a single job in flight) and saves each direction's frames into tools/pixellab/src/<key>/<anim>/<direction>/. | — |
+| `tools/pixellab/save_job.py` | Saves a finished animation job's frames: save_job.py <job_id> <key> <anim> <direction> into tools/pixellab/src/<key>/<anim>/<direction>/<n>.png (the layout pack.py reads). | — |
 
 ## Generated assets
 
 - **`client/public/assets/audio/`** (54 files): `amb_night_wind`, `music_gate_fight`, `music_soramei_night`, `sfx_bell`, `sfx_blade`, `sfx_blade_heavy`, `sfx_blade_spin`, `sfx_blood`, `sfx_blood_heavy`, `sfx_blowpipe`, `sfx_bow`, `sfx_bow_heavy`, `sfx_burst`, `sfx_cin_split`, `sfx_dodge`, `sfx_downed`, `sfx_drink`, `sfx_execute`, `sfx_fire`, `sfx_fire_heavy`, `sfx_gate_bang`, `sfx_gong_small`, `sfx_gore`, `sfx_greyed_death`, `sfx_groan_0`, `sfx_groan_1`, `sfx_groan_2`, `sfx_hit_flesh`, `sfx_horn`, `sfx_poison`, `sfx_revive`, `sfx_roots`, `sfx_slam`, `sfx_smoke`, `sfx_spirit`, `sfx_spirit_heavy`, `sfx_step_soft_0`, `sfx_step_soft_1`, `sfx_step_soft_2`, `sfx_step_soft_3`, `sfx_step_stone_0`, `sfx_step_stone_1`, `sfx_step_stone_2`, `sfx_step_stone_3`, `sfx_tapper_roar`, `sfx_throw`, `sfx_thunder`, `sfx_title_gong`, `sfx_victory`, `sfx_whoosh`, `sfx_wind`, `ui_click`, `ui_confirm`, `ui_hover`
-- **`client/public/assets/chars/`** (9 files): `blood_female`, `index`, `runner_greyed`, `shambler_greyed`, `thorn_male`
+- **`client/public/assets/chars/`** (13 files): `blood_female`, `body_female`, `body_male`, `index`, `runner_greyed`, `shambler_greyed`, `thorn_male`
 - **`client/public/assets/sprites/`** (6 files): `fx`, `ground`, `props`

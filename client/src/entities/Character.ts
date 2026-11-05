@@ -1,9 +1,13 @@
 import Phaser from "phaser";
-import { BALANCE, depthOf, directionIndex, PATHS, worldToScreen, type PathId } from "@broken-ash/shared";
+import { BALANCE, depthOf, directionIndex, PATH_LOOKS, PATHS, worldToScreen, type PathId } from "@broken-ash/shared";
 import type { AudioDirector } from "../audio/AudioDirector";
+import { recolorAtlas } from "../assets/recolor";
 import { atlasMeta, atlasOr, charKey, ensureAtlas, resolveAnim, type AtlasMeta } from "../assets/atlases";
 
 const IDLE_FPS = 6;
+
+/** The texture key of a body dressed in a path's look. */
+const dressedKey = (path: PathId, body: string) => `body_${body}@${path}`;
 /** Cells travelled per full run cycle: matches the stride of the drawn run, so feet don't slide. */
 const STRIDE_PER_CYCLE = 1.9;
 const DEATH_FRAME_MS = 110;
@@ -49,10 +53,16 @@ export class Character {
     private readonly audio: AudioDirector,
     private readonly groundAt: (x: number, y: number) => string | null,
   ) {
-    const key = charKey(path, body);
-    this.atlas = atlasOr(scene, key, [charKey(path, body === "male" ? "female" : "male"), "thorn_male", "blood_female"]);
-    void ensureAtlas(scene, key).then((ok) => {
-      if (ok) this.useAtlas(key);
+    // The shared PixelLab body, dressed in the path's look; older per-path renders stand in until it loads.
+    const bodyKey = `body_${body}`;
+    const legacy = charKey(path, body);
+    this.atlas = atlasOr(scene, dressedKey(path, body), [legacy, charKey(path, body === "male" ? "female" : "male"), "thorn_male", "blood_female"]);
+    void ensureAtlas(scene, bodyKey).then((ok) => {
+      if (ok && recolorAtlas(scene, bodyKey, PATH_LOOKS[path], dressedKey(path, body))) this.useAtlas(dressedKey(path, body));
+      else
+        void ensureAtlas(scene, legacy).then((ok2) => {
+          if (ok2) this.useAtlas(legacy);
+        });
     });
     this.shadow = scene.add.image(0, 0, "fx", "shadow").setScale(0.62, 0.62);
     this.sprite = scene.add.sprite(0, 0, this.atlas ?? "fx", this.atlas ? "idle/0/0" : "shadow");
@@ -105,7 +115,7 @@ export class Character {
     this.shadow.setPosition(scr.x, scr.y).setDepth(this.depth - 1);
     this.label.setPosition(scr.x, scr.y - this.meta.height - 14).setScale(1 / this.scene.cameras.main.zoom);
     if (!this.atlas) {
-      const k = atlasOr(this.scene, charKey(this.path, this.body), ["thorn_male", "blood_female"]);
+      const k = atlasOr(this.scene, dressedKey(this.path, this.body), [charKey(this.path, this.body), "thorn_male", "blood_female"]);
       if (!k) return;
       this.useAtlas(k);
     }
