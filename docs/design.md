@@ -1,4 +1,4 @@
-# Broken Ash — design document (draft 3)
+# Broken Ash — design document (draft 4)
 
 > Status: **for review**. Nothing here is coded yet. Mark up anything you hate; everything is negotiable
 > except the pillars.
@@ -10,6 +10,9 @@
 > Draft 3 changes: East Asian–inspired elven cultures. Eight peoples, each with its own look, architecture,
 > customs and path; vermilion red as the realm's sacred colour; the World-Ash blossoms red; peoples you
 > win over unlock their building style; human invaders as the European contrast.
+>
+> Draft 4 changes: the realm mixes Japanese and Chinese influences about equally (each people leans one way);
+> every people has its own naming style, and the cast and places are renamed to match.
 
 ## 0. Pillars
 
@@ -59,8 +62,9 @@ her daughter **Elia**. She is the villain of everyone's story, and she was right
 ### The look of Aeldrith
 Aeldrith is an elven realm built on **East Asian aesthetics**: tiered pagodas with curved roofs,
 vermilion gates, paper lanterns, blossom groves, moon bridges, rock gardens, lacquer, silk, masks,
-curved swords. It mixes Japanese and Chinese influences with elven grace and is never a copy of a real
-country.
+curved swords. It mixes **Japanese and Chinese influences about equally** with elven grace and is never a
+copy of a real country. Each people leans one way (see the table), so travelling across the realm feels
+like crossing borders.
 
 - **Colour:** vermilion red is sacred, because it's the colour of the sap, the blossoms and blood. The
   realm's palette is **black lacquer, ash grey, vermilion and old gold**. Since the tree broke, the
@@ -75,16 +79,36 @@ The realm is a patchwork of elven peoples (*ludy* and *klany*), each with its ow
 customs and fighting style. Each people is home to one of the eight paths (§4). You choose your
 character's **people of origin** at creation, independently of your path.
 
-| People | Lands & architecture | Customs | Path born there |
-|---|---|---|---|
-| **The Lacquer Court** (*Lakowy Dwór*) | The capital **Lirendhal**: tiered vermilion pagodas on stone terraces, lantern streets, paper-screen halls, palace gardens with koi ponds. | Masks, silk, rank shown by robe colour, poetry duels, tea ceremonies that sometimes double as poisonings. Calligraphers write law, and blood-scribes write spells. | **Blood**: sigils painted with a brush dipped in your own blood. |
-| **The Thorn Clan** (*Klan Ciernia*) | The **North-Grove**: wooden keeps with curved roofs among red-blossom groves, training yards, ancestor halls. Ithiel's people. | A warrior oath, **the Oath of the Thorn**, that values loyalty over life. It's why Ithiel walks to his own execution. Duels, ritual tea before battle, poems written on the eve of death. | **Thorn**: a pair of curved blades, one long and one short, with a lightning draw-and-cut. |
-| **The Bark Monasteries** (*Klasztory Kory*) | Mountain fortress-temples on terraced cliffs, bronze bells, stone stairways in the clouds. | Warrior monks, vows of silence, meditation in the snow, heavy lacquered armour bound with living bark. | **Bark**: huge two-handed blades and iron-studded war-clubs. |
-| **The Reed Folk** (*Lud Trzcin*) | **Hollowmere**: a river city on stilts, moon bridges, bamboo walkways, boat markets, floating lantern festivals. | Fishers, smugglers, poisoners and spies. Black-clad night runners, smoke and silence. | **Sting**: throwing knives, darts, blowpipes, poisons, smoke. |
-| **The Dusk Riders** (*Jeźdźcy Zmierzchu*) | The **grey steppe**: felt tents, wooden watchtowers, sky-burial hills, horse herds. | Nomad archers who hunt at dusk, tattoos of every kill, songs instead of written history. | **Dusk**: asymmetric longbows, stealth, traps. |
-| **The Ember Folk** (*Lud Żaru*) | Volcanic forge-shrines behind rows of vermilion gates, black-stone smithies, hot springs. | The realm's swordsmiths. Fire festivals, and paper talismans that burn with a prayer written on them. | **Ash**: talismans that burst into flame, burning ground, explosions. |
-| **The Wind Clan** (*Klan Wiatru*) | Cliff-pagodas above a sea of clouds, rope bridges, wind chimes, kite towers. | Messengers and scholars who read storms, war-fans, kites flown into battle. | **Storm**: lightning, wind, war-fans, blinks. |
-| **The Lantern-Keepers** (*Strażnicy Latarni*) | Ancestor shrines lit by thousands of lanterns, bone pagodas, spirit tablets in the fog. Gwendr's people. | The festival of the dead, lanterns to guide souls home. Since the tree broke, they have tended the Greyed instead of fighting them. | **Graves**: lanterns that bind spirits, raising the dead. |
+| People | Leans | Lands & architecture | Customs | Path born there |
+|---|---|---|---|---|
+| **The Lacquer Court** (*Lakowy Dwór*) | Chinese | The capital **Lirendhal**: tiered vermilion pagodas on stone terraces, lantern streets, paper-screen halls, palace gardens with koi ponds. | Masks, silk, rank shown by robe colour, poetry duels, tea ceremonies that sometimes double as poisonings. Calligraphers write law, and blood-scribes write spells. | **Blood**: sigils painted with a brush dipped in your own blood. |
+| **The Thorn Clan** (*Klan Ciernia*) | Japanese | The **North-Grove**: wooden keeps with curved roofs among red-blossom groves, training yards, ancestor halls. Itheru's people. | A warrior oath, **the Oath of the Thorn**, that values loyalty over life. It's why Itheru walks to his own execution. Duels, ritual tea before battle, poems written on the eve of death. | **Thorn**: a pair of curved blades, one long and one short, with a lightning draw-and-cut. |
+| **The Bark Monasteries** (*Klasztory Kory*) | Japanese | Mountain fortress-temples on terraced cliffs, bronze bells, stone stairways in the clouds. | Warrior monks, vows of silence, meditation in the snow, heavy lacquered armour bound with living bark. | **Bark**: huge two-handed blades and iron-studded war-clubs. |
+| **The Reed Folk** (*Lud Trzcin*) | Chinese | **Shuilan**: a river city on stilts, moon bridges, bamboo walkways, boat markets, floating lantern festivals. | Fishers, smugglers, poisoners and spies. Black-clad night runners, smoke and silence. | **Sting**: throwing knives, darts, blowpipes, poisons, smoke. |
+| **The Dusk Riders** (*Jeźdźcy Zmierzchu*) | Chinese (frontier steppe) | The **grey steppe**: felt tents, wooden watchtowers, sky-burial hills, horse herds. | Nomad archers who hunt at dusk, tattoos of every kill, songs instead of written history. | **Dusk**: asymmetric longbows, stealth, traps. |
+| **The Ember Folk** (*Lud Żaru*) | Japanese | Volcanic forge-shrines behind rows of vermilion gates, black-stone smithies, hot springs. | The realm's swordsmiths. Fire festivals, and paper talismans that burn with a prayer written on them. | **Ash**: talismans that burst into flame, burning ground, explosions. |
+| **The Wind Clan** (*Klan Wiatru*) | Chinese | Cliff-pagodas above a sea of clouds, rope bridges, wind chimes, kite towers. | Messengers and scholars who read storms, war-fans, kites flown into battle. | **Storm**: lightning, wind, war-fans, blinks. |
+| **The Lantern-Keepers** (*Strażnicy Latarni*) | Japanese | Ancestor shrines lit by thousands of lanterns, bone pagodas, spirit tablets in the fog. Sanoe's people. | The festival of the dead, lanterns to guide souls home. Since the tree broke, they have tended the Greyed instead of fighting them. | **Graves**: lanterns that bind spirits, raising the dead. |
+
+### Names
+Every people names its children its own way, so you can tell where someone is from by their name. All
+names are invented: they borrow the *sound* of Japanese or Chinese, mixed with elven endings, and are
+never real names or words used as names.
+
+| People | Style | Examples |
+|---|---|---|
+| **Thorn Clan** | Family (house) name first, then a given name of three soft syllables. Lords are addressed by given name, everyone else by house. | Soramei Itheru, Tamari Fenshō, Kasuren Ayume |
+| **Bark Monasteries** | Monks drop their family name and take a two-syllable temple name ending in *-an* or *-on*, addressed as Brother/Sister. | Brother Tessan, Sister Hokuron |
+| **Ember Folk** | Forge-house name + given name. Smiths sign their blades with the house name, and a famous blade is known by it. | Hakura of House Enjima |
+| **Lantern-Keepers** | One soft given name. At death they receive a "lantern name" that is spoken only at the festival of the dead. | Sanoe, Hinaru, Moyuki |
+| **Lacquer Court** | One-syllable family name first, then a two-syllable given name, often with an elven ending. Long courtly titles. | Lady Zhae Minrue, Minister Quen Taoyel |
+| **Wind Clan** | Clan name + a generation name shared by siblings + a personal name. | Yuevar Shan-Li, Yuevar Shan-Teo |
+| **Reed Folk** | Everyone goes by a nickname; real names are kept secret because names have power on the river. | Old Eel, Three-Fingers Wuyen, Lantern-Fish |
+| **Dusk Riders** | One name + "child of" a parent + the name of a deed, earned and changed through life. | Orsa, child of Temuen, Who Ran With Wolves |
+| **Priests & royal house** | **Old elven names**, from before the peoples split. The royal house and the priesthood keep them to show they belong to the tree, which marks them as the old elite. | Queen Ysolde, Prince Taerin, Elia, Brother Corvane |
+| **Iron March (humans)** | European names. | Margrave Harrow; Maeve's human father |
+
+Maeve keeps her human name from her father, which the elves never let her forget.
 
 Two more powers stand outside the peoples:
 - **The Priests of the Root** (*Kapłani Korzenia*): white robes, red cords, shaved heads, and shrines
@@ -113,7 +137,7 @@ capital has lacquered Greyed courtiers and the steppe has Greyed riders.
 ## 2. The player characters
 
 Both players are **Ashbound** (*Popielni*): elven convicts branded with ash on the forehead, which means
-they are already legally dead. The game opens with both of you in the dungeons under **Sorrowmere Keep**,
+they are already legally dead. The game opens with both of you in the dungeons under **Soramei Keep**,
 sentenced to the stump: being bled for Żywica until you die.
 
 You pick your own name, look, **people of origin**, path and your crime (*Twoja zbrodnia*):
@@ -139,8 +163,8 @@ Normal → downer → CRUEL → DOOM → Hope → DOOM AND CRUELTY → another r
 | Act | Title | Beats | One-line summary |
 |---|---|---|---|
 | 1 | **Ash on the Forehead** (*Popiół na czole*) | Normal → downer | Escape, a kind lord, a first camp, a first dungeon. Then his home burns and he is summoned to court. |
-| 2 | **The Execution Square** (*Plac Ścięć*) | **CRUEL** | Court intrigue in the capital ends with Ithiel's head on a spike. |
-| 3 | **The Rot** (*Zgnilizna*) | **DOOM** → Hope | The realm collapses and Hollowmere falls. Then you find a ruined fortress and build a home in it. |
+| 2 | **The Execution Square** (*Plac Ścięć*) | **CRUEL** | Court intrigue in the capital ends with Itheru's head on a spike. |
+| 3 | **The Rot** (*Zgnilizna*) | **DOOM** → Hope | The realm collapses and Shuilan falls. Then you find a ruined fortress and build a home in it. |
 | 4 | **The Ash Feast** (*Uczta Popiołu*) | **DOOM AND CRUELTY** | A massacre inside the walls you built, the children taken for the tithe, the truth about the tree. |
 | 5 | **The Tithe** (*Dziesięcina*) | Ray of hope → **Happy ending** | The hated queen becomes your ally. You rebuild, march into the roots, bring the children home and plant a new tree. |
 
@@ -149,7 +173,7 @@ Rough length: 25–30 hours with side quests. Act 1 is the vertical slice.
 **Where it happens.** Each act travels through different peoples' lands, so the world keeps changing:
 - Act 1: the Thorn Clan's North-Grove.
 - Act 2: the Lacquer Court's capital.
-- Act 3: the Reed Folk's Hollowmere, then Ostoja on the border between the Bark mountains and the Dusk
+- Act 3: the Reed Folk's Shuilan, then Ostoja on the border between the Bark mountains and the Dusk
   steppe.
 - Act 4: Ostoja, where the lords of every people gather.
 - Act 5: the whole realm, then the roots.
@@ -167,51 +191,51 @@ below is a story event.
 
 | # | Character | Who they are | Fate |
 |---|---|---|---|
-| 1 | **Lord Ithiel Sorrowmere** | Old lord of the Thorn Clan and warden of the North-Grove. Frees you from the dungeon because he needs people with nothing to lose. Kind, funny, the father figure. Bound by the Oath of the Thorn. | **Always dies in Act 2.** Beheaded on a forged charge. You can't save him, only choose how you spend the day (Choice 1). |
-| 2 | **Maeve "Rdza" (Rust)** | Half-elf sellsword, the foulest mouth in the realm, travels with you from Act 1. Comic relief and the most likeable person in the game. | **Dies or lives at Hollowmere** (Choice 2, Act 3). If she lives, she stays to the end. |
-| 3 | **Fennick** | 15-year-old squire of Ithiel. Idolises Maeve, follows you after Ithiel's death. | If Hollowmere's lower city was drowned (his family died), he **opens Ostoja's gate to the enemy in Act 4** and dies in the fighting. Otherwise he's knighted in the epilogue. |
-| 4 | **Brother Corvane** | Priest of the Root, gentle, helpful, brings you medicine and secrets. | **The traitor.** Forged the charge against Ithiel, plans the Ash Feast. Whether you catch him decides who dies at the feast (Choice 3). |
+| 1 | **Lord Itheru of House Soramei** (*Soramei Itheru*) | Old lord of the Thorn Clan and warden of the North-Grove. Frees you from the dungeon because he needs people with nothing to lose. Kind, funny, the father figure. Bound by the Oath of the Thorn. | **Always dies in Act 2.** Beheaded on a forged charge. You can't save him, only choose how you spend the day (Choice 1). |
+| 2 | **Maeve "Rdza" (Rust)** | Half-elf sellsword, the foulest mouth in the realm, travels with you from Act 1. Comic relief and the most likeable person in the game. | **Dies or lives at Shuilan** (Choice 2, Act 3). If she lives, she stays to the end. |
+| 3 | **Fenshō** (*Tamari Fenshō*) | 15-year-old squire of Itheru. Idolises Maeve, follows you after Itheru's death. | If Shuilan's lower city was drowned (his family died), he **opens Ostoja's gate to the enemy in Act 4** and dies in the fighting. Otherwise he's knighted in the epilogue. |
+| 4 | **Brother Corvane** | Priest of the Root, gentle, helpful, brings you medicine and secrets. | **The traitor.** Forged the charge against Itheru, plans the Ash Feast. Whether you catch him decides who dies at the feast (Choice 3). |
 | 5 | **Prince Taerin** | Ysolde's son, nervous, decent, hates his mother. The heir everyone wants to control. | Dies poisoned at the Ash Feast unless Corvane is exposed. If he lives, he grows into a king worth having. |
 | 6 | **Queen Ysolde** | Broke the World-Ash. Cold, brilliant, completely alone. Hunted by everyone, including you, until Act 5. | Becomes your ally in Act 5 (the ray of hope). **Lives** and is reunited with Elia. |
 | 7 | **Margrave Harrow** | Human warlord. Brutal, honest, keeps his word. | Enemy in Acts 1–4. In Act 5 he marches with you **if** you spared his scouts in Act 1; otherwise his army stands in your way. |
-| 8 | **Gwendr the Ash-Witch** | Ancient Lantern-Keeper living in the stump's shadow; the only one outside the priesthood who knows about the tithe. | Joins Ostoja in Act 3. **Always dies in Act 4**, killed by the priests for telling you the truth. |
+| 8 | **Sanoe the Ash-Witch** | Ancient Lantern-Keeper living in the stump's shadow; the only one outside the priesthood who knows about the tithe. | Joins Ostoja in Act 3. **Always dies in Act 4**, killed by the priests for telling you the truth. |
 | 9 | **The Rootfather** | Head of the priesthood. Soft-spoken, sincere, monstrous. | The final villain. Takes the children in Act 4; dies at the roots in Act 5. |
 | 10 | **Elia** | Ysolde's daughter, alive and trapped in the roots for nineteen years. Heard only as a voice until the end. | **Lives.** Rescued in the finale. |
 
 ### Act 1 — "Ash on the Forehead" (*Popiół na czole*) — Normal → downer — the vertical slice
-1. **The Stump.** Prison escape tutorial under Sorrowmere: fight the Greyed in the bleeding-cells, learn
-   dodging, find your first weapon on a dead guard. Ithiel's men break you out on purpose.
-2. **The Warden's Hounds.** Ithiel recruits you as deniable agents and gives you a burned-out farmstead.
+1. **The Stump.** Prison escape tutorial under Soramei Keep: fight the Greyed in the bleeding-cells, learn
+   dodging, find your first weapon on a dead guard. Itheru's men break you out on purpose.
+2. **The Warden's Hounds.** Itheru recruits you as deniable agents and gives you a burned-out farmstead.
    **First building:** palisade, tents, a workbench, a garden bed (the building tutorial). Maeve joins.
 3. **The Drowned Sap-Mine** (*Zatopiona Kopalnia Żywicy*), the first dungeon: a noble house was secretly
    bleeding captives here. Captives you save move into your farmstead.
 4. **Harrow's Scouts.** First taste of the human army. Choice: execute the captured scouts or let them go.
    Harrow remembers, and it decides Act 5.
-5. **Downer.** You come back to find the North-Grove burned by royal troops. Ithiel is summoned to the
+5. **Downer.** You come back to find the North-Grove burned by royal troops. Itheru is summoned to the
    capital and goes willingly, sure that the truth will protect him. You go with him. The farmstead is
    abandoned.
 
 ### Act 2 — "The Execution Square" (*Plac Ścięć*) — CRUEL
 - The capital **Lirendhal**: beautiful, rotting, full of old elves who are suddenly afraid of dying.
   Hideout in a brothel cellar (small building: beds, a stash, an alchemy corner).
-- Intrigue quests: Corvane helps you hunt for proof of Ithiel's innocence. Each lead is a dungeon or a
+- Intrigue quests: Corvane helps you hunt for proof of Itheru's innocence. Each lead is a dungeon or a
   heist (the royal catacombs, a noble's sap vault).
 - The trial is a farce; the proof you found is "lost" (by Corvane, though you don't know it yet).
-- **Execution day — Choice 1:** try to free Ithiel (a hopeless fight in the plaza: you lose, Maeve is
+- **Execution day — Choice 1:** try to free Itheru (a hopeless fight in the plaza: you lose, Maeve is
   scarred, you're hunted for the rest of the act) **or** stay hidden in the crowd and watch (you keep
-  your cover; Fennick never forgives you). Either way his head comes off, and his body hangs at the gate.
+  your cover; Fenshō never forgives you). Either way his head comes off, and his body hangs at the gate.
 - You flee the capital with nothing.
 
 ### Act 3 — "The Rot" (*Zgnilizna*) — DOOM → Hope
 - **Doom.** The noble houses go to open war, the Greyed multiply, Harrow takes the southern forests.
-- **Siege of Hollowmere — Choice 2:** hold the river gate with Maeve while refugees escape (Maeve dies
+- **Siege of Shuilan — Choice 2:** hold the river gate with Maeve while refugees escape (Maeve dies
   covering your retreat; you see it happen) **or** break the dam and flood the lower city, drowning
-  Harrow's army *and* about 2000 refugees (Maeve lives; Fennick's family dies; the drowned rise as Greyed
-  later). Hollowmere falls either way.
+  Harrow's army *and* about 2000 refugees (Maeve lives; Fenshō's family dies; the drowned rise as Greyed
+  later). Shuilan falls either way.
 - **Hope.** Survivors lead you to **Ostoja**, a ruined border fortress. You make it yours: clear it,
   rebuild the walls, bring in the refugees, recruit a smith, an alchemist, a quartermaster. This is where
   the building system opens up fully (§7).
-- Prince Taerin escapes the capital and comes to you. Gwendr arrives with half the truth.
+- Prince Taerin escapes the capital and comes to you. Sanoe arrives with half the truth.
 - **End of act:** the first real victory. A wave of Greyed hits Ostoja and breaks on the walls you built.
   People cheer. For a while, things are good.
 
@@ -223,8 +247,8 @@ below is a story event.
   becomes a massacre: Taerin dies screaming, half the guests are poisoned, and you fight through your own
   hall.
 - Either way, the Root's priests use the chaos to **take Ostoja's children** for a new tithe. Parts of
-  Ostoja burn. If the refugees were drowned, Fennick opens the gate for the enemy and dies.
-- Gwendr tells you the whole truth about the tree and is killed for it.
+  Ostoja burn. If the refugees were drowned, Fenshō opens the gate for the enemy and dies.
+- Sanoe tells you the whole truth about the tree and is killed for it.
 - The act ends at the lowest point of the game: your home half-burned, the children gone, the one person
   who knew the way dead.
 
@@ -239,7 +263,7 @@ below is a story event.
 - **Happy ending.** The children are carried out alive. Elia is freed. Ysolde plants a new seed grown from
   Elia's sap: a tree that **takes no tithe**. Elves will age now, but the Greyed finally rest.
 - **Epilogue:** Ostoja grows into a town built around the fortress you designed. Everyone you kept alive
-  is there: Maeve drinking, Taerin crowned or a council in his place, Fennick knighted, Harrow's banner
+  is there: Maeve drinking, Taerin crowned or a council in his place, Fenshō knighted, Harrow's banner
   over the southern road. The epilogue shows your actual buildings.
 
 ---
@@ -498,9 +522,9 @@ Colyseus 0.16 (embedded server: *Hostuj grę* / *Dołącz* + IP), Electron Windo
 | **B1** | Combat slice | Thorn and Blood with 6 skills each, dodge, stamina, poise, executions, gore, 3 enemy types, 1 boss. *Playtest: is fighting fun?* |
 | **B2** | Items & alchemy | Grid inventory, affixes, 3 ashen uniques, salvage, herbs → potions/oils/bombs, belt. |
 | **B3** | Building basics | Build mode, walls/floors/doors/roofs in wood, workbench, garden plots, storage, decoration, blueprints, saved on the host. *Playtest: is building fun on its own?* |
-| **B4** | Vertical slice | Act 1 complete: prison escape, Ithiel, Maeve, the farmstead, the Drowned Sap-Mine, Harrow's scouts, the downer ending. Talent trees + evolution for Thorn and Blood. *Playtest: do we care about Ithiel?* |
+| **B4** | Vertical slice | Act 1 complete: prison escape, Itheru, Maeve, the farmstead, the Drowned Sap-Mine, Harrow's scouts, the downer ending. Talent trees + evolution for Thorn and Blood. *Playtest: do we care about Itheru?* |
 | **B5** | Act 2 + 2 paths | The capital, the hideout, intrigue dungeons, the execution (Choice 1). Bark and Dusk. |
-| **B6** | Act 3 + Ostoja + 2 paths | Hollowmere (Choice 2), Ostoja's full building (stone tiers, workshops, NPC homes and jobs, defences, sieges). Ash and Sting. |
+| **B6** | Act 3 + Ostoja + 2 paths | Shuilan (Choice 2), Ostoja's full building (stone tiers, workshops, NPC homes and jobs, defences, sieges). Ash and Sting. |
 | **B7** | Act 4 + 2 paths | The Ash Feast (Choice 3), the burning, the taken children. Graves and Storm. |
 | **B8** | Act 5 & ending | Ysolde, the rebuild, the Roots, the Rootfather, the happy ending, an epilogue built from your town and your choices. |
 | **B9** | Polish & ship | Balance, settings (gore level, raids on/off, volumes, keybinds), bug pass, hosting tested end-to-end. |
@@ -515,7 +539,3 @@ Every milestone ends with a playtest and a bug-fix pass before the next one star
 3. Should Ostoja's raids outside the story be on by default, off, or a setting?
 4. Building: is a second storey enough, or do you want cellars and multi-level castles?
 5. Which path does each of you want to play first? (The slice has Thorn + Blood.)
-6. Should the mix lean more Japanese, more Chinese, or stay half and half? Should any people lean
-   elsewhere (e.g. Korean or Southeast Asian influences for the Reed Folk)?
-7. Character names: keep the elven-sounding names (Ithiel, Ysolde), or give each people its own naming
-   style so you can tell where someone is from by their name?
