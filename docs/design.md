@@ -424,7 +424,8 @@ Building is a core pillar. It grows in three steps with the story:
 - **Acts 3–5:** **Ostoja**, a whole fortress and the town around it.
 
 ### What you build
-- **Structure:** foundations, floors, walls, doors, gates, stairs, roofs, a second storey. Free placement
+- **Structure:** foundations, floors, walls, doors, gates, stairs, roofs, one upper storey; cellars
+  as separate interiors. Free placement
   on a fine snapping grid, with rotation. Material tiers: wood → stone → ash-glass. Better tiers look
   better and survive raids.
 - **Workshops** that unlock systems:
@@ -575,7 +576,7 @@ Colyseus 0.16 (embedded server: *Hostuj grę* / *Dołącz* + IP), Electron Windo
 | # | Milestone | Done when |
 |---|---|---|
 | **B0** ✅ | Scaffold | Networking, hosting and the desktop shell ported from Dinusie; two players move freely in a test room over IP; tests + typecheck green. *Also done: the Blender sprite pipeline, ground painter, audio synthesiser, the cinematic system with the prolog, and the Soramei courtyard.* Dinusie's skill, talent, evolution and dungeon systems come over in B1–B4, when each is needed. |
-| **B1** | Combat slice | Thorn and Blood with 6 skills each, dodge, stamina, poise, executions, gore, 3 enemy types, 1 boss. *Playtest: is fighting fun?* |
+| **B1** | Combat slice | **All eight paths** with 6 skills each, MakeHuman-based elf characters (both body types), dodge, stamina, poise, executions, gore, 3 Greyed types, the Tapper boss, character creation. *Playtest: is fighting fun?* |
 | **B2** | Items & alchemy | Grid inventory, affixes, 3 ashen uniques, salvage, herbs → potions/oils/bombs, belt. |
 | **B3** | Building basics | Build mode, walls/floors/doors/roofs in wood, workbench, garden plots, storage, decoration, blueprints, saved on the host. *Playtest: is building fun on its own?* |
 | **B4** | Vertical slice | Act 1 complete: prison escape, Itheru, Maeve, the farmstead, the Drowned Sap-Mine, Harrow's scouts, the downer ending. Talent trees + evolution for Thorn and Blood. *Playtest: do we care about Itheru?* |
@@ -589,9 +590,11 @@ Every milestone ends with a playtest and a bug-fix pass before the next one star
 
 ---
 
-## Open questions for you two
-1. Is the five-act curve right? Is Act 4 cruel enough? Is Act 5 hopeful enough?
-2. Building: is a second storey enough, or do you want cellars and multi-level castles?
-3. Which path does each of you want to play first? (The slice has Thorn + Blood.)
-
-Answered: isometric camera; raids outside the story are a setting (on by default).
+## Decided
+- Isometric camera.
+- Raids outside the story are a setting (on by default).
+- The five-act curve stays as written.
+- **Building height:** a ground floor plus one upper storey under the roof. Cellars and undercrofts
+  are separate interior areas reached by stairs, built like small dungeons. No multi-level castles:
+  in the isometric view taller buildings would hide the fighting behind them.
+- **B1 brings all eight paths**, not two.

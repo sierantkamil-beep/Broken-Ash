@@ -11,12 +11,15 @@
     "desktop": "pnpm --filter @broken-ash/desktop start",
     "dist:win": "pnpm --filter @broken-ash/desktop dist:win",
     "art": "python3 tools/art/render.py && python3 tools/art/ground.py",
-    "audio": "python3 tools/audio/build.py"
+    "audio": "python3 tools/audio/build.py",
+    "catalogue": "tsx tools/catalogue/catalogue.ts"
   },
   "devDependencies": {
     "concurrently": "9.2.5",
     "typescript": "5.9.3",
-    "vitest": "3.2.7"
+    "vitest": "3.2.7",
+    "tsx": "4.23.15",
+    "@types/node": "22.20.5"
   },
   "packageManager": "pnpm@10.28.0"
 }
