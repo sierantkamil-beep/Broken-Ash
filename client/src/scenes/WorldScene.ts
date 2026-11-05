@@ -70,8 +70,8 @@ interface Remote {
   lastCast: string;
 }
 
-/** Zoom during play, relative to a 1080 px tall window. */
-const PLAY_ZOOM = 0.78;
+/** Zoom during play, relative to a 1080 px tall window: close enough to read the characters, wide enough to see a telegraph coming. */
+const PLAY_ZOOM = 0.92;
 
 export class WorldScene extends Phaser.Scene {
   private map!: AreaMap;
