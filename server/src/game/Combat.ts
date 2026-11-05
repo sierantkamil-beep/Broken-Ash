@@ -288,6 +288,7 @@ function releaseCast(a: Arena, p: PlayerSim) {
   const landing = skill.shape.kind === "circle" && skill.shape.at === "aim" ? aimLanding(p.body, c.aim, { x: p.body.x + Math.cos(c.aim) * c.aimDist, y: p.body.y + Math.sin(c.aim) * c.aimDist }, skill.shape.reach ?? 6) : origin;
   for (const e of once) if (e.kind !== "dash") applyOnce(a, p, skill, e, landing);
 
+  if (skill.shape.kind === "circle") a.fx.push({ t: "area", skill: skill.id, x: landing.x, y: landing.y, radius: skill.shape.radius });
   if (skill.shape.kind === "projectile") {
     spawnBolts(a, p, skill, c.aim);
   } else if (skill.shape.kind !== "self") {

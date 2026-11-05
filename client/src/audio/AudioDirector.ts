@@ -15,6 +15,8 @@ export const AUDIO_KEYS = [
   "ui_hover",
   "ui_confirm",
   ...[0, 1, 2, 3].flatMap((i) => [`sfx_step_stone_${i}`, `sfx_step_soft_${i}`]),
+  "music_gate_fight",
+  ...["blade", "blade_heavy", "blade_spin", "whoosh", "gore", "hit_flesh", "gong_small", "roots", "slam", "blood", "blood_heavy", "fire", "fire_heavy", "wind", "thunder", "spirit", "spirit_heavy", "poison", "bell", "bow", "bow_heavy", "throw", "blowpipe", "smoke", "drink", "greyed_death", "tapper_roar", "horn", "revive", "downed", "execute", "victory", "burst", "groan_0", "groan_1", "groan_2"].map((k) => `sfx_${k}`),
 ];
 
 interface Loop {

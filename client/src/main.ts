@@ -11,6 +11,7 @@ import { BootScene } from "./scenes/BootScene";
 import { WorldScene } from "./scenes/WorldScene";
 import { saveSettings, settings } from "./settings";
 import { $ } from "./ui/dom";
+import { setupCreator } from "./ui/Creator";
 import { renderHostLines } from "./ui/hostReport";
 
 const game = new Phaser.Game({
@@ -29,11 +30,13 @@ game.events.on("world-ready", (scene: WorldScene) => {
   world = scene;
   // Dev shortcut: ?autojoin=1&name=X joins localhost directly (used by automated screenshot checks).
   const q = new URLSearchParams(location.search);
+  if (q.get("path")) saveSettings({ path: q.get("path")!, body: (q.get("body") as "male" | "female") ?? settings.body });
   if (q.get("autojoin")) void connect(q.get("address") ?? "localhost", q.get("name") ?? "Tester");
 });
 
 // ------------------------------------------------------------------ menu
 
+setupCreator(() => world?.audio.play("ui_click", 0.4));
 const nameInput = $<HTMLInputElement>("name");
 const addressInput = $<HTMLInputElement>("address");
 nameInput.value = settings.name;
@@ -56,7 +59,7 @@ async function connect(address: string, name: string) {
   const btn = $<HTMLButtonElement>("connect-btn");
   btn.disabled = true;
   try {
-    const room = await joinWorld(address, { name });
+    const room = await joinWorld(address, { name, path: settings.path, body: settings.body, people: settings.people });
     saveSettings({ name, address: address === "localhost" || address.startsWith("localhost:") ? settings.address : address });
     world?.audio.play("ui_confirm", 0.6);
     $("menu").hidden = true;

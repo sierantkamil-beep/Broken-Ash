@@ -8,10 +8,13 @@ export interface Settings {
   raids: "on" | "off";
   name: string;
   address: string;
+  path: string;
+  body: "male" | "female";
+  people: string;
 }
 
 const KEY = "broken-ash.settings";
-const DEFAULTS: Settings = { master: 80, music: 60, ambience: 70, sfx: 80, gore: "full", raids: "on", name: "", address: "" };
+const DEFAULTS: Settings = { master: 80, music: 60, ambience: 70, sfx: 80, gore: "full", raids: "on", name: "", address: "", path: "thorn", body: "female", people: "" };
 
 function load(): Settings {
   try {

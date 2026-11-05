@@ -95,6 +95,16 @@ def pack(path, body):
     meta["meta"]["image"] = f"{path}_{body}.webp"
     json.dump(meta, open(meta_path, "w"), separators=(",", ":"))
     print(f"packed {path}_{body} {size}", flush=True)
+    write_index()
+
+
+def write_index():
+    """The client reads this list to know which character atlases exist (assets/atlases.ts)."""
+    import json
+
+    names = sorted(f[:-5] for f in os.listdir(OUT) if f.endswith(".json") and f != "index.json")
+    with open(os.path.join(OUT, "index.json"), "w") as f:
+        json.dump(names, f)
 
 
 if __name__ == "__main__":

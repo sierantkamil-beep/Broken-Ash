@@ -21,11 +21,23 @@
       <div id="cin-skip" hidden></div>
     </div>
 
+    <div id="hurt"></div>
     <!-- In-game HUD. -->
     <div id="hud" hidden>
       <div id="area-toast"><div class="name"></div><div class="sub"></div></div>
-      <div id="stamina"><div class="fill"></div><div class="ticks"><i></i><i></i></div></div>
-      <div id="hint">WASD — ruch · Spacja — przewrót · Esc — menu</div>
+      <div id="partner" hidden><div class="pname"></div><div class="ppath"></div><div class="bar hp"><div class="fill"></div></div></div>
+      <div id="boss" hidden><div class="bname">Upuszczacz</div><div class="bar"><div class="fill"></div></div></div>
+      <div id="me">
+        <div class="bars">
+          <div class="bar hp"><div class="shield"></div><div class="fill"></div><span class="val"></span></div>
+          <div class="bar res"><div class="fill"></div><span class="val"></span></div>
+        </div>
+        <div id="skills"></div>
+        <div id="stamina"><div class="fill"></div><div class="ticks"><i></i><i></i></div></div>
+        <div class="statuses"></div>
+      </div>
+      <div id="downed" hidden><div class="title">Wykrwawiasz się</div><div class="sub"></div><div class="bar"><div class="fill"></div></div></div>
+      <div id="hint">WASD — ruch · LPM/PPM/1–4 — umiejętności · Spacja — przewrót · F — dobij / podnieś partnera · Esc — menu</div>
     </div>
 
     <!-- Esc menu. -->
@@ -59,6 +71,17 @@
         <label>Imię postaci
           <input id="name" maxlength="20" placeholder="np. Kasuren Ayume" autocomplete="off" />
         </label>
+        <div class="row2">
+          <label>Ciało
+            <select id="body"><option value="female">kobiece</option><option value="male">męskie</option></select>
+          </label>
+          <label>Lud
+            <select id="people"></select>
+          </label>
+        </div>
+        <label>Ścieżka</label>
+        <div id="paths"></div>
+        <div id="path-info" class="muted small"></div>
         <button id="host-btn" class="primary" hidden>Hostuj grę na tym komputerze</button>
         <div class="divider" id="host-divider" hidden><span>albo dołącz do partnera</span></div>
         <label>Adres IP partnera

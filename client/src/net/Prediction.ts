@@ -4,6 +4,12 @@ export interface Intent {
   mx: number;
   my: number;
   dodge: boolean;
+  aim?: number;
+  aimDist?: number;
+  act?: boolean;
+  /** Movement multiplier the server will apply (path speed, slows, rooted, downed). */
+  speedMul?: number;
+  canDodge?: boolean;
 }
 
 /**
@@ -16,12 +22,15 @@ export class Prediction {
   private prevX: number;
   private prevY: number;
   private pending: InputFrame[] = [];
+  private speedMul = 1;
+  private canDodge = true;
   private seq = 0;
   private acc = 0;
   /** Visual offset left over from the last correction; decays to zero. */
   private errX = 0;
   private errY = 0;
   private dodgeLatched = false;
+  private castLatched: number | null = null;
 
   constructor(
     private readonly grid: CollisionGrid,
@@ -38,6 +47,11 @@ export class Prediction {
     this.dodgeLatched = true;
   }
 
+  /** A skill key pressed: sent with the next simulation step. */
+  pressCast(slot: number) {
+    this.castLatched = slot;
+  }
+
   /** Advances the fixed-step simulation; returns the frames to send to the server. */
   tick(deltaMs: number, intent: Intent, enabled: boolean): InputFrame[] {
     const out: InputFrame[] = [];
@@ -48,11 +62,19 @@ export class Prediction {
         this.dodgeLatched = false;
         continue;
       }
-      const frame: InputFrame = { seq: ++this.seq, mx: intent.mx, my: intent.my, dodge: intent.dodge || this.dodgeLatched };
+      const frame: InputFrame = { seq: ++this.seq, mx: intent.mx, my: intent.my, dodge: intent.dodge || this.dodgeLatched, aim: intent.aim, aimDist: intent.aimDist };
+      if (intent.act) frame.act = true;
+      if (this.castLatched !== null) {
+        frame.cast = this.castLatched;
+        this.castLatched = null;
+      }
       this.dodgeLatched = false;
       this.prevX = this.body.x;
       this.prevY = this.body.y;
-      stepBody(this.body, frame, SIM_DT, this.grid);
+      this.speedMul = intent.speedMul ?? 1;
+      this.canDodge = intent.canDodge ?? true;
+      stepBody(this.body, frame, SIM_DT, this.grid, this.speedMul, this.canDodge);
+      if (frame.cast !== undefined && frame.aim !== undefined) this.body.facing = frame.aim;
       this.pending.push(frame);
       out.push(frame);
     }
@@ -69,7 +91,7 @@ export class Prediction {
     const beforeY = this.renderY();
     this.pending = this.pending.filter((f) => f.seq > lastSeq);
     copyBody(this.body, server);
-    for (const f of this.pending) stepBody(this.body, f, SIM_DT, this.grid);
+    for (const f of this.pending) stepBody(this.body, f, SIM_DT, this.grid, this.speedMul, this.canDodge);
     this.prevX = this.body.x;
     this.prevY = this.body.y;
     const dx = beforeX - this.body.x;

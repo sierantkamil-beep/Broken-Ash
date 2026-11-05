@@ -5,8 +5,12 @@ listed here: **name, author, link, license, what we changed**. Assets under CC-B
 modified.
 
 ## Art
-All sprites are original: rendered by our own scripts in `tools/art/` with Blender (the program's GPL
-licence doesn't extend to images it renders). No third-party art yet.
+All sprites are rendered by our own scripts in `tools/art/` with Blender (the program's GPL licence
+doesn't extend to images it renders).
+- **MakeHuman base mesh, skeleton, skin weights and body/ear targets** — the MakeHuman project
+  (Data Collection AB, Joel Palmius, Jonas Hauquier and contributors),
+  https://github.com/makehumancommunity/makehuman, **CC0 1.0**. Changed: morphed into elves
+  (proportions, long ears), dressed with our own outfits, hair and weapons, posed and rendered.
 
 ## Audio
 All music, ambience and effects are original, synthesised by `tools/audio/build.py`. No third-party

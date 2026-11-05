@@ -151,7 +151,11 @@ def place(track, clip, at, gain=1.0, p=0.0):
 
 
 def mixin(a, b, at=0.0, gain=1.0):
-    """Adds mono clip b into mono buffer a at time `at` (seconds), clipped to a's length."""
+    """Adds clip b into buffer a at time `at` (seconds), clipped to a's length. Mono meets stereo as stereo."""
+    if b.ndim == 2 and a.ndim == 1:
+        a = np.stack([a, a], 1)
+    elif a.ndim == 2 and b.ndim == 1:
+        b = np.stack([b, b], 1)
     i = int(at * SR)
     j = min(len(a), i + len(b))
     if i < len(a):
@@ -364,8 +368,263 @@ def ui_confirm():
     return reverb(x, 2.0, 0.3)
 
 
+# ----------------------------------------------------------------------------- combat
+
+def noise(n, lo=None, hi=None, seed=None):
+    r = np.random.default_rng(seed) if seed is not None else rng
+    return fft_filter(r.normal(0, 1, n), lo=lo, hi=hi)
+
+
+def sweep_band(seconds, f0, f1, width=0.5, seed=None):
+    """Noise whose band glides from f0 to f1 (a whoosh), built from crossfaded fixed bands."""
+    n = int(seconds * SR)
+    tt = np.arange(n) / SR
+    out = np.zeros(n)
+    centers = np.geomspace(min(f0, f1), max(f0, f1), 6)
+    track = f0 * (f1 / f0) ** (tt / seconds)
+    for c in centers:
+        out += noise(n, c * (1 - width), c * (1 + width), seed) * np.exp(-((np.log(track / c)) ** 2) / 0.08)
+    return out
+
+
+def blade(heavy=False, seed=0):
+    """A blade cutting air, then a short metallic edge ring."""
+    d = 0.5 if heavy else 0.32
+    x = sweep_band(d, 800 if heavy else 1500, 3500 if heavy else 6000, seed=seed) * np.hanning(int(d * SR)) ** 0.7
+    ring = bell(midi(96 if heavy else 101), 0.6, (1, 2.7, 5.1)) * 0.06
+    return reverb(mixin(x * 0.8, ring, d * 0.4), 1.0, 0.15)
+
+
+def impact_flesh(seed=0):
+    n = int(0.35 * SR)
+    tt = np.arange(n) / SR
+    thud = np.sin(math.tau * (70 + 40 * np.exp(-tt / 0.03)) * tt) * np.exp(-tt / 0.06)
+    wet = noise(n, 300, 2500, seed) * np.exp(-tt / 0.05) * (0.6 + 0.4 * np.sin(math.tau * 31 * tt))
+    return thud * 0.9 + wet * 0.6
+
+
+def splatter(seed=0):
+    n = int(0.6 * SR)
+    out = np.zeros(n)
+    r = np.random.default_rng(seed)
+    for _ in range(9):
+        i = int(r.uniform(0, 0.35) * SR)
+        k = int(0.04 * SR)
+        out[i : i + k] += noise(k, 500, 4000, int(r.integers(1e6))) * np.hanning(k) * r.uniform(0.2, 0.6)
+    return mixin(out, impact_flesh(seed), 0, 0.8)
+
+
+def fire(heavy=False, seed=0):
+    d = 1.4 if heavy else 0.7
+    n = int(d * SR)
+    tt = np.arange(n) / SR
+    roar = noise(n, 80, 1800, seed) * (np.exp(-tt / (0.5 if heavy else 0.2)))
+    crackle = np.zeros(n)
+    r = np.random.default_rng(seed + 7)
+    for _ in range(40 if heavy else 15):
+        i = int(r.uniform(0, d * 0.8) * SR)
+        crackle[i : i + 200] += r.normal(0, 1, 200) * np.exp(-np.arange(200) / 30) * 0.6
+    whoosh = sweep_band(min(d, 0.6), 300, 2000, seed=seed) * np.hanning(int(min(d, 0.6) * SR))
+    return reverb(mixin(roar + crackle, whoosh, 0, 0.7), 1.5, 0.2)
+
+
+def thunder(seed=0):
+    n = int(2.2 * SR)
+    tt = np.arange(n) / SR
+    crack = noise(n, 1500, 9000, seed) * np.exp(-tt / 0.03)
+    rumble = noise(n, 30, 300, seed + 1) * np.exp(-tt / 0.8) * (0.6 + 0.4 * np.sin(math.tau * 3 * tt))
+    return reverb(crack * 1.2 + rumble, 2.5, 0.3, dark=3000)
+
+
+def wind_gust(seed=0):
+    d = 0.8
+    return sweep_band(d, 400, 1400, 0.6, seed) * np.hanning(int(d * SR)) ** 1.5
+
+
+def spirit(heavy=False, seed=0):
+    """A wailing, breathy spirit: a sliding sine choir through noise."""
+    d = 1.6 if heavy else 0.9
+    n = int(d * SR)
+    tt = np.arange(n) / SR
+    out = np.zeros(n)
+    for k, f in enumerate((midi(62), midi(65), midi(69))[: 3 if heavy else 2]):
+        bend = 1 + 0.05 * np.sin(math.tau * (0.7 + k * 0.3) * tt)
+        out += np.sin(np.cumsum(f * bend) / SR * math.tau) * 0.3
+    breath = noise(n, 300, 3000, seed) * 0.4
+    env_ = np.sin(np.linspace(0, math.pi, n)) ** 1.2
+    return reverb((out + breath) * env_, 3.0, 0.45)
+
+
+def bow(heavy=False, seed=0):
+    n = int(0.5 * SR)
+    tt = np.arange(n) / SR
+    twang = np.sin(math.tau * (110 if heavy else 150) * tt) * np.exp(-tt / 0.12) * (1 + 0.5 * np.sin(math.tau * 9 * tt))
+    hiss = sweep_band(0.3, 2500, 1200, seed=seed) * np.hanning(int(0.3 * SR)) * 0.5
+    return mixin(twang * 0.7, hiss, 0.02)
+
+
+def throw(seed=0):
+    return sweep_band(0.22, 2500, 5000, 0.4, seed) * np.hanning(int(0.22 * SR)) * 0.8
+
+
+def poison_hiss(seed=0):
+    n = int(0.9 * SR)
+    tt = np.arange(n) / SR
+    hiss = noise(n, 3000, 9000, seed) * np.exp(-tt / 0.35)
+    bubbles = np.zeros(n)
+    r = np.random.default_rng(seed + 3)
+    for _ in range(18):
+        i = int(r.uniform(0, 0.7) * SR)
+        f = r.uniform(300, 900)
+        k = int(0.05 * SR)
+        bubbles[i : i + k] += np.sin(math.tau * f * np.arange(k) / SR * (1 + np.arange(k) / k)) * np.hanning(k) * 0.3
+    return hiss * 0.5 + bubbles
+
+
+def roots_crack(seed=0):
+    n = int(1.0 * SR)
+    tt = np.arange(n) / SR
+    creak = np.sin(math.tau * (60 + 30 * tt) * tt) * (0.5 + 0.5 * np.sign(np.sin(math.tau * 14 * tt))) * np.exp(-tt / 0.5) * 0.4
+    snaps = np.zeros(n)
+    r = np.random.default_rng(seed)
+    for _ in range(12):
+        i = int(r.uniform(0, 0.6) * SR)
+        snaps[i : i + 300] += noise(300, 800, 5000, int(r.integers(1e6))) * np.exp(-np.arange(300) / 50)
+    return reverb(creak + snaps * 0.7 + noise(n, 40, 200, seed) * np.exp(-tt / 0.3) * 0.6, 1.2, 0.2)
+
+
+def groan(seed=0):
+    """The Greyed: a dry, rattling moan."""
+    d = 1.3
+    n = int(d * SR)
+    tt = np.arange(n) / SR
+    r = np.random.default_rng(seed)
+    f0 = r.uniform(70, 110)
+    f = f0 * (1 - 0.25 * tt / d) * (1 + 0.04 * np.sin(math.tau * 5 * tt))
+    ph = np.cumsum(f) / SR * math.tau
+    voice = sum(np.sin(ph * k) / k for k in range(1, 9))
+    rattle = 0.6 + 0.4 * np.sign(np.sin(math.tau * r.uniform(18, 30) * tt))
+    formant = fft_filter(voice * rattle, lo=150, hi=1400, peak=r.uniform(500, 800), q=2)
+    env_ = np.sin(np.linspace(0, math.pi, n)) ** 0.8
+    return reverb(formant * env_ + noise(n, 500, 3000, seed) * env_ * 0.15, 1.5, 0.2)
+
+
+def roar():
+    d = 2.6
+    n = int(d * SR)
+    tt = np.arange(n) / SR
+    f = 55 * (1 + 0.3 * np.sin(math.pi * tt / d))
+    ph = np.cumsum(f) / SR * math.tau
+    voice = sum(np.sin(ph * k + k) / k ** 0.8 for k in range(1, 14))
+    growl = fft_filter(voice * (0.7 + 0.3 * np.sin(math.tau * 27 * tt)), lo=40, hi=2500, peak=420, q=1.5)
+    env_ = np.clip(tt / 0.2, 0, 1) * np.clip((d - tt) / 0.8, 0, 1)
+    return reverb(growl * env_ + noise(n, 200, 4000) * env_ * 0.2, 3.0, 0.35, dark=2500)
+
+
+def horn():
+    """A war horn from beyond the gate: a wave is coming."""
+    d = 2.4
+    n = int(d * SR)
+    tt = np.arange(n) / SR
+    f = midi(43) * (1 + 0.02 * np.clip(tt / 0.3, 0, 1))
+    ph = np.cumsum(np.full(n, f)) / SR * math.tau
+    tone = sum(np.sin(ph * k) * (0.9 ** k) for k in range(1, 10))
+    env_ = np.clip(tt / 0.25, 0, 1) * np.clip((d - tt) / 0.7, 0, 1)
+    return reverb(fft_filter(tone, hi=1800) * env_, 3.5, 0.45)
+
+
+def chime(up=True):
+    x = np.zeros(int(2.5 * SR))
+    notes = (scale_note(5), scale_note(7), scale_note(9)) if up else (scale_note(9), scale_note(6), scale_note(3))
+    for k, note in enumerate(notes):
+        mixin(x, bell(midi(note + 12), 2.0, (1, 2.76, 5.4)), k * 0.12, 0.5)
+    return reverb(x, 2.5, 0.35)
+
+
+def heartbeat():
+    x = np.zeros(int(1.2 * SR))
+    for at, g in ((0.0, 1.0), (0.28, 0.7)):
+        mixin(x, drum(0.5, 70, 40, 0.0), at, g)
+    return x
+
+
+def music_gate_fight(seconds=96):
+    """The gate assault: war drums on a dark pulse, string stabs, a flute crying over it."""
+    track = np.zeros((int((seconds + 6) * SR), 2))
+    bpm = 104
+    beat = 60 / bpm
+    tt = t_axis(seconds + 6)
+    drone = np.zeros(len(tt))
+    for f in (midi(38), midi(45)):
+        for det in (-0.1, 0.1):
+            drone += 2 * ((f * (1 + det / 100) * tt) % 1) - 1
+    track += pan(fft_filter(drone, lo=30, hi=260) * 0.07, 0)
+    n_beats = int(seconds / beat)
+    for b in range(n_beats):
+        at = b * beat
+        bar = b % 8
+        if bar in (0, 3, 6) or (b // 8) % 2 and bar == 7:
+            place(track, drum(1.4, 110, 45, 0.3), at, 0.55, p=-0.15)
+        if bar in (2, 5):
+            place(track, drum(0.8, 190, 80, 0.5), at, 0.3, p=0.2)
+        if b % 2 == 1:
+            place(track, drum(0.3, 380, 200, 0.8), at, 0.08, p=0.35)
+        if bar == 0 and b % 16 == 0:
+            for k, d in enumerate((0, 2, 4)):
+                place(track, pluck(midi(scale_note(d, -1)), 2.5, 0.8), at + k * 0.02, 0.25, p=-0.3 + k * 0.3)
+    # A flute line over the drums in the second half.
+    a = seconds * 0.5
+    for deg in (7, 8, 6, 7, 5, 4, 5):
+        d = beat * 4
+        place(track, flute(midi(scale_note(deg)), d + 0.5), a, 0.16, p=0.25)
+        a += d
+    track = reverb(track, 2.8, 0.3)
+    return loop_seamless(track[: int(seconds * SR)], 2.0)
+
+
+def combat_sfx():
+    write_ogg("sfx_blade", blade(False, 1), 4)
+    write_ogg("sfx_blade_heavy", blade(True, 2), 4)
+    write_ogg("sfx_blade_spin", mixin(blade(False, 3), blade(False, 4), 0.12, 0.8), 4)
+    write_ogg("sfx_whoosh", sweep_band(0.35, 600, 2500, seed=5) * np.hanning(int(0.35 * SR)), 4)
+    write_ogg("sfx_gore", splatter(6), 4)
+    write_ogg("sfx_hit_flesh", impact_flesh(7), 4)
+    write_ogg("sfx_gong_small", reverb(bell(midi(57), 3.0, shimmer=0.04), 2.5, 0.35), 4)
+    write_ogg("sfx_roots", roots_crack(8), 4)
+    write_ogg("sfx_slam", reverb(mixin(drum(1.2, 90, 35, 0.6), noise(int(0.6 * SR), 80, 1200, 9) * np.exp(-np.arange(int(0.6 * SR)) / SR / 0.15), 0, 0.6), 1.5, 0.25), 4)
+    write_ogg("sfx_blood", mixin(splatter(10) * 0.6, spirit(False, 10) * 0.25, 0), 4)
+    write_ogg("sfx_blood_heavy", mixin(splatter(11), spirit(True, 11) * 0.3, 0), 4)
+    write_ogg("sfx_fire", fire(False, 12), 4)
+    write_ogg("sfx_fire_heavy", fire(True, 13), 4)
+    write_ogg("sfx_wind", wind_gust(14), 4)
+    write_ogg("sfx_thunder", thunder(15), 4)
+    write_ogg("sfx_spirit", spirit(False, 16), 4)
+    write_ogg("sfx_spirit_heavy", spirit(True, 17), 4)
+    write_ogg("sfx_poison", poison_hiss(18), 4)
+    write_ogg("sfx_bell", reverb(bell(midi(45), 4.0, shimmer=0.05), 3.0, 0.4), 4)
+    write_ogg("sfx_bow", bow(False, 19), 4)
+    write_ogg("sfx_bow_heavy", bow(True, 20), 4)
+    write_ogg("sfx_throw", throw(21), 4)
+    write_ogg("sfx_blowpipe", mixin(noise(int(0.15 * SR), 1500, 6000, 22) * np.hanning(int(0.15 * SR)), throw(23) * 0.5, 0.05), 4)
+    write_ogg("sfx_smoke", noise(int(1.2 * SR), 200, 3000, 24) * np.hanning(int(1.2 * SR)) ** 0.6, 4)
+    write_ogg("sfx_drink", mixin(poison_hiss(25) * 0.3, chime(True) * 0.6, 0), 4)
+    for i in range(3):
+        write_ogg(f"sfx_groan_{i}", groan(30 + i), 4)
+    write_ogg("sfx_greyed_death", mixin(splatter(40), groan(41) * 0.5, 0.05), 4)
+    write_ogg("sfx_tapper_roar", roar(), 4)
+    write_ogg("sfx_horn", horn(), 4)
+    write_ogg("sfx_revive", chime(True), 4)
+    write_ogg("sfx_downed", mixin(chime(False) * 0.5, heartbeat(), 0.3), 4)
+    write_ogg("sfx_execute", mixin(blade(True, 42), splatter(43), 0.12, 1.0), 4)
+    write_ogg("sfx_victory", reverb(mixin(bell(midi(50), 6.0, shimmer=0.04), chime(True), 0.4, 0.8), 3.5, 0.4), 4)
+    write_ogg("sfx_burst", mixin(splatter(44), poison_hiss(45), 0, 0.8), 4)
+
+
 def main():
-    which = sys.argv[1:] or ["music", "amb", "sfx"]
+    which = sys.argv[1:] or ["music", "amb", "sfx", "combat"]
+    if "combat" in which:
+        combat_sfx()
+        write_ogg("music_gate_fight", music_gate_fight(), 5)
     if "sfx" in which:
         write_ogg("sfx_title_gong", sfx_title_gong())
         write_ogg("sfx_cin_split", sfx_cin_split())

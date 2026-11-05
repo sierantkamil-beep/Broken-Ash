@@ -1,12 +1,10 @@
 """
 Renders every sprite with Blender (bpy) and packs them into atlases for the client.
 
-    python tools/art/render.py            # everything
-    python tools/art/render.py props      # only props
-    python tools/art/render.py chars      # only characters
+    python tools/art/render.py            # props (characters: tools/art/characters.py)
 
 Needs the `bpy` module (pip install bpy — Blender as a Python module) plus numpy and Pillow.
-Output: client/public/assets/sprites/{props,chars}.{png,json}. Renders are cached in
+Output: client/public/assets/sprites/props.{png,json}. Renders are cached in
 tools/art/.cache; delete it (or pass --force) after changing a model.
 """
 import math
@@ -44,19 +42,6 @@ PROPS = {
 # Footprints in cells (Blender X × Y), for the shadow area. Must match shared/src/data/props.ts.
 FOOTPRINTS = {"gate_vermilion": (3, 1), "blossom_tree": (3, 3), "shrine": (4, 4), "bamboo": (1.2, 1.2)}
 
-# Sprite directions in the order of shared/src/iso.ts DIRECTIONS (S, SW, W, NW, N, NE, E, SE), as screen vectors.
-SCREEN_DIRS = [(0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1), (1, 0), (1, 1)]
-ANIMS = {"idle": 6, "run": 8, "roll": 8}
-CHARS = ["a", "b"]
-CHAR_FRAME = (200, 230, 0.85)
-
-
-def facing_z(dx, dy):
-    """Z rotation that turns the model (built facing -Y) towards a screen direction."""
-    wx = (dx / 64 + dy / 32) / 2
-    wy = (dy / 32 - dx / 64) / 2
-    bx, by = wx, -wy  # game → Blender
-    return math.atan2(by, bx) + math.pi / 2
 
 
 def render_frame(key, w, h, tz, build, footprint=(1, 1)):
@@ -98,42 +83,5 @@ def props():
     print("props atlas", C.pack_atlas(frames, os.path.join(OUT, "props.png"), os.path.join(OUT, "props.json")))
 
 
-def chars():
-    w, h, tz = CHAR_FRAME
-    frames = []
-    for pal in CHARS:
-        built = {"piv": None}
-
-        def ensure():
-            # Building the model once per palette; every frame re-poses the same objects.
-            if built["piv"] is None:
-                # Characters get their shadow in the engine (a soft blob), which follows them in every pose.
-                C.reset_scene(samples=16)
-                built["piv"] = M.build_humanoid(pal)
-                C.setup_camera(w, h, tz)
-
-        for anim, n in ANIMS.items():
-            for d, (dx, dy) in enumerate(SCREEN_DIRS):
-                for f in range(n):
-                    key = f"char_{pal}_{anim}_{d}_{f}"
-                    path = os.path.join(CACHE, f"{key}.png")
-                    if FORCE or not os.path.exists(path):
-                        ensure()
-                        piv = built["piv"]
-                        piv["facing"].rotation_euler = (0, 0, facing_z(dx, dy))
-                        M.pose(piv, anim, f, n)
-                        os.makedirs(CACHE, exist_ok=True)
-                        C.render_to(path)
-                    im, pivot = C.trim(C.load_downsampled(path), (w / 2, h / 2 + tz * C.Z_PX))
-                    frames.append((f"ashbound_{pal}/{anim}/{d}/{f}", im, pivot))
-            print("char", pal, anim, flush=True)
-    os.makedirs(OUT, exist_ok=True)
-    print("chars atlas", C.pack_atlas(frames, os.path.join(OUT, "chars.png"), os.path.join(OUT, "chars.json")))
-
-
 if __name__ == "__main__":
-    which = [a for a in sys.argv[1:] if not a.startswith("--")] or ["props", "chars"]
-    if "props" in which:
-        props()
-    if "chars" in which:
-        chars()
+    props()
