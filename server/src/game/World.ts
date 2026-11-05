@@ -83,7 +83,11 @@ export class World implements Arena {
   private readonly fields = new Map<string, { field: FlowField; cell: number; at: number }>();
   private pendingSpawns: { kind: keyof typeof GREYED; at: number }[] = [];
 
-  constructor(mapId = START_MAP) {
+  /** Seeded randomness: the simulation (and the balance tests) play out the same on every machine. */
+  private seed: number;
+
+  constructor(mapId = START_MAP, seed = Date.now()) {
+    this.seed = seed >>> 0;
     const map = MAPS[mapId];
     if (!map) throw new Error(`unknown map ${mapId}`);
     this.map = map;
@@ -352,7 +356,7 @@ export class World implements Arena {
         if (this.time < s.at) continue;
         this.pendingSpawns.splice(i, 1);
         // Through the vermilion gate, fanning out a little.
-        const u = makeUnit(GREYED[s.kind], 14.5 + (Math.random() - 0.5) * 0.8, 0.9 + Math.random() * 0.4);
+        const u = makeUnit(GREYED[s.kind], 14.5 + (this.random() - 0.5) * 0.8, 0.9 + this.random() * 0.4);
         this.units.set(u.id, u);
       }
       const greyed = [...this.units.values()].filter((u) => u.faction === "greyed" && !u.dead);
@@ -433,6 +437,14 @@ export class World implements Arena {
     const field = new FlowField(this.grid, p.x, p.y);
     this.fields.set(t.id, { field, cell, at: this.time });
     return field;
+  }
+
+  /** mulberry32: small, fast, and the same sequence everywhere for a given seed. */
+  random(): number {
+    let t = (this.seed = (this.seed + 0x6d2b79f5) >>> 0);
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   }
 
   /** Returns and clears the visual events of this step. */

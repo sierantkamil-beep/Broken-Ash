@@ -81,8 +81,8 @@ function bot(w: World, p: PlayerSim) {
   w.queueInputs(p.id, [f]);
 }
 
-function setup(paths: PathId[], encounter: boolean) {
-  const w = new World();
+function setup(paths: PathId[], encounter: boolean, seed = 1) {
+  const w = new World(undefined, seed);
   w.encounter = encounter;
   const ps = paths.map((path, i) => w.addPlayer(`p${i}`, { name: `P${i}`, path }));
   for (const p of ps) w.voteSkip(p.id);
@@ -142,5 +142,26 @@ describe("balance", () => {
     }
     console.log(a, b, "won", won, "time", Math.round(w.time), "s");
     expect(won).toBe(true);
+  });
+});
+
+/**
+ * Tuning aid, off by default: `SEEDS=20 pnpm vitest run server/src/game/sim.test.ts -t "seed sweep"`
+ * plays Thorn + Blood over many spawn layouts (seed 1 is what the test above uses).
+ */
+describe.skipIf(!process.env.SEEDS)("seed sweep", () => {
+  it("thorn + blood over seeds", () => {
+    const res: string[] = [];
+    for (let seed = 1; seed <= Number(process.env.SEEDS); seed++) {
+      const { w, ps } = setup(["thorn", "blood"], true, seed);
+      let won = false;
+      for (let i = 0; i < Math.round(420 / SIM_DT) && !won; i++) {
+        for (const p of ps) bot(w, p);
+        w.step(SIM_DT);
+        for (const e of w.drainFx()) if (e.t === "victory") won = true;
+      }
+      res.push(`${seed}:${won ? Math.round(w.time) : "LOST w" + (w.wave + 1)}`);
+    }
+    console.log(res.join(" "));
   });
 });
