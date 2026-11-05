@@ -5,10 +5,18 @@ listed here: **name, author, link, license, what we changed**. Assets under CC-B
 modified.
 
 ## Art
-_None yet._
+All sprites are original: rendered by our own scripts in `tools/art/` with Blender (the program's GPL
+licence doesn't extend to images it renders). No third-party art yet.
 
 ## Audio
-_None yet._
+All music, ambience and effects are original, synthesised by `tools/audio/build.py`. No third-party
+audio yet.
 
 ## Fonts
-_None yet._
+- **Cormorant Garamond** — Christian Thalmann (Catharsis Fonts), SIL Open Font License 1.1, via
+  `@fontsource/cormorant-garamond`. Unchanged.
+- **Shippori Mincho** — FONTDASU, SIL Open Font License 1.1, via `@fontsource/shippori-mincho`
+  (Latin subset only). Unchanged.
+
+## Libraries
+Phaser (MIT), Colyseus (MIT), Electron (MIT), Vite (MIT) — see each package's licence in `node_modules`.

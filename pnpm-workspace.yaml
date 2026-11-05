@@ -1,0 +1,12 @@
+packages:
+  - shared
+  - server
+  - client
+  - desktop
+# pnpm 10 blocks install scripts unless listed. esbuild needs its script for the native binary;
+# Electron downloads its binary on first launch, so it needs nothing here.
+onlyBuiltDependencies:
+  - esbuild
+ignoredBuiltDependencies:
+  - msgpackr-extract
+  - electron-winstaller

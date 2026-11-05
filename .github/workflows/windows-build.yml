@@ -1,0 +1,28 @@
+# Builds BrokenAsh.exe on a real Windows machine on every push to main, and on demand.
+# Download it from the run's "Artifacts" section on GitHub (Actions tab).
+name: Windows build
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
+      - run: pnpm typecheck
+      - run: pnpm dist:win
+      - uses: actions/upload-artifact@v5
+        with:
+          name: BrokenAsh-windows
+          path: desktop/release/*.exe
+          retention-days: 30

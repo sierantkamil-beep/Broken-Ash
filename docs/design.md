@@ -1,4 +1,4 @@
-# Broken Ash — design document (draft 4)
+# Broken Ash — design document (draft 5)
 
 > Status: **for review**. Nothing here is coded yet. Mark up anything you hate; everything is negotiable
 > except the pillars.
@@ -13,6 +13,9 @@
 >
 > Draft 4 changes: the realm mixes Japanese and Chinese influences about equally (each people leans one way);
 > every people has its own naming style, and the cast and places are renamed to match.
+>
+> Draft 5 changes: isometric camera decided; raids outside the story are a setting; a new section on
+> cinematics (§5a); the art and audio pipelines are decided and built (§9); B0 is done.
 
 ## 0. Pillars
 
@@ -308,8 +311,8 @@ Reviving a downed partner is universal (hold F), not a class skill.
 
 ## 5. Combat
 
-- **Movement:** WASD, free 8-way movement (no tiles). Mouse aims. Camera: isometric or 3/4 top-down
-  (decided with the art, §9).
+- **Movement:** WASD, free 8-way movement (no tiles), along the screen (W is straight up the screen).
+  Mouse aims. Camera: **isometric** (2:1), zoomable a little with the wheel.
 - **Buttons:** LMB basic attack, RMB + 1–5 skills, **Space = dodge roll** with short invulnerability,
   Q/E consumables, F interact / execute / revive, B build mode.
 - **Stamina:** dodging and heavy attacks cost stamina. You can't spam rolls.
@@ -325,6 +328,43 @@ Reviving a downed partner is universal (hold F), not a class skill.
 - **Friendly fire:** off. (Could be a hard-mode toggle later.)
 - **Netcode:** server-authoritative as in Dinusie, plus client-side prediction for your own movement and
   dodge so it feels instant at Tailscale latency.
+
+---
+
+## 5a. Cinematics
+
+The story is told in the engine, not in dialogue boxes. Every important beat gets a **cinematic**:
+camera moves over the real scene, letterbox bars, a title or subtitles, music and sound cues, the
+characters acting it out. Talking to an NPC can still be a plain dialogue, but deaths, betrayals,
+arrivals and boss reveals are always staged.
+
+**Kinds of cinematic action:**
+- **Story scenes.** Letterboxed, both players' control taken away. Examples: the prolog over the
+  burning courtyard, Itheru's execution, Maeve's last stand at Shuilan, the Ash Feast massacre, Elia
+  carried out of the roots.
+- **Scripted moments in play.** No letterbox and no lost control: the camera swings to show
+  something (a gate bursting, a horde coming over the wall, the shrine collapsing) while you keep
+  moving and fighting.
+- **Finishers.** An execution on a staggered enemy or a boss kill gets a short close-up: zoom, a beat
+  of slow motion, a gore burst, and a sound sting. It lasts under a second, so it never breaks the
+  flow.
+- **Boss entrances.** A short camera move to the boss, a title card with its name, and its theme
+  starting.
+- **Death and loss.** When a named character dies, the scene doesn't cut away. The camera holds,
+  the music drops out, and the partner's reaction is part of the shot.
+
+**Rules:**
+- **Both players watch together.** A cinematic is shared state on the server. A partner who
+  connects mid-scene joins at the same moment, not at the start.
+- **Skipping needs both votes:** Esc on each side (the corner shows "Pomiń: Esc (1/2)"). Nobody gets
+  a key story beat skipped for them.
+- **Cinematics are data:** timelines of camera keys, subtitles, title cards, actors, fades and events
+  (`shared/src/data/cinematics.ts`). Tests check that every subtitle stays on screen long enough to
+  read in Polish.
+- **No voice acting:** text plus sound design and music carry it. Any line can be rewritten without
+  re-recording anything.
+- **Grading:** scenes can desaturate the picture slightly, which makes the red of blood and blossoms
+  stand out.
 
 ---
 
@@ -429,8 +469,10 @@ stranger fortress.
 - **Co-op:** both of you build at the same time from shared storage. **Blueprints** let you save a building
   and place it again.
 - **Defence:** Ostoja gets attacked:
-  - in story sieges (end of Act 3, Act 4, Act 5);
-  - in occasional raids by the Greyed or bandits, if the setting is on.
+  - in story sieges (end of Act 3, Act 4, Act 5), which always happen;
+  - in occasional raids by the Greyed or bandits outside the story. Raids are a **setting**
+    (*Najazdy na Ostoję poza fabułą*, on by default) that each of you can see in the Esc menu. The
+    host's setting decides.
   - During an attack you fight in the action combat while your walls, towers, traps and guards hold the
     line. Damaged pieces need repairs.
 - **Field building:** a small kit you can use anywhere: barricades, spike traps, bridges over gaps. Some
@@ -486,20 +528,34 @@ people gets its own colour palette and trim on the same base pieces.
 Gore decals (blood pools, splatter, gibs) can come from either option (rendered in B) or from a CC0 pack
 on OpenGameArt.
 
-**Recommendation:** use **B** for all elven architecture, props and elven characters, with our own
-scripted pagoda and roof modules, Quaternius/Kenney CC0 bodies with new elven heads, and the Thorn and
-Ember blade designs. Use **A (Flare)** for the **Iron March** humans and generic monsters: its European
-medieval look is exactly the contrast the invaders need. Both produce the same isometric sprites, so
-switching is a content change, not a code rewrite.
+**Decision (B0):** option **B, built by us**. `tools/art/` renders every sprite with Blender's Python
+module (`bpy`) through the same isometric camera the game uses:
+- props and characters are procedural models with Cycles lighting, soft contact shadows and 2×
+  supersampling;
+- the ground is painted with numpy as seamless textures with feathered borders;
+- blood is painted decals.
+
+Everything is original, so no licences need tracking. Option A (Flare) stays the fallback for Iron
+March humans if we want them fast. The B0 placeholders (the two convicts, the courtyard props) are
+meant to be refined, not thrown away: improving a model and re-running the script updates every
+sprite.
 
 ### Audio
-Keep Dinusie's audio engine (buses, limiter, positional panning) and procedural SFX where they fit (hits,
-blood, footsteps). Music and ambience should be darker and more "real": free CC0/CC-BY ambient tracks or
-dark-folk loops, credited.
+All audio is **synthesised by `tools/audio/build.py` into real `.ogg` files**, so it is original and
+easy to re-tune:
+- **Music** uses the in-sen scale with plucked-string, breathy-flute, drum and temple-bell voices,
+  a drone and reverb. It loops seamlessly.
+- **Ambience:** wind, rustling blossom, wind chimes, crickets.
+- **Effects:** footsteps on stone and moss, the dodge roll, gate impacts, the splitting of the tree,
+  and the UI sounds.
+
+The game mixes them on three buses (music, ambience, effects), crossfades loops, and pans effects by
+where they happen on screen. Free CC0/CC-BY recordings can be added later where synthesis falls
+short; they would be credited.
 
 ---
 
-## 10. Tech (summary — details in CLAUDE.md once we scaffold)
+## 10. Tech (summary — details in CLAUDE.md)
 
 Same stack as Dinusie so the good code carries over: pnpm workspaces, TypeScript, Phaser 3.90 (WebGL),
 Colyseus 0.16 (embedded server: *Hostuj grę* / *Dołącz* + IP), Electron Windows .exe, `node:sqlite`.
@@ -518,7 +574,7 @@ Colyseus 0.16 (embedded server: *Hostuj grę* / *Dołącz* + IP), Electron Windo
 
 | # | Milestone | Done when |
 |---|---|---|
-| **B0** | Scaffold | Engine ported, two players move freely in a test room over IP, tests + typecheck green. |
+| **B0** ✅ | Scaffold | Networking, hosting and the desktop shell ported from Dinusie; two players move freely in a test room over IP; tests + typecheck green. *Also done: the Blender sprite pipeline, ground painter, audio synthesiser, the cinematic system with the prolog, and the Soramei courtyard.* Dinusie's skill, talent, evolution and dungeon systems come over in B1–B4, when each is needed. |
 | **B1** | Combat slice | Thorn and Blood with 6 skills each, dodge, stamina, poise, executions, gore, 3 enemy types, 1 boss. *Playtest: is fighting fun?* |
 | **B2** | Items & alchemy | Grid inventory, affixes, 3 ashen uniques, salvage, herbs → potions/oils/bombs, belt. |
 | **B3** | Building basics | Build mode, walls/floors/doors/roofs in wood, workbench, garden plots, storage, decoration, blueprints, saved on the host. *Playtest: is building fun on its own?* |
@@ -534,8 +590,8 @@ Every milestone ends with a playtest and a bug-fix pass before the next one star
 ---
 
 ## Open questions for you two
-1. Isometric or 3/4 top-down camera? (Both art options are isometric by default.)
-2. Is the five-act curve right? Is Act 4 cruel enough? Is Act 5 hopeful enough?
-3. Should Ostoja's raids outside the story be on by default, off, or a setting?
-4. Building: is a second storey enough, or do you want cellars and multi-level castles?
-5. Which path does each of you want to play first? (The slice has Thorn + Blood.)
+1. Is the five-act curve right? Is Act 4 cruel enough? Is Act 5 hopeful enough?
+2. Building: is a second storey enough, or do you want cellars and multi-level castles?
+3. Which path does each of you want to play first? (The slice has Thorn + Blood.)
+
+Answered: isometric camera; raids outside the story are a setting (on by default).

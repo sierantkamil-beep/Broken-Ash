@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss: http: https:; media-src 'self' data: blob:" />
+    <title>Broken Ash</title>
+    <link rel="icon" type="image/png" href="favicon.png" />
+  </head>
+  <body>
+    <div id="game"></div>
+
+    <!-- Cinematic overlay: letterbox, fade, title card, subtitles. DOM text stays crisp at any zoom. -->
+    <div id="cinema" aria-live="polite">
+      <div class="bar top"></div>
+      <div class="bar bottom"></div>
+      <div id="cin-fade"></div>
+      <div id="cin-flash"></div>
+      <div id="cin-title"><div class="title"></div><div class="sub"></div></div>
+      <div id="cin-subtitle"><span class="speaker"></span><span class="line"></span></div>
+      <div id="cin-skip" hidden></div>
+    </div>
+
+    <!-- In-game HUD. -->
+    <div id="hud" hidden>
+      <div id="area-toast"><div class="name"></div><div class="sub"></div></div>
+      <div id="stamina"><div class="fill"></div><div class="ticks"><i></i><i></i></div></div>
+      <div id="hint">WASD — ruch · Spacja — przewrót · Esc — menu</div>
+    </div>
+
+    <!-- Esc menu. -->
+    <div id="pause" class="panel" hidden>
+      <h2>Ustawienia</h2>
+      <label>Głośność ogólna <input type="range" id="vol-master" min="0" max="100" /></label>
+      <label>Muzyka <input type="range" id="vol-music" min="0" max="100" /></label>
+      <label>Otoczenie <input type="range" id="vol-ambience" min="0" max="100" /></label>
+      <label>Efekty <input type="range" id="vol-sfx" min="0" max="100" /></label>
+      <label class="row">Krew i okaleczenia
+        <select id="gore"><option value="full">pełne</option><option value="reduced">ograniczone</option></select>
+      </label>
+      <label class="row">Najazdy na Ostoję poza fabułą
+        <select id="raids"><option value="on">włączone</option><option value="off">wyłączone</option></select>
+      </label>
+      <div class="muted small">Najazdy zaczynają się w Akcie 3.</div>
+      <div id="host-info"></div>
+      <div class="buttons">
+        <button id="resume" class="primary">Wróć do gry</button>
+        <button id="leave">Wyjdź do menu</button>
+      </div>
+    </div>
+
+    <!-- Title screen. -->
+    <div id="menu">
+      <div class="brand">
+        <h1>Broken Ash</h1>
+        <div class="tagline">Jesion Świata pękł. Krew jeszcze nie zaschła.</div>
+      </div>
+      <div class="panel" id="join">
+        <label>Imię postaci
+          <input id="name" maxlength="20" placeholder="np. Kasuren Ayume" autocomplete="off" />
+        </label>
+        <button id="host-btn" class="primary" hidden>Hostuj grę na tym komputerze</button>
+        <div class="divider" id="host-divider" hidden><span>albo dołącz do partnera</span></div>
+        <label>Adres IP partnera
+          <input id="address" placeholder="np. 100.64.0.2" autocomplete="off" />
+        </label>
+        <button id="connect-btn">Dołącz</button>
+        <div id="host-report-box"></div>
+        <div id="error" class="error" hidden></div>
+      </div>
+      <div class="footer">Gra dla dwojga · tylko dla dorosłych: przemoc, krew, wulgaryzmy</div>
+    </div>
+
+    <div id="tooltip" hidden></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

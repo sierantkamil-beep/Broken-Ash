@@ -1,0 +1,26 @@
+{
+  "name": "@broken-ash/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Broken Ash – mroczne RPG akcji dla dwojga",
+  "author": "Kamil Sierant",
+  "main": "dist/main.cjs",
+  "scripts": {
+    "build": "node build.mjs",
+    "start": "pnpm --filter @broken-ash/client build && node build.mjs && electron .",
+    "dist:win": "pnpm --filter @broken-ash/client build && node build.mjs && electron-builder --config electron-builder.config.cjs --win --x64 --publish never",
+    "typecheck": "tsc -p .",
+    "dev": "node build.mjs && cross-env ASH_DEV_URL=http://localhost:5173 ASH_EXTERNAL_SERVER=1 electron ."
+  },
+  "devDependencies": {
+    "@broken-ash/server": "workspace:*",
+    "@broken-ash/shared": "workspace:*",
+    "@types/node": "22.20.5",
+    "electron": "44.8.0",
+    "electron-builder": "26.15.3",
+    "esbuild": "0.25.12",
+    "cross-env": "10.1.0"
+  },
+  "repository": "github:sierantkamil-beep/broken-ash",
+  "homepage": "https://github.com/sierantkamil-beep/broken-ash"
+}

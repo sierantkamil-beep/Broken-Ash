@@ -1,0 +1,22 @@
+{
+  "name": "broken-ash",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -k -n server,client,app -c green,cyan,magenta \"pnpm --filter @broken-ash/server dev\" \"pnpm --filter @broken-ash/client dev\" \"pnpm --filter @broken-ash/desktop dev\"",
+    "dev:web": "concurrently -k -n server,client -c green,cyan \"pnpm --filter @broken-ash/server dev\" \"pnpm --filter @broken-ash/client dev\"",
+    "build": "pnpm -r build",
+    "test": "vitest run",
+    "typecheck": "pnpm -r typecheck",
+    "desktop": "pnpm --filter @broken-ash/desktop start",
+    "dist:win": "pnpm --filter @broken-ash/desktop dist:win",
+    "art": "python3 tools/art/render.py && python3 tools/art/ground.py",
+    "audio": "python3 tools/audio/build.py"
+  },
+  "devDependencies": {
+    "concurrently": "9.2.5",
+    "typescript": "5.9.3",
+    "vitest": "3.2.7"
+  },
+  "packageManager": "pnpm@10.28.0"
+}

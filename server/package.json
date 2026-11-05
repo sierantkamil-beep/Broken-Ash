@@ -1,0 +1,24 @@
+{
+  "name": "@broken-ash/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/startServer.ts",
+  "types": "src/startServer.ts",
+  "scripts": {
+    "dev": "cross-env ASH_DEBUG=1 tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "@colyseus/core": "0.16.26",
+    "@colyseus/schema": "3.0.76",
+    "@colyseus/ws-transport": "0.16.5",
+    "@broken-ash/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "tsx": "4.23.15",
+    "cross-env": "10.1.0"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    // @colyseus/schema uses legacy decorators; real class fields would shadow its property setters.
+    "experimentalDecorators": true,
+    "useDefineForClassFields": false,
+    "types": ["node"]
+  },
+  "include": ["src"]
+}

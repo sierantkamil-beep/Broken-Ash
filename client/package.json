@@ -1,0 +1,22 @@
+{
+  "name": "@broken-ash/client",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview --host",
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "@broken-ash/shared": "workspace:*",
+    "@fontsource/cormorant-garamond": "5.3.0",
+    "colyseus.js": "0.16.22",
+    "phaser": "3.90.0",
+    "@fontsource/shippori-mincho": "5.3.0"
+  },
+  "devDependencies": {
+    "vite": "7.3.7"
+  }
+}
