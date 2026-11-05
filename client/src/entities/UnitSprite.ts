@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { depthOf, directionIndex, GREYED, worldToScreen, type GreyedKind } from "@broken-ash/shared";
-import { atlasOr, ensureAtlas, greyedKey } from "../assets/atlases";
+import { atlasMeta, atlasOr, ensureAtlas, greyedKey, resolveAnim, type AtlasMeta } from "../assets/atlases";
 import { Interpolation } from "../net/Interpolation";
 
 /** The synced unit fields (server/src/schema/WorldState.ts UnitState). */
@@ -26,7 +26,8 @@ export interface UnitView {
   ay: number;
 }
 
-const STRIDE_PER_FRAME = 0.2;
+/** Cells per full walk cycle of a Greyed (a shorter, shuffling stride than the players'). */
+const STRIDE_PER_CYCLE = 1.6;
 
 /**
  * A Greyed (or a Graves thrall) on screen: interpolated position, walk/attack/stagger animations,
@@ -38,6 +39,7 @@ export class UnitSprite {
   private readonly bar: Phaser.GameObjects.Graphics;
   readonly interp = new Interpolation();
   private atlas: string | null;
+  private meta!: AtlasMeta;
   private frameF = 0;
   private lastX = 0;
   private lastY = 0;
@@ -57,7 +59,7 @@ export class UnitSprite {
     const key = greyedKey(view.kind);
     this.atlas = atlasOr(scene, key, ["shambler_greyed"]);
     void ensureAtlas(scene, key).then((ok) => {
-      if (ok) this.atlas = key;
+      if (ok) this.useAtlas(key);
     });
     const big = view.kind === "tapper";
     this.shadow = scene.add.image(0, 0, "fx", "shadow").setScale(big ? 1.1 : 0.65, big ? 1.0 : 0.6);
@@ -66,6 +68,18 @@ export class UnitSprite {
     if (view.faction === "players") this.sprite.setTint(0xb8d8e8);
     this.bar = scene.add.graphics();
     layer.add([this.shadow, this.sprite, this.bar]);
+    this.useAtlas(this.atlas);
+  }
+
+  private useAtlas(key: string | null) {
+    this.atlas = key;
+    this.meta = atlasMeta(this.scene, key);
+    this.sprite.setScale(this.meta.scale);
+  }
+
+  /** How tall the unit stands on screen (for health bars and hit effects). */
+  get height() {
+    return this.meta.pixel ? this.meta.height : this.view.kind === "tapper" ? 220 : this.view.kind === "bloated" ? 150 : 140;
   }
 
   get def() {
@@ -91,7 +105,7 @@ export class UnitSprite {
   update(now: number, delta: number) {
     const v = this.view;
     if (!this.atlas) {
-      this.atlas = atlasOr(this.scene, greyedKey(this.view.kind), ["shambler_greyed"]);
+      this.useAtlas(atlasOr(this.scene, greyedKey(this.view.kind), ["shambler_greyed"]));
       if (!this.atlas) {
         // No sprite yet, but the position still matters (aiming, effects, sounds).
         const s = this.interp.sample(now);
@@ -99,10 +113,13 @@ export class UnitSprite {
         return;
       }
     }
+    const atlas = this.atlas;
+    const count = (a: string) => this.meta.anims[a] ?? 1;
     const dir = directionIndex(v.facing);
     if (this.dead) {
-      const f = Math.min(5, Math.floor((now - this.deathStart) / 110));
-      this.sprite.setTexture(this.atlas, `death/${dir}/${f}`);
+      const death = resolveAnim(this.scene, atlas, "death");
+      const f = Math.min(count(death) - 1, Math.floor((now - this.deathStart) / 110));
+      this.sprite.setTexture(atlas, `${death}/${dir}/${f}`);
       // Corpses lie on the ground: under anyone standing.
       this.sprite.setDepth(this.depth - 2e6);
       this.shadow.setVisible(false);
@@ -121,26 +138,29 @@ export class UnitSprite {
     let anim = "idle";
     let frame = 0;
     if (v.stagger > 0) {
-      anim = "hit";
-      frame = 1;
+      anim = resolveAnim(this.scene, atlas, "hit");
+      frame = Math.min(1, count(anim) - 1);
     } else if (v.state === "windup" && v.atk) {
       const atk = this.def.attacks.find((a) => a.id === v.atk);
-      anim = atk?.anim ?? "attack";
+      anim = resolveAnim(this.scene, atlas, atk?.anim ?? "attack");
+      // The wind-up plays the first half of the clip, so the strike lands as the telegraph fills.
+      const half = Math.max(1, Math.floor(count(anim) / 2));
       const k = 1 - v.atkT / Math.max(0.01, v.atkTotal);
-      frame = Math.min(2, Math.floor(k * 3));
+      frame = Math.min(half - 1, Math.floor(k * half));
     } else if (v.state === "recover") {
-      const atk = this.def.attacks[0];
-      anim = atk?.anim ?? "attack";
-      frame = 4;
+      anim = resolveAnim(this.scene, atlas, this.def.attacks[0]?.anim ?? "attack");
+      frame = count(anim) - 1;
     } else if (Math.hypot(s.vx, s.vy) > 0.2) {
       anim = "run";
-      this.frameF = (this.frameF + moved / STRIDE_PER_FRAME) % 8;
+      const n = count(anim);
+      this.frameF = (this.frameF + (moved / STRIDE_PER_CYCLE) * n) % n;
       frame = Math.floor(this.frameF);
     } else {
-      this.frameF = (this.frameF + delta / 1000 * 5) % 6;
+      const n = count(anim);
+      this.frameF = (this.frameF + (delta / 1000) * 5) % n;
       frame = Math.floor(this.frameF);
     }
-    this.sprite.setTexture(this.atlas, `${anim}/${dir}/${frame}`);
+    this.sprite.setTexture(atlas, `${anim}/${dir}/${frame}`);
     if (this.hitFlash > 0) {
       this.hitFlash -= delta;
       this.sprite.setTintFill(0xffe8e0);
@@ -151,7 +171,7 @@ export class UnitSprite {
     this.bar.clear();
     if (v.hp < v.hpMax && v.kind !== "tapper") {
       const w = 54;
-      const y = scr.y - (v.kind === "bloated" ? 150 : 140);
+      const y = scr.y - this.height;
       this.bar.fillStyle(0x000000, 0.6).fillRect(scr.x - w / 2 - 1, y - 1, w + 2, 6);
       this.bar.fillStyle(v.faction === "players" ? 0x8cc0d8 : 0xa8231a, 1).fillRect(scr.x - w / 2, y, (w * v.hp) / v.hpMax, 4);
       if (v.stagger > 0) this.bar.fillStyle(0xf0d070, 1).fillRect(scr.x - w / 2, y - 4, w, 2);

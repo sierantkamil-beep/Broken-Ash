@@ -1,13 +1,12 @@
 import Phaser from "phaser";
 import { BALANCE, depthOf, directionIndex, PATHS, worldToScreen, type PathId } from "@broken-ash/shared";
 import type { AudioDirector } from "../audio/AudioDirector";
-import { atlasOr, charKey, ensureAtlas } from "../assets/atlases";
+import { atlasMeta, atlasOr, charKey, ensureAtlas, resolveAnim, type AtlasMeta } from "../assets/atlases";
 
-/** Frame counts per animation (tools/art/anims.py FRAMES). */
-export const ANIM_FRAMES: Record<string, number> = { idle: 6, run: 8, roll: 6, hit: 3, death: 6, attack: 6, skill1: 6, skill2: 6 };
 const IDLE_FPS = 6;
-/** Cells travelled per run-cycle frame: matches the stride of the rendered run, so feet don't slide. */
-const STRIDE_PER_FRAME = 0.24;
+/** Cells travelled per full run cycle: matches the stride of the drawn run, so feet don't slide. */
+const STRIDE_PER_CYCLE = 1.9;
+const DEATH_FRAME_MS = 110;
 
 export interface CharacterState {
   x: number;
@@ -28,6 +27,7 @@ export class Character {
   private readonly shadow: Phaser.GameObjects.Image;
   private readonly label: Phaser.GameObjects.Text;
   private atlas: string | null;
+  private meta!: AtlasMeta;
   private anim = "idle";
   private frameF = 0;
   private lastX = 0;
@@ -52,7 +52,7 @@ export class Character {
     const key = charKey(path, body);
     this.atlas = atlasOr(scene, key, [charKey(path, body === "male" ? "female" : "male"), "thorn_male", "blood_female"]);
     void ensureAtlas(scene, key).then((ok) => {
-      if (ok) this.atlas = key;
+      if (ok) this.useAtlas(key);
     });
     this.shadow = scene.add.image(0, 0, "fx", "shadow").setScale(0.62, 0.62);
     this.sprite = scene.add.sprite(0, 0, this.atlas ?? "fx", this.atlas ? "idle/0/0" : "shadow");
@@ -63,6 +63,23 @@ export class Character {
       .setVisible(showName)
       .setDepth(9.7e6);
     layer.add([this.shadow, this.sprite, this.label]);
+    this.useAtlas(this.atlas);
+  }
+
+  /** How tall the figure stands on screen (name tag, hit effects). */
+  get height() {
+    return this.meta.height;
+  }
+
+  /** Pixel-art set and its scale, for whole-pixel camera zoom. */
+  get pixelScale(): number | null {
+    return this.meta.pixel ? this.meta.scale : null;
+  }
+
+  private useAtlas(key: string | null) {
+    this.atlas = key;
+    this.meta = atlasMeta(this.scene, key);
+    this.sprite.setScale(this.meta.scale);
   }
 
   /** Plays a skill's animation: its wind-up spread over the cast time, the strike on release. */
@@ -86,12 +103,14 @@ export class Character {
     this.depth = depthOf(s.x, s.y) + 50;
     this.sprite.setPosition(scr.x, scr.y).setDepth(this.depth);
     this.shadow.setPosition(scr.x, scr.y).setDepth(this.depth - 1);
-    this.label.setPosition(scr.x, scr.y - 160).setScale(1 / this.scene.cameras.main.zoom);
+    this.label.setPosition(scr.x, scr.y - this.meta.height - 14).setScale(1 / this.scene.cameras.main.zoom);
     if (!this.atlas) {
       const k = atlasOr(this.scene, charKey(this.path, this.body), ["thorn_male", "blood_female"]);
       if (!k) return;
-      this.atlas = k;
+      this.useAtlas(k);
     }
+    const atlas = this.atlas!;
+    const count = (a: string) => this.meta.anims[a] ?? 1;
 
     const moved = Math.hypot(s.x - this.lastX, s.y - this.lastY);
     this.lastX = s.x;
@@ -104,46 +123,52 @@ export class Character {
 
     if (s.downed) {
       if (this.downedAt < 0) this.downedAt = now;
-      anim = "death";
-      frame = Math.min(5, Math.floor((now - this.downedAt) / 110));
+      anim = resolveAnim(this.scene, atlas, "death");
+      frame = Math.min(count(anim) - 1, Math.floor((now - this.downedAt) / DEATH_FRAME_MS));
       this.action = null;
     } else if (s.dodgeT > 0) {
       this.downedAt = -1;
       if (!this.wasRolling) this.audio.play("sfx_dodge", 0.55, scr);
-      anim = "roll";
-      frame = Math.min(5, Math.floor((1 - s.dodgeT / BALANCE.dodge.duration) * 6));
+      anim = resolveAnim(this.scene, atlas, "roll");
+      const n = count(anim);
+      frame = Math.min(n - 1, Math.floor((1 - s.dodgeT / BALANCE.dodge.duration) * n));
       this.action = null;
     } else if (this.action && now - this.action.start < this.action.dur) {
       this.downedAt = -1;
       const a = this.action;
-      anim = a.anim;
+      anim = resolveAnim(this.scene, atlas, a.anim);
+      const n = count(anim);
       const t = now - a.start;
-      if (a.anim === "hit") frame = Math.min(2, Math.floor((t / a.dur) * 3));
-      // Wind-up frames 0–2 across the cast time, then strike and follow-through 3–5.
-      else if (t < a.strikeAt) frame = Math.min(2, Math.floor((t / Math.max(1, a.strikeAt)) * 3));
-      else frame = Math.min(5, 3 + Math.floor(((t - a.strikeAt) / (a.dur - a.strikeAt)) * 3));
+      // The first half of the clip is the wind-up, spread over the cast time; the rest is the
+      // strike and follow-through after release.
+      const half = Math.max(1, Math.floor(n / 2));
+      if (a.anim === "hit" || a.strikeAt <= 0) frame = Math.min(n - 1, Math.floor((t / a.dur) * n));
+      else if (t < a.strikeAt) frame = Math.min(half - 1, Math.floor((t / a.strikeAt) * half));
+      else frame = Math.min(n - 1, half + Math.floor(((t - a.strikeAt) / (a.dur - a.strikeAt)) * (n - half)));
     } else {
       this.downedAt = -1;
       this.action = null;
       if (speed > 0.35) {
-        const before = Math.floor(this.frameF);
-        if (this.anim !== "run") this.frameF = 0;
         anim = "run";
-        this.frameF = (this.frameF + moved / STRIDE_PER_FRAME) % 8;
+        const n = count(anim);
+        if (this.anim !== "run") this.frameF = 0;
+        const before = Math.floor(this.frameF);
+        this.frameF = (this.frameF + (moved / STRIDE_PER_CYCLE) * n) % n;
         frame = Math.floor(this.frameF);
-        // Feet touch down on frames 1 and 5 of the run cycle.
-        if (frame !== before && (frame === 1 || frame === 5)) this.footstep(s.x, s.y, scr);
+        // Feet touch down twice per cycle.
+        if (frame !== before && (frame === 0 || frame === Math.floor(n / 2))) this.footstep(s.x, s.y, scr);
       } else {
-        if (this.anim !== "idle") this.frameF = 0;
         anim = "idle";
-        this.frameF = (this.frameF + dt * IDLE_FPS) % 6;
+        const n = count(anim);
+        if (this.anim !== "idle") this.frameF = 0;
+        this.frameF = (this.frameF + dt * IDLE_FPS) % n;
         frame = Math.floor(this.frameF);
       }
     }
     this.anim = anim;
     this.wasRolling = s.dodgeT > 0;
     const name = `${anim}/${dir}/${frame}`;
-    if (this.sprite.texture.key !== this.atlas || this.sprite.frame.name !== name) this.sprite.setTexture(this.atlas, name);
+    if (this.sprite.texture.key !== atlas || this.sprite.frame.name !== name) this.sprite.setTexture(atlas, name);
   }
 
   private footstep(x: number, y: number, at: { x: number; y: number }) {

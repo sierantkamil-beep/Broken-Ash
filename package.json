@@ -13,6 +13,7 @@
     "audio": "python3 tools/audio/build.py",
     "catalogue": "tsx tools/catalogue/catalogue.ts",
     "chars": "python3 tools/art/characters.py",
+    "art:pack": "python3 tools/pixellab/pack.py",
     "e2e": "pnpm --filter @broken-ash/client build && pnpm --filter @broken-ash/desktop build && node tools/e2e/play.cjs"
   },
   "devDependencies": {

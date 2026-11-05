@@ -178,7 +178,7 @@ export class WorldScene extends Phaser.Scene {
       else if (p.leftButtonDown()) this.cast(0);
     });
     this.input.on("wheel", (_p: unknown, _o: unknown, _dx: number, dy: number) => {
-      if (this.room && !this.cinematic.playing) this.userZoom = Phaser.Math.Clamp(this.userZoom * (dy > 0 ? 0.92 : 1.08), 0.7, 1.35);
+      if (this.room && !this.cinematic.playing) this.userZoom = Phaser.Math.Clamp(this.userZoom * (dy > 0 ? 0.92 : 1.08), 0.55, 1.65);
     });
     this.scale.on("resize", (size: Phaser.Structs.Size) => {
       this.overlayCam.setSize(size.width, size.height);
@@ -288,17 +288,17 @@ export class WorldScene extends Phaser.Scene {
   private locate(id: string) {
     if (this.me && id === this.room?.sessionId) {
       const p = this.me.pred.render();
-      return { ...this.me.char.screen, wx: p.x, wy: p.y, height: 150 };
+      return { ...this.me.char.screen, wx: p.x, wy: p.y, height: this.me.char.height };
     }
     const r = this.remotes.get(id);
     if (r) {
       const w = screenToWorld(r.char.screen.x, r.char.screen.y);
-      return { ...r.char.screen, wx: w.x, wy: w.y, height: 150 };
+      return { ...r.char.screen, wx: w.x, wy: w.y, height: r.char.height };
     }
     const u = this.units.get(id);
     if (u) {
       const w = screenToWorld(u.screen.x, u.screen.y);
-      return { ...u.screen, wx: w.x, wy: w.y, height: u.view.kind === "tapper" ? 220 : 140 };
+      return { ...u.screen, wx: w.x, wy: w.y, height: u.height };
     }
     return null;
   }
@@ -416,8 +416,13 @@ export class WorldScene extends Phaser.Scene {
       this.cinematic.update();
     } else if (this.me) {
       const target = this.me.char.screen;
-      const zoom = PLAY_ZOOM * this.baseZoom() * this.userZoom;
-      cam.setZoom(Phaser.Math.Linear(cam.zoom, zoom, Math.min(1, delta / 250)));
+      let zoom = PLAY_ZOOM * this.baseZoom() * this.userZoom;
+      const px = this.me.char.pixelScale;
+      // Pixel art stays crisp only when each art pixel covers a whole number of screen pixels.
+      if (px) zoom = Math.max(1, Math.round(zoom * px)) / px;
+      const next = Phaser.Math.Linear(cam.zoom, zoom, Math.min(1, delta / 250));
+      cam.setZoom(Math.abs(next - zoom) < 0.004 ? zoom : next);
+      cam.roundPixels = !!px && cam.zoom === zoom;
       // Lead the camera a little towards where you aim, as action RPGs do.
       const lead = worldToScreen(Math.cos(this.aim.angle) * 0.9, Math.sin(this.aim.angle) * 0.9);
       const k = Math.min(1, delta / 140);
@@ -427,6 +432,7 @@ export class WorldScene extends Phaser.Scene {
       this.titleT += delta / 1000;
       const p = worldToScreen(14 + Math.sin(this.titleT / 23) * 7, 12 + Math.cos(this.titleT / 31) * 6);
       cam.setZoom(0.62 * this.baseZoom());
+      cam.roundPixels = false;
       cam.centerOn(p.x, p.y);
     }
 
