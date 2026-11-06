@@ -145,3 +145,21 @@ looked broken and why; all of it was fixed.
 - **Mastery panel:** chosen / locked by level / "not now" look different; sticky header, a scroll
   fade, the HUD steps back while it's open.
 - Polish letters in the heading font (latin-ext); colour and spacing tokens in the stylesheet.
+
+### Pixel spell effects (Phase 1 of "spectacle, creatures, gore, Act 1")
+- Every skill has a real effect over its exact hit shape, built from data: element from the weapon or
+  path, look from the shape and vfx key; signature skills have hand-made recipes (Piorun is a real
+  forking bolt with a flash of the screen, Stos a fireball blast and a burning field, Powstańcie
+  ghost hands clawing out of the ground, Nawałnica lightning out of the sky…).
+- `tools/fx/build.py` bakes the small sprites (sparks, flames, clouds, roots, hands, projectiles,
+  status loops) in eleven element palettes; the client generates big shapes (blade smears, whirls,
+  shockwave rings, seals, blasts, cyclones) at the exact size each skill needs, so every effect keeps
+  the characters' 2× pixel size. Pixel art draws opaque with its dark rim; only light adds.
+- Feel: pixel particles (embers, sparks, dust), effects light the night, hit-stop and a knock-back
+  kick on heavy blows, shake, screen flashes for lightning. Projectiles fly as arrows, knives,
+  burning talismans or wisps with trails and burst on impact where the server stopped them.
+- Statuses show on bodies: flames (burn), bubbles (poison), drips (bleed), sparks (static), vines
+  (rooted), a sigil over a marked head, stars (stagger), a shield dome.
+- Server: hits carry the attacker, the blow's direction and how it was dealt (cut, crush, fire,
+  shock…), detonations are flagged, deaths carry direction, cause and overkill (for gore next),
+  enemy blows send their own event.

@@ -71,6 +71,7 @@ export class Character {
   /** A one-shot animation (cast, hit) and when it ends. */
   private action: { anim: string; start: number; dur: number; strikeAt: number } | null = null;
   private downedAt = -1;
+  private frozenUntil = 0;
   screen = { x: 0, y: 0 };
   depth = 0;
 
@@ -181,6 +182,11 @@ export class Character {
     this.action = { anim: "hit", start: this.scene.time.now, dur: 260, strikeAt: 0 };
   }
 
+  /** Hit-stop: the pose holds for a beat when a heavy blow lands (dealt or taken). */
+  freeze(ms: number) {
+    this.frozenUntil = Math.max(this.frozenUntil, this.scene.time.now + ms);
+  }
+
   update(s: CharacterState, delta: number) {
     const dt = delta / 1000;
     const scr = worldToScreen(s.x, s.y);
@@ -254,8 +260,12 @@ export class Character {
     this.anim = anim;
     this.wasRolling = s.dodgeT > 0;
     const name = `${anim}/${dir}/${frame}`;
-    if (this.sprite.texture.key !== atlas || this.sprite.frame.name !== name) this.sprite.setTexture(atlas, name);
-    this.placeGear(name, dir, frame, scr);
+    const frozen = now < this.frozenUntil;
+    if (!frozen && (this.sprite.texture.key !== atlas || this.sprite.frame.name !== name)) this.sprite.setTexture(atlas, name);
+    // Gear follows the frame actually shown (during hit-stop that's the held one).
+    const shown = this.sprite.frame.name;
+    const parts = shown.split("/");
+    this.placeGear(shown, Number(parts[1] ?? dir), Number(parts[2] ?? frame), scr);
   }
 
   /**

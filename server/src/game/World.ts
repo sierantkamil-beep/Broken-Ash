@@ -340,7 +340,7 @@ export class World implements Arena {
         const amount = victim.def.boss ? victim.hpMax * 0.12 : victim.hp + victim.hpMax * 0.5;
         victim.staggerT = 0;
         victim.statuses.delete("stagger");
-        dealDamage(this, p, victim, amount, 0);
+        dealDamage(this, p, victim, amount, 0, { cause: "exec" });
         for (const o of list) if (!o.downed) heal(this, o, o.hpMax * C.executionHeal);
       }
     }
@@ -458,7 +458,19 @@ export class World implements Arena {
     const u = victim as UnitSim;
     u.dead = true;
     const pos = u.pos();
-    this.fx.push({ t: "death", id: u.id, gore: overkill > u.hpMax * C.goreOverkill || !!u.def.deathBurst, x: pos.x, y: pos.y });
+    const lh = u.lastHit;
+    this.fx.push({
+      t: "death",
+      id: u.id,
+      gore: overkill > u.hpMax * C.goreOverkill || !!u.def.deathBurst || lh?.cause === "exec",
+      x: pos.x,
+      y: pos.y,
+      dx: lh ? Math.round(lh.dx * 100) / 100 : 0,
+      dy: lh ? Math.round(lh.dy * 100) / 100 : 0,
+      cause: lh?.cause,
+      ok: Math.round((overkill / u.hpMax) * 100) / 100,
+      kind: u.kind,
+    });
     if (u.def.deathBurst && u.faction === "greyed") {
       const b = u.def.deathBurst;
       this.fx.push({ t: "burst", x: pos.x, y: pos.y, radius: b.radius });

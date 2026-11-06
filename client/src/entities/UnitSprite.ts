@@ -44,6 +44,9 @@ export class UnitSprite {
   private lastX = 0;
   private lastY = 0;
   private hitFlash = 0;
+  private kickX = 0;
+  private kickY = 0;
+  private frozenUntil = 0;
   view: UnitView;
   screen = { x: 0, y: 0 };
   depth = 0;
@@ -91,8 +94,12 @@ export class UnitSprite {
     return GREYED[(this.view.kind === "thrall" ? "shambler" : this.view.kind) as GreyedKind];
   }
 
-  hit() {
+  /** Struck: a white flash, a kick in the blow's direction, and for heavy blows a short freeze (hit-stop). */
+  hit(dx = 0, dy = 0, freezeMs = 0) {
     this.hitFlash = 90;
+    this.kickX = dx * 7;
+    this.kickY = dy * 7;
+    if (freezeMs > 0) this.frozenUntil = this.scene.time.now + freezeMs;
   }
 
   /** Death: play the fall once, then lie there as a corpse (drawn flat, under the living). */
@@ -134,7 +141,12 @@ export class UnitSprite {
     const scr = worldToScreen(s.x, s.y);
     this.screen = scr;
     this.depth = depthOf(s.x, s.y) + 40;
-    this.sprite.setPosition(scr.x, scr.y).setDepth(this.depth);
+    // The kick from the last blow eases back; a frozen (hit-stopped) body trembles in place.
+    this.kickX *= 0.82;
+    this.kickY *= 0.82;
+    const frozen = now < this.frozenUntil;
+    const tremble = frozen ? (Math.random() - 0.5) * 4 : 0;
+    this.sprite.setPosition(Math.round(scr.x + this.kickX + tremble), Math.round(scr.y + this.kickY)).setDepth(this.depth);
     this.shadow.setPosition(scr.x, scr.y).setDepth(this.depth - 1);
     const moved = Math.hypot(s.x - this.lastX, s.y - this.lastY);
     this.lastX = s.x;
@@ -165,7 +177,7 @@ export class UnitSprite {
       this.frameF = (this.frameF + (delta / 1000) * 5) % n;
       frame = Math.floor(this.frameF);
     }
-    this.sprite.setTexture(atlas, `${anim}/${dir}/${frame}`);
+    if (!frozen) this.sprite.setTexture(atlas, `${anim}/${dir}/${frame}`);
     if (this.hitFlash > 0) {
       this.hitFlash -= delta;
       this.sprite.setTintFill(0xffe8e0);

@@ -81,6 +81,8 @@ interface Remote {
 const PLAY_ZOOM = 0.92;
 
 export class WorldScene extends Phaser.Scene {
+  /** The bar whose effects were last prepared (Vfx.warm). */
+  private warmedBar = "";
   private map!: AreaMap;
   private grid!: CollisionGrid;
   private worldLayer!: Phaser.GameObjects.Layer;
@@ -130,7 +132,7 @@ export class WorldScene extends Phaser.Scene {
     this.telegraphs = new Telegraphs(this, this.worldLayer);
     this.vfx = new Vfx(this, this.worldLayer, {
       locate: (id) => this.locate(id),
-      flash: (id) => this.flash(id),
+      flash: (id, dx, dy) => this.flash(id, dx, dy),
       playSound: (k, v, at) => this.audio.play(k, v, at),
       shake: (i, ms) => this.cameras.main.shake(ms, i),
       banner: (t, s) => this.hud.banner(t, s),
@@ -139,6 +141,12 @@ export class WorldScene extends Phaser.Scene {
         const p = this.state?.players.get(id);
         return ACCENTS[(p ? pathOf(p) : "thorn") as PathId];
       },
+      freeze: (id, ms) => {
+        if (this.me && id === this.room?.sessionId) this.me.char.freeze(ms);
+        this.remotes.get(id)?.char.freeze(ms);
+        this.units.get(id)?.hit(0, 0, ms);
+      },
+      flashScreen: (color, ms) => this.cameras.main.flash(ms, (color >> 16) & 255, (color >> 8) & 255, color & 255, false),
     });
 
     // Fog drifts in screen space on its own camera, so zoom doesn't stretch it.
@@ -275,6 +283,7 @@ export class WorldScene extends Phaser.Scene {
       }
     });
     $s(state).players.onRemove((_p: PlayerView, key: string) => {
+      this.vfx.forget(key);
       this.remotes.get(key)?.char.destroy();
       this.remotes.delete(key);
     });
@@ -289,6 +298,7 @@ export class WorldScene extends Phaser.Scene {
       const s = this.units.get(key);
       if (!s) return;
       this.units.delete(key);
+      this.vfx.forget(key);
       s.die();
       if (s.view.faction === "greyed") {
         this.corpses.push(s);
@@ -342,10 +352,10 @@ export class WorldScene extends Phaser.Scene {
     return null;
   }
 
-  private flash(id: string) {
+  private flash(id: string, dx = 0, dy = 0) {
     if (this.me && id === this.room?.sessionId) this.me.char.playHit();
     this.remotes.get(id)?.char.playHit();
-    this.units.get(id)?.hit();
+    this.units.get(id)?.hit(dx, dy);
   }
 
   private intent() {
@@ -412,6 +422,10 @@ export class WorldScene extends Phaser.Scene {
       // A faint cold light that follows each player, so you never lose your elf in the dark.
       lights.push({ x: s.x, y: s.y - 30, radius: 260, color: 0xa8b0d8, intensity: 0.5, seed: 1 });
       const bar = barOf(v);
+      if (this.warmedBar !== bar.key) {
+        this.warmedBar = bar.key;
+        this.vfx.warm(bar.skills);
+      }
       this.hud.setBar(pathOf(v), bar.skills, bar.key);
       this.me.char.setBar(bar.skills);
       this.me.char.setLook(lookOf(v));
@@ -482,7 +496,13 @@ export class WorldScene extends Phaser.Scene {
       cam.centerOn(p.x, p.y);
     }
 
-    this.vfx.update(time);
+    this.vfx.update(time, delta);
+    // Effects light the night too: a fireball lights the stones it passes, lightning the whole yard.
+    for (const l of this.vfx.lights()) lights.push(l);
+    // Statuses as effects on the bodies (burning, poisoned, bleeding, rooted, shielded…).
+    if (this.me && this.room) this.vfx.statuses(this.room.sessionId, this.me.view.st, this.me.view.shield);
+    for (const [id, r] of this.remotes) this.vfx.statuses(id, r.view.st, r.view.shield);
+    for (const [id, u] of this.units) this.vfx.statuses(id, u.view.st);
     this.props.update(time, delta, watchers);
     this.petals.update(time, delta);
     this.lighting.render(time, lights);

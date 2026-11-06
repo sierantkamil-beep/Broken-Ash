@@ -16,12 +16,14 @@ export class BootScene extends Phaser.Scene {
     this.load.atlas("fx", "assets/sprites/fx.png", "assets/sprites/fx.json");
     // Gear drawn pixel by pixel (tools/pixellab/parts.py): weapons, head pieces, shoulders, capes.
     this.load.atlas("gear", "assets/gear/gear.webp", "assets/gear/gear.json");
+    // Skill effects drawn as pixel art (tools/fx/build.py).
+    this.load.atlas("spells", "assets/fx/spells.png", "assets/fx/spells.json");
     for (const key of AUDIO_KEYS) this.load.audio(key, `assets/audio/${key}.ogg`);
   }
 
   create() {
     // Pixel art stays crisp: nearest sampling for the map and the gear.
-    for (const key of ["ground", "props", "gear"]) if (this.textures.exists(key)) this.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST);
+    for (const key of ["ground", "props", "gear", "spells"]) if (this.textures.exists(key)) this.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST);
     this.scene.start("world");
   }
 }

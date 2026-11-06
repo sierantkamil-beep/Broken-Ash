@@ -129,9 +129,12 @@ export function tickUnits(a: Arena, dt: number, fields: (target: Fighter) => Flo
 
 function strike(a: Arena, u: UnitSim) {
   const at = u.attack!;
+  const up = u.pos();
+  // So the client can draw the blow itself (a claw rake, a cleaver arc, a slam) where it lands.
+  a.fx.push({ t: "unitAtk", id: u.id, kind: u.kind, atk: at.id, aim: u.aim, x: up.x, y: up.y, ax: u.ax, ay: u.ay });
   for (const f of foesOf(a, u.faction)) {
     if (!unitAttackHits(u, f)) continue;
-    dealDamage(a, u, f, at.damage, 0);
+    dealDamage(a, u, f, at.damage, 0, { cause: "claw" });
     if (at.status && !f.dead) addStatus(f, at.status.id, at.status.duration, at.status.value ?? 3, u.id);
   }
   u.state = "recover";

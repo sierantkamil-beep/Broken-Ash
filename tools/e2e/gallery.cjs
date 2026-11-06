@@ -44,7 +44,7 @@ const electronPath = require(path.join(ROOT, "desktop", "node_modules", "electro
     await win.evaluate(
       ({ page, per }) => {
         const s = window.__game().scene.getScene("world");
-        s.time.paused = false;
+        // (the scene clock keeps running: effects freeze through vfx.kit.hold instead)
         const cam = s.cameras.main;
         const skills = window.__skills.slice(page * per, page * per + per);
         const me = s.me.pred.render();
@@ -78,10 +78,12 @@ const electronPath = require(path.join(ROOT, "desktop", "node_modules", "electro
     if (!pass) await win.waitForTimeout(1500);
    }
     // Let wind-ups pass and strokes get laid, then freeze.
-    await win.waitForTimeout(Number(process.env.FREEZE_MS ?? 220));
-    await win.evaluate(() => {
+    await win.waitForTimeout(Number(process.env.FREEZE_MS ?? 120));
+    await win.evaluate((seek) => {
       const s = window.__game().scene.getScene("world");
-      s.time.paused = true;
+      // Hold every effect still for the photo, as it looks SEEK_MS after the cast.
+      s.vfx.kit.hold = true;
+      s.vfx.kit.seek(Number(seek));
       for (const l of s.galleryLabels ?? []) {
         const w = l.getData("w");
         const a = s.me.char.screen;
@@ -91,14 +93,15 @@ const electronPath = require(path.join(ROOT, "desktop", "node_modules", "electro
         const dy = w.y - me.y;
         l.setPosition(a.x + dx * 64, a.y + dy * 64 + 40);
       }
-    });
+    }, Number(process.env.SEEK_MS ?? 110));
     await win.waitForTimeout(300);
-    await win.screenshot({ path: path.join(OUT, `ink-${page}.png`) });
+    await win.screenshot({ path: path.join(OUT, `fx-${page}.png`) });
     await win.evaluate(() => {
       const s = window.__game().scene.getScene("world");
+      s.vfx.kit.hold = false;
       for (const l of s.galleryLabels ?? []) l.destroy();
       s.galleryLabels = [];
-      s.time.paused = false;
+      // (the scene clock keeps running: effects freeze through vfx.kit.hold instead)
     });
     await win.waitForTimeout(1200);
   }

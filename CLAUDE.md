@@ -33,7 +33,7 @@ for porting its systems.
 | Building | Core pillar: the players build, furnish and defend their fortress (Ostoja). Raids outside the story are a **setting** (on by default). | The users love building. |
 | Language | Player-facing content in **Polish**; code, comments, docs, data keys in English. Avoid gendered verb forms where possible; counts via `plural()`. | User request; the two players are different genders. |
 | Art | **PixelLab** (pixellab.ai) generates the hard parts: the **two shared bodies** (male/female, 64 px, 8 rotations) and their motion (run, strike, cast; 5 directions, the other 3 mirrored). Everything else is ours, made from those pixels: path looks by **palette recolour** (`shared/src/data/looks.ts`, `client/src/assets/recolor.ts`), idle/hit/death/roll derived in `tools/pixellab/derive.py`, gear (weapons, head pieces, shoulders, capes) hand-placed pixel parts pinned to per-frame anchors (`tools/pixellab/anchors.py` + `anchor_picks.json`, `parts.py`), armour materials drawn into the tunic. Pixel art drawn at 2× with nearest filtering and whole-pixel zoom. Generations are scarce (40 on the trial): test one direction before buying the rest. Props, ground and the Greyed are Blender renders put through `tools/art/pixelate.py` (art resolution, per-frame palettes, dark outlines) so the whole screen is one pixel style. Free assets (CC0/CC-BY/CC-BY-SA) only with a `CREDITS.md` entry; **nothing paid**. | User decision ("visuals still ugly"; "male/female models, animations within the skills, armour that actually appears"). |
-| Skill VFX | **Exact hit shapes, for now.** Every skill draws the area it really hits (cone wedge, line rectangle, circle at its true radius, bolts as dots the server ends where they stop), flat on the ground in **one accent colour per path** (Thorn vermilion, Bark moss, Blood crimson, Ash ember, Storm pale indigo, Graves lantern teal, Dusk amber, Sting venom green; `client/src/fx/accents.ts`), `client/src/fx/shapes.ts`. Shadow-ink stays the goal: it comes back one effect at a time, drawn over these shapes, never instead of them. Gore keeps its own look. | User decision: the painted ink was "profoundly wrong" (approximate on purpose, so it never matched the hits). |
+| Skill VFX | **Pixel spell effects over the exact hit shapes.** Every skill's effect is built from its data: the element from its weapon (talismans burn, the lantern haunts) or its path (Ash fire, Storm lightning, Graves spirit…), the look from its shape and vfx key (blade smears, thrusts, whirls, explosions, lightning, seals, roots, clouds, volleys), with particles, flashes of light on the night, hit-stop and shake; signature skills have their own recipes (`client/src/fx/spells.ts`). Small sprites are baked by `tools/fx/build.py`; big shapes (smears, rings, seals, blasts, cyclones) are generated in the client at the exact size (`procfx.ts`) so every effect has the characters' pixel size. The flat hit shape stays underneath (`shapes.ts`), so the spectacle never hides what hits. Statuses show on bodies (flames, bubbles, drips, sparks, vines, sigils, stars, shields). | User decision: "outstandingly beautiful" effects; pixel spell FX chosen over ink. |
 | Weapons | **Any path can wield any of 9 weapon types**; each path has 2–3 home weapons (+damage and a path rider). The bar is **path 3 + weapon 3**: the weapon gives LMB, RMB and key 1 from its own **mastery tree** (levelled by use, saved on the host); the path gives its 3 signature skills. Weapons and armour are **visible** on the body (anchored parts + armour materials). | User decision. |
 | Bodies | Each player picks a male or female body; **one body per sex for every path**, dressed by the path's look and gear. | User request. |
 | Combat | Skills are data (aimed shapes + effects + statuses), interpreted by the server; Greyed attacks are telegraphed on the ground; executions, downed/revive, wipes restart the wave. | design.md §5. |
@@ -69,8 +69,10 @@ client/   Phaser 3 + Vite.
                      Lighting (night multiply + lights), Petals (falling blossom).
   src/cinematic/     CinematicPlayer (camera, DOM overlay, events).
   src/entities/      Character (paper doll: dyed body + gear on anchors), UnitSprite (Greyed, thralls, corpses).
-  src/fx/            Vfx (skill visuals, blood, gore, damage numbers), Telegraphs (enemy wind-ups);
-                     shapes.ts (exact hit shapes for skills and telegraphs); accents.ts (one colour per path).
+  src/fx/            Vfx (combat events → effects, blood, gore, damage numbers, status loops), Telegraphs;
+                     spells.ts (every skill's effect recipe), fxkit.ts (effect sprites, pixel particles,
+                     lightning, temporary lights, hit-stop), procfx.ts (big shapes at exact size),
+                     shapes.ts (exact hit shapes), accents.ts (one colour per path).
   src/assets/        Atlas loading (per game), recolor.ts (looks: dyes, skin, armour materials; gear dyes).
   src/net/           Prediction, Interpolation, loadout.ts (bar/look of a synced player).
   src/ui/            Hud (bars, skill slots), Mastery (K panel), pixelIcons.ts (24 px skill icons from each
@@ -88,6 +90,7 @@ tools/
           outfits.py (path outfits, hair, weapons, Greyed), anims.py (poses), models.py, materials.py,
           decals.py, ground.py, common.py.
   audio/  build.py (music, ambience, effects, combat sounds).
+  fx/     build.py (skill-effect pixel animations in element palettes → client/public/assets/fx/spells.*).
   catalogue/ catalogue.ts (writes docs/catalogue.md).
   e2e/    play.cjs (two Electron windows host/join and fight), menu.cjs (walks the menus, creation,
           lobby, mastery panel), gallery.cjs (every skill's shape, page by page), icons.cjs (every icon on
@@ -114,6 +117,7 @@ python tools/pixellab/anchors.py body_male body_female && pnpm art:pack --palett
 node tools/e2e/menu.cjs / gallery.cjs / icons.cjs   # after building client + desktop; under xvfb-run on Linux
 pnpm catalogue      # regenerate docs/catalogue.md
 pnpm audio          # re-synthesise audio (needs: numpy + ffmpeg)
+python3 tools/fx/build.py   # skill-effect sprites (+ tools/fx/out/sheet.png); gallery: SEEK_MS=120 node tools/e2e/gallery.cjs
 ```
 
 Automated checks drive the real Electron app (`tools/e2e/play.cjs`, Playwright's `_electron`): the

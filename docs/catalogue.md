@@ -7,7 +7,7 @@
 
 - [shared](#shared) — 22 files, 5 test files
 - [server](#server) — 10 files, 4 test files
-- [client](#client) — 31 files, 3 test files
+- [client](#client) — 34 files, 3 test files
 - [desktop](#desktop) — 3 files, 1 test files
 - [tools/catalogue](#toolscatalogue) — 1 files, 1 test files
 - [Python tools](#python-tools)
@@ -39,7 +39,7 @@ Pure game logic and data used by server and client. No Phaser, Colyseus or Node 
 | `shared/src/maps/index.ts` | — | `MAPS`, `START_MAP` | `shared/src/map`, `shared/src/maps/soramei` |
 | `shared/src/maps/soramei.ts` | Dziedziniec Soramei — the courtyard of the ruined Soramei Keep, the night of the escape (Act 1). | `SORAMEI_COURTYARD` | `shared/src/maps/builder` |
 | `shared/src/movement.ts` | One player's movement state. | `Body`, `InputFrame`, `newBody`, `sanitizeInput`, `isInvulnerable`, `stepBody`, `moveWithCollision`, `overlaps`, `copyBody` | `shared/src/balance`, `shared/src/map`, `shared/src/view` |
-| `shared/src/types.ts` | Options a client sends when joining the room. | `JoinOptions`, `FxEvent` | — |
+| `shared/src/types.ts` | Options a client sends when joining the room. | `JoinOptions`, `HitCause`, `FxEvent` | — |
 | `shared/src/view.ts` | Top-down 3/4 view (like Dinusie): square cells, the ground drawn flat, characters and props drawn upright as seen slightly from the front. | `CELL`, `Z_PX`, `worldToScreen`, `screenToWorld`, `screenDirToWorld`, `DIRECTIONS`, `directionIndex`, `depthOf` | — |
 
 Tests: `shared/src/cinematic.test.ts`, `shared/src/i18n.test.ts`, `shared/src/maps/maps.test.ts`, `shared/src/movement.test.ts`, `shared/src/view.test.ts`
@@ -92,6 +92,7 @@ Tests: `shared/src/cinematic.test.ts`, `shared/src/i18n.test.ts`, `shared/src/ma
 - `overlaps` (function, `shared/src/movement.ts`) — Does a circle at (x, y) overlap any blocked cell?
 - `copyBody` (function, `shared/src/movement.ts`) — Copies the fields the client needs to rewind its prediction to a server snapshot.
 - `JoinOptions` (interface, `shared/src/types.ts`) — Options a client sends when joining the room.
+- `HitCause` (type, `shared/src/types.ts`) — How a blow was dealt: it decides how a body breaks (cut, crushed, burned, shocked, rotted, pierced).
 - `FxEvent` (type, `shared/src/types.ts`) — A transient combat event the server broadcasts for visuals and sound (MSG.fx).
 - `CELL` (const, `shared/src/view.ts`) — Screen pixels per cell (32 art pixels at 2×, the size of a PixelLab top-down tile).
 - `Z_PX` (const, `shared/src/view.ts`) — Screen pixels per unit of height.
@@ -108,7 +109,7 @@ Colyseus server. `game/` is the network-free simulation; `rooms/` forwards messa
 
 | File | Purpose | Exports | Depends on |
 |---|---|---|---|
-| `server/src/game/Combat.ts` | Damage-over-time caps (dps), so stacking stays strong but bounded. | `Projectile`, `Zone`, `Arena`, `fighters`, `fighterById`, `partnerOf`, `targetable`, `foesOf`, `addStatus`, `speedOf`, `tickStatuses`, `DamageOpts`, `dealDamage`, `heal`, `gainResource`, `canCast`, `startCast`, `tickCasts`, `tickProjectiles`, `gainMastery`, `push`, `tickZones`, `unitAttackHits` | `server/src/game/fighters`, @broken-ash/shared |
+| `server/src/game/Combat.ts` | Damage-over-time caps (dps), so stacking stays strong but bounded. | `Projectile`, `Zone`, `Arena`, `fighters`, `fighterById`, `partnerOf`, `targetable`, `foesOf`, `addStatus`, `speedOf`, `tickStatuses`, `DamageOpts`, `causeOf`, `dealDamage`, `heal`, `gainResource`, `canCast`, `startCast`, `tickCasts`, `tickProjectiles`, `gainMastery`, `push`, `tickZones`, `unitAttackHits` | `server/src/game/fighters`, @broken-ash/shared |
 | `server/src/game/Pathing.ts` | Flow fields: for a goal cell, every reachable cell's walking distance to it (8-connected, no corner cutting). | `FlowField` | @broken-ash/shared |
 | `server/src/game/Profiles.ts` | What the host remembers about each character between sessions: weapon mastery, tree picks and the last weapon, path and look. | `Profile`, `Profiles` | @broken-ash/shared, node:fs, node:path |
 | `server/src/game/Units.ts` | A thrall raised by the Path of Graves: a Shambler's body fighting on the players' side. | `thrallDef`, `makeUnit`, `tickUnits` | `server/src/game/Combat`, `server/src/game/Pathing`, `server/src/game/fighters`, @broken-ash/shared |
@@ -127,6 +128,7 @@ Tests: `server/src/game/Combat.test.ts`, `server/src/game/Mastery.test.ts`, `ser
 - `targetable` (function, `server/src/game/Combat.ts`) — Can this fighter be hit right now?
 - `foesOf` (function, `server/src/game/Combat.ts`) — Enemies of a faction that can be hit.
 - `speedOf` (function, `server/src/game/Combat.ts`) — Movement multiplier from statuses (and the path's own speed for players).
+- `causeOf` (function, `server/src/game/Combat.ts`) — How a skill's blows land, from its look and shape: it decides how a body breaks.
 - `dealDamage` (function, `server/src/game/Combat.ts`) — Applies damage after modifiers, shields and invulnerability.
 - `canCast` (function, `server/src/game/Combat.ts`) — Can this skill be cast now?
 - `gainMastery` (function, `server/src/game/Combat.ts`) — Weapon-skill damage is mastery XP for that weapon type; a new level is announced.
@@ -160,9 +162,12 @@ Phaser 3 + Vite client: rendering, prediction, cinematics, audio, DOM UI.
 | `client/src/desktop.ts` | What the desktop app found out when it started hosting (mirrors desktop/src/network.ts). | `HostReport`, `DesktopBridge`, `desktop` | — |
 | `client/src/entities/Character.ts` | The texture key of a body dressed in a look. | `CharacterState`, `Character` | `client/src/assets/atlases`, `client/src/assets/recolor`, `client/src/audio/AudioDirector`, `client/src/net/loadout`, @broken-ash/shared, phaser |
 | `client/src/entities/UnitSprite.ts` | The synced unit fields (server/src/schema/WorldState.ts UnitState). | `UnitView`, `UnitSprite` | `client/src/assets/atlases`, `client/src/net/Interpolation`, @broken-ash/shared, phaser |
-| `client/src/fx/Vfx.ts` | Screen position (feet) and sprite height of a fighter, if on screen. | `VfxHooks`, `Vfx`, `Telegraphs` | `client/src/fx/shapes`, `client/src/net/loadout`, `client/src/settings`, @broken-ash/shared, phaser |
+| `client/src/fx/Vfx.ts` | Screen position (feet) and sprite height of a fighter, if on screen. | `VfxHooks`, `Vfx`, `Telegraphs` | `client/src/fx/fxkit`, `client/src/fx/shapes`, `client/src/fx/spells`, `client/src/net/loadout`, `client/src/settings`, `client/src/world/Lighting`, @broken-ash/shared, phaser |
 | `client/src/fx/accents.ts` | One accent colour per path: its skill shapes, icons and highlights are drawn in it. | `ACCENTS` | @broken-ash/shared |
+| `client/src/fx/fxkit.ts` | The effect toolkit every skill, hit and death is built from: - sprites: the pixel animations from tools/fx/build.py (atlas "spells"), played at a point with an aim, a scale, a blend and a depth, optionally following a fi | `ART`, `DEPTH_GLOW`, `DEPTH_GROUND`, `DEPTH_GORE_AIR`, `Ramp`, `RAMP_COLORS`, `PlayOpts`, `Particle`, `Handle`, `FxKit` | `client/src/fx/procfx`, `client/src/world/Lighting`, phaser |
+| `client/src/fx/procfx.ts` | Big effect shapes generated in the client at the exact size a skill needs: blade smears, whirls, shockwave rings, ground seals and cyclones. | `ProcKind`, `ProcFx` | `client/src/fx/fxkit`, phaser |
 | `client/src/fx/shapes.ts` | Skill visuals as their exact hit shapes: a cone is the wedge the server tests, a line is the rectangle, a circle has the true radius, all flat on the ground in the caster's path accent. | `DEPTH_FX_GROUND`, `DEPTH_FX`, `groundCircle`, `wedge`, `rect`, `ShapePainter` | @broken-ash/shared, phaser |
+| `client/src/fx/spells.ts` | Every skill's effect, built from its data: the element comes from the weapon (a talisman burns, a lantern haunts) or, for a path's own skills, from the path (Ash is fire, Storm lightning, Graves spirit…); the look from t | `PATH_RAMP`, `rampOf`, `Feel`, `SpellFx` | `client/src/fx/fxkit`, @broken-ash/shared |
 | `client/src/main.ts` | The settings panel from the title screen (the same panel as the in-game pause menu). | — | `client/src/desktop`, `client/src/fx/accents`, `client/src/net`, `client/src/net/loadout`, `client/src/scenes/BootScene`, `client/src/scenes/WorldScene`, `client/src/settings`, `client/src/style.css`, `client/src/ui/Mastery`, `client/src/ui/dom`, `client/src/ui/hostReport`, `client/src/ui/menu/Menu`, `client/src/ui/pixelIcons`, @broken-ash/shared, @fontsource/cormorant-garamond, @fontsource/shippori-mincho, phaser |
 | `client/src/net/Interpolation.ts` | Renders a remote player slightly in the past, between the two snapshots around that moment. | `Snapshot`, `Interpolation` | @broken-ash/shared |
 | `client/src/net/Prediction.ts` | Movement multiplier the server will apply (path speed, slows, rooted, downed). | `Intent`, `Prediction` | @broken-ash/shared |
@@ -205,11 +210,17 @@ Tests: `client/src/net/Prediction.test.ts`, `client/src/net.test.ts`, `client/sr
 - `Vfx` (class, `client/src/fx/Vfx.ts`) — Turns the server's combat events into things you see: slashes, bolts, burning ground, lightning, blood.
 - `Telegraphs` (class, `client/src/fx/Vfx.ts`) — Red telegraphs on the ground for the Greyed's coming attacks: they fill as the blow nears.
 - `ACCENTS` (const, `client/src/fx/accents.ts`) — One accent colour per path: its skill shapes, icons and highlights are drawn in it.
+- `ART` (const, `client/src/fx/fxkit.ts`) — The effect toolkit every skill, hit and death is built from: - sprites: the pixel animations from tools/fx/build.py (atlas "spells"), played at a point with an aim, a scale, a blend and a depth, optionally following a fi
+- `DEPTH_GLOW` (const, `client/src/fx/fxkit.ts`) — Emissive effects glow above the night lighting (Lighting DEPTH_LIGHT 9.5e6); ground marks just above it.
+- `DEPTH_GORE_AIR` (const, `client/src/fx/fxkit.ts`) — Blood and debris sit under the lighting: the night darkens them like everything else on the ground.
+- `RAMP_COLORS` (const, `client/src/fx/fxkit.ts`) — The hottest and the base colour of each ramp (tools/fx/build.py RAMPS): particles and lights.
 - `DEPTH_FX_GROUND` (const, `client/src/fx/shapes.ts`) — Above the night lighting (Lighting DEPTH_LIGHT 9.5e6), so the accent colour reads the same next to a lantern and in the dark.
 - `groundCircle` (function, `client/src/fx/shapes.ts`) — A world-space circle on the ground (the top-down ground is drawn flat, so it stays round).
 - `wedge` (function, `client/src/fx/shapes.ts`) — A world-space wedge (cone hit test: shared/src/combat/geometry.ts) as screen points.
 - `rect` (function, `client/src/fx/shapes.ts`) — A world-space rectangle from (x, y) along `aim` (line hit test) as screen points.
 - `ShapePainter` (class, `client/src/fx/shapes.ts`) — Draws skills' hit shapes, flashing in and fading out.
+- `PATH_RAMP` (const, `client/src/fx/spells.ts`) — Every skill's effect, built from its data: the element comes from the weapon (a talisman burns, a lantern haunts) or, for a path's own skills, from the path (Ash is fire, Storm lightning, Graves spirit…); the look from t
+- `rampOf` (function, `client/src/fx/spells.ts`) — A skill's element: its weapon's, its path's, or what its look says (fire is fire on any path).
 - `Interpolation` (class, `client/src/net/Interpolation.ts`) — Renders a remote player slightly in the past, between the two snapshots around that moment.
 - `Prediction` (class, `client/src/net/Prediction.ts`) — Client-side prediction for your own character.
 - `LoadoutView` (interface, `client/src/net/loadout.ts`) — The synced fields a player's bar and look are resolved from (server/src/schema/WorldState.ts).
@@ -290,6 +301,7 @@ Tests: `tools/catalogue/catalogue.test.ts`
 | `tools/art/pixelate.py` | The map's pixel-art pass: takes the Blender-rendered prop and ground atlases and turns every frame into pixel art that matches the PixelLab characters (one art pixel = 2×2 screen pixels), keeping the detail and the baked | `pixelate`, `run`, `run_chars` |
 | `tools/art/render.py` | Renders every sprite with Blender (bpy) and packs them into atlases for the client. | `render_frame`, `props` |
 | `tools/audio/build.py` | Synthesises the game's music, ambience and sound effects into .ogg files (numpy + ffmpeg). | `t_axis`, `midi`, `fft_filter`, `env`, `pluck`, `flute`, `drum`, `bell`, `reverb`, `pan`, `place`, `mixin`, `loop_seamless`, `master`, `write_ogg`, `scale_note`, `music_soramei_night`, `amb_night_wind`, `sfx_title_gong`, `sfx_cin_split`, `sfx_gate_bang`, `footstep`, `sfx_dodge`, `ui_click`, `ui_hover`, `ui_confirm`, `noise`, `sweep_band`, `blade`, `impact_flesh`, `splatter`, `fire`, `thunder`, `wind_gust`, `spirit`, `bow`, `throw`, `poison_hiss`, `roots_crack`, `groan`, `roar`, `horn`, `chime`, `heartbeat`, `music_gate_fight`, `combat_sfx`, `main` |
+| `tools/fx/build.py` | Skill effects as pixel art: every effect is a short animation drawn procedurally at the game's art resolution (one art pixel = 2×2 screen pixels, like the characters) in hard-edged element palettes, then packed into one  | `hexrgb`, `noise2`, `grid`, `to_rgba`, `smooth`, `slash`, `streak`, `ring`, `sparks`, `explosion`, `flames`, `cloud`, `cyclone`, `roots`, `pillar`, `sigil`, `bubble`, `hands`, `mote`, `drip`, `crackle`, `vines`, `stars`, `proj`, `build`, `preview` |
 | `tools/pixellab/anchors.py` | Finds where gear attaches on every body frame: head (centre + top), neck, torso, shoulders, and both hands with the arm's direction. | `region_map`, `components`, `anchors_for`, `candidates`, `pick_sheet`, `smooth`, `frames`, `resolve`, `own_shoulders`, `standing`, `moved`, `snap`, `median3`, `steady_head`, `compute`, `qa` |
 | `tools/pixellab/api.py` | Thin client for PixelLab's REST API (v2), used to build the game's sprites. | `call`, `log`, `wait` |
 | `tools/pixellab/clean.py` | Strips effects PixelLab baked into a clip (the fireball template draws a fire orb in some frames): the orb's colours, and any blob left floating off the figure, are erased, since spell visuals are the game's own (Vfx.ts) | `components`, `clean` |
@@ -304,5 +316,6 @@ Tests: `tools/catalogue/catalogue.test.ts`
 
 - **`client/public/assets/audio/`** (54 files): `amb_night_wind`, `music_gate_fight`, `music_soramei_night`, `sfx_bell`, `sfx_blade`, `sfx_blade_heavy`, `sfx_blade_spin`, `sfx_blood`, `sfx_blood_heavy`, `sfx_blowpipe`, `sfx_bow`, `sfx_bow_heavy`, `sfx_burst`, `sfx_cin_split`, `sfx_dodge`, `sfx_downed`, `sfx_drink`, `sfx_execute`, `sfx_fire`, `sfx_fire_heavy`, `sfx_gate_bang`, `sfx_gong_small`, `sfx_gore`, `sfx_greyed_death`, `sfx_groan_0`, `sfx_groan_1`, `sfx_groan_2`, `sfx_hit_flesh`, `sfx_horn`, `sfx_poison`, `sfx_revive`, `sfx_roots`, `sfx_slam`, `sfx_smoke`, `sfx_spirit`, `sfx_spirit_heavy`, `sfx_step_soft_0`, `sfx_step_soft_1`, `sfx_step_soft_2`, `sfx_step_soft_3`, `sfx_step_stone_0`, `sfx_step_stone_1`, `sfx_step_stone_2`, `sfx_step_stone_3`, `sfx_tapper_roar`, `sfx_throw`, `sfx_thunder`, `sfx_title_gong`, `sfx_victory`, `sfx_whoosh`, `sfx_wind`, `ui_click`, `ui_confirm`, `ui_hover`
 - **`client/public/assets/chars/`** (13 files): `blood_female`, `body_female`, `body_male`, `index`, `runner_greyed`, `shambler_greyed`, `thorn_male`
+- **`client/public/assets/fx/`** (2 files): `spells`
 - **`client/public/assets/gear/`** (2 files): `gear`
 - **`client/public/assets/sprites/`** (10 files): `fx`, `ground`, `ground_px`, `props`, `props_px`

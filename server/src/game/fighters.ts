@@ -1,3 +1,4 @@
+import type { HitCause } from "@broken-ash/shared";
 import type { Body, BodyType, CharacterLook, EnemyAttack, EnemyDef, Faction, InputFrame, PathDef, PeopleId, Picks, SkillDef, StatusId, WeaponId } from "@broken-ash/shared";
 
 /** A status on a fighter. `value` is dps for damage-over-time, the remaining shield, a % for slow/haste... */
@@ -26,6 +27,8 @@ export interface Fighter {
   /** Accumulates time for damage-over-time ticks. */
   dotClock: number;
   pos(): { x: number; y: number };
+  /** The last blow taken (direction and cause), so a death knows how the body breaks. */
+  lastHit?: { dx: number; dy: number; cause: HitCause };
 }
 
 export interface CastState {

@@ -7,6 +7,7 @@ import {
   type Effect,
   type Faction,
   type FxEvent,
+  type HitCause,
   type Shape,
   type SkillDef,
   type StatusId,
@@ -146,8 +147,28 @@ export function tickStatuses(a: Arena, dt: number) {
 export interface DamageOpts {
   dot?: StatusId;
   fire?: boolean;
+  /** The blow's direction (radians); otherwise from the source towards the target. */
+  aim?: number;
+  cause?: HitCause;
+  /** The status this blow detonated (a special burst on the client). */
+  det?: StatusId;
   /** Bonus multiplier from the skill (combos). */
   mult?: number;
+}
+
+const DOT_CAUSE: Partial<Record<StatusId, HitCause>> = { burn: "fire", poison: "rot", bleed: "blood", static: "shock" };
+
+/** How a skill's blows land, from its look and shape: it decides how a body breaks. */
+export function causeOf(skill: SkillDef): HitCause {
+  const v = skill.vfx;
+  if (skill.fire) return "fire";
+  if (/lightning|tempest|static|ward/.test(v)) return "shock";
+  if (/rot|boil|smoke|curse|wisp|poison|dart/.test(v)) return "rot";
+  if (/raise|feast|toll|flare|soul|spirit|wisp/.test(v)) return "spirit";
+  if (/blood|drink|veil|needle|lance|seal|sigil|flood/.test(v)) return "blood";
+  if (/quake|slam|charge|overhead|cleave|sunder|moon|roots|grove/.test(v)) return "crush";
+  if (skill.shape.kind === "projectile" || /arrow|knife|volley|thrust|hook/.test(v)) return "pierce";
+  return "cut";
 }
 
 /** Applies damage after modifiers, shields and invulnerability. Returns the damage actually dealt. */
@@ -172,7 +193,34 @@ export function dealDamage(a: Arena, src: Fighter | undefined, target: Fighter, 
   const before = target.hp;
   target.hp -= dmg;
   target.sinceHit = 0;
-  a.fx.push({ t: "hit", id: target.id, amount: Math.max(1, Math.round(dmg)), kind: opts.dot ? "dot" : "damage", status: opts.dot, big: dmg >= target.hpMax * 0.15 });
+  // Which way the blow travelled: the skill's aim, else from the attacker to the target.
+  let dx = 0;
+  let dy = 0;
+  if (opts.aim !== undefined) {
+    dx = Math.cos(opts.aim);
+    dy = Math.sin(opts.aim);
+  } else if (src) {
+    const sp0 = src.pos();
+    const tp0 = target.pos();
+    const len = Math.hypot(tp0.x - sp0.x, tp0.y - sp0.y) || 1;
+    dx = (tp0.x - sp0.x) / len;
+    dy = (tp0.y - sp0.y) / len;
+  }
+  const cause: HitCause = opts.cause ?? (opts.dot ? DOT_CAUSE[opts.dot] ?? "blood" : opts.fire ? "fire" : "cut");
+  target.lastHit = { dx, dy, cause };
+  a.fx.push({
+    t: "hit",
+    id: target.id,
+    amount: Math.max(1, Math.round(dmg)),
+    kind: opts.dot ? "dot" : "damage",
+    status: opts.dot,
+    big: dmg >= target.hpMax * 0.15,
+    src: src?.id,
+    dx: Math.round(dx * 100) / 100,
+    dy: Math.round(dy * 100) / 100,
+    cause,
+    det: opts.det,
+  });
 
   // Poise: enough heavy hits stagger (and expose to an execution).
   if (poise > 0 && target.staggerT <= 0) {
@@ -366,7 +414,7 @@ function applyToTarget(a: Arena, p: PlayerSim, f: Fighter, effects: Effect[], sk
     if (f.dead) break;
     switch (e.kind) {
       case "damage":
-        dealt += dealDamage(a, p, f, e.amount, e.poise ?? 0, { fire });
+        dealt += dealDamage(a, p, f, e.amount, e.poise ?? 0, { fire, aim, cause: causeOf(skill) });
         break;
       case "status":
         if ((e.target ?? "enemy") === "enemy") addStatus(f, e.status, e.duration, e.value ?? defaultValue(e.status), p.id);
@@ -381,7 +429,7 @@ function applyToTarget(a: Arena, p: PlayerSim, f: Fighter, effects: Effect[], sk
         if (s) {
           // Consume the status: the bigger the stack, the bigger the burst.
           f.statuses.delete(e.status);
-          dealt += dealDamage(a, p, f, e.damage * (1 + Math.min(1.5, s.value / 8)), 20, { fire: e.status === "burn" });
+          dealt += dealDamage(a, p, f, e.damage * (1 + Math.min(1.5, s.value / 8)), 20, { fire: e.status === "burn", aim, cause: causeOf(skill), det: e.status });
         }
         break;
       }
