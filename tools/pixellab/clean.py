@@ -48,13 +48,16 @@ def clean(path):
     for y in range(im.height):
         for x in range(im.width):
             p = px[x, y]
-            if p[3] >= 128 and any(sum((a - b) ** 2 for a, b in zip(p[:3], o)) < 700 for o in ORB):
+            r, g, bl = p[:3]
+            # The orb's colours, and its yellow and hot-orange rim (the bodies have neither).
+            hot = (r > 190 and g > 150 and bl < 120) or (r > 220 and 70 < g < 170 and bl < 70)
+            if p[3] >= 128 and (hot or any(sum((a - b) ** 2 for a, b in zip(p[:3], o)) < 700 for o in ORB)):
                 px[x, y] = (0, 0, 0, 0)
                 erased += 1
     comps = sorted(components(im), key=len, reverse=True)
     for comp in comps[1:]:
         lum = sum(0.299 * px[p][0] + 0.587 * px[p][1] + 0.114 * px[p][2] for p in comp) / len(comp)
-        if lum > 110 or len(comp) > 12 or len(comp) <= 4:
+        if lum > 110 or len(comp) <= 25:
             for p in comp:
                 px[p] = (0, 0, 0, 0)
             erased += len(comp)

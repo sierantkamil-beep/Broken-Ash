@@ -18,6 +18,7 @@ Usage: python tools/pixellab/pack.py [--palette tools/pixellab/body_palette.json
        (no keys = every folder under src/)
 """
 import json
+import math
 import os
 import sys
 
@@ -93,8 +94,37 @@ def frames_of(folder):
     return [snap(im, PALETTE) for im in ims] if PALETTE else ims
 
 
+def rel_anchor(a, pivot, mirror_w=None):
+    """A frame's anchors relative to its pivot (feet), as a flat list the client reads:
+    [hand x, y, angle, off x, y, angle, head x, y, top y, neck x, y, torso x, y, shoulder L x, y, R x, y].
+    Hands are null when stowed or hidden. A mirrored frame flips x and angles."""
+    if a is None:
+        return None
+
+    def pt(p):
+        x, y = p[0], p[1]
+        if mirror_w is not None:
+            x = mirror_w - 1 - x
+        return [round(x - pivot[0], 1), round(y - pivot[1], 1)]
+
+    def hand(h):
+        if not h:
+            return [None, None, None]
+        x, y = pt(h)
+        ang = h[2] if mirror_w is None else math.pi - h[2]
+        return [x, y, round(ang, 3)]
+
+    sl, sr = a["shoulders"]
+    if mirror_w is not None:
+        sl, sr = sr, sl
+    return [*hand(a.get("hand")), *hand(a.get("off")), *pt(a["head"]), round(a["top"] - pivot[1], 1), *pt(a["neck"]), *pt(a["torso"]), *pt(sl), *pt(sr)]
+
+
 def pack(key):
     src = os.path.join(SRC, key)
+    apath = os.path.join(src, "anchors.json")
+    anchors = json.load(open(apath)) if os.path.exists(apath) else {}
+    rel = {}
     frames = []  # (name, image, pivot)
     counts = {}
     height = 0
@@ -117,6 +147,9 @@ def pack(key):
                 height = (box[3] - box[1]) if box else imgs[0].height
             for n, im in enumerate(imgs):
                 frames.append((f"{anim}/{i}/{n}", im, pivot))
+                r = rel_anchor(anchors.get(f"{anim}/{d}/{n}"), pivot)
+                if r:
+                    rel[f"{anim}/{i}/{n}"] = r
     if not frames:
         raise SystemExit(f"{key}: no frames under {src}")
     # A missing direction falls back to its mirror, then to south, so every lookup resolves.
@@ -133,6 +166,10 @@ def pack(key):
                 if hit:
                     im = hit[1].transpose(Image.FLIP_LEFT_RIGHT)
                     extra.append((f"{anim}/{i}/{k}", im, (im.width - hit[2][0], hit[2][1])))
+                    r = rel_anchor(anchors.get(f"{anim}/{DIRS[mirror]}/{k}"), hit[2], mirror_w=im.width)
+                    if r:
+                        # Mirrored pixels: x measured from the mirrored pivot is just negated.
+                        rel[f"{anim}/{i}/{k}"] = r
                 else:
                     hit = next((f for f in frames if f[0] == f"{anim}/0/{k}"), None)
                     if hit:
@@ -160,6 +197,8 @@ def pack(key):
         "anims": counts,
         "height": height,
     }
+    if rel:
+        meta["anchors"] = rel
     if PALETTE:
         regions = {}
         for c in PALETTE:

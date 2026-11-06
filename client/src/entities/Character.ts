@@ -1,14 +1,29 @@
 import Phaser from "phaser";
-import { BALANCE, depthOf, directionIndex, PATH_LOOKS, PATHS, worldToScreen, type PathId, type SkillDef } from "@broken-ash/shared";
+import { BALANCE, DEFAULT_LOOKS, depthOf, directionIndex, PATHS, worldToScreen, type CharacterLook, type PathId, type SkillDef, type WeaponId } from "@broken-ash/shared";
 import { ALL_SKILLS } from "../net/loadout";
 import type { AudioDirector } from "../audio/AudioDirector";
-import { recolorAtlas } from "../assets/recolor";
+import { gearFor, recolorAtlas } from "../assets/recolor";
 import { atlasMeta, atlasOr, charKey, ensureAtlas, resolveAnim, type AtlasMeta } from "../assets/atlases";
 
 const IDLE_FPS = 6;
 
-/** The texture key of a body dressed in a path's look. */
-const dressedKey = (path: PathId, body: string) => `body_${body}@${path}`;
+/** The texture key of a body dressed in a look. */
+const dressedKey = (body: string, look: CharacterLook) => `body_${body}@${look.skin}.${look.cloth}.${look.trim}.${look.armour}`;
+/** Gear sprites rotate in this many steps (tools/pixellab/parts.py ANGLES). */
+const ANGLES = 32;
+/** Which gear sprites each weapon shows in the main and off hand (parts.py WEAPON_PARTS). */
+const WEAPON_PARTS: Record<WeaponId, [string | null, string | null]> = {
+  blades: ["katana", "wakizashi"],
+  glaive: ["glaive", null],
+  greatblade: ["nodachi", null],
+  brush: ["brush", null],
+  talismans: ["talismans", "talismans"],
+  fan: ["fan", null],
+  lantern: ["lantern", null],
+  bow: [null, "bow"],
+  knives: ["knife", "knife"],
+};
+const angleFrame = (a: number) => ((Math.round(a / ((2 * Math.PI) / ANGLES)) % ANGLES) + ANGLES) % ANGLES;
 /** Cells travelled per full run cycle: matches the stride of the drawn run, so feet don't slide. */
 const STRIDE_PER_CYCLE = 1.9;
 const DEATH_FRAME_MS = 110;
@@ -33,6 +48,15 @@ export class Character {
   private readonly label: Phaser.GameObjects.Text;
   private atlas: string | null;
   private meta!: AtlasMeta;
+  private look: CharacterLook;
+  private weapon: WeaponId;
+  private gear: string | null = null;
+  private readonly cape: Phaser.GameObjects.Image;
+  private readonly head: Phaser.GameObjects.Image;
+  private readonly shoulderL: Phaser.GameObjects.Image;
+  private readonly shoulderR: Phaser.GameObjects.Image;
+  private readonly weaponMain: Phaser.GameObjects.Image;
+  private readonly weaponOff: Phaser.GameObjects.Image;
   private bar: SkillDef[] = [];
   private anim = "idle";
   private frameF = 0;
@@ -55,17 +79,26 @@ export class Character {
     private readonly audio: AudioDirector,
     private readonly groundAt: (x: number, y: number) => string | null,
   ) {
-    // The shared PixelLab body, dressed in the path's look; older per-path renders stand in until it loads.
-    const bodyKey = `body_${body}`;
+    // The shared PixelLab body, dressed in the look; older per-path renders stand in until it loads.
+    this.look = DEFAULT_LOOKS[path];
+    this.weapon = PATHS[path].homeWeapons[0];
     const legacy = charKey(path, body);
-    this.atlas = atlasOr(scene, dressedKey(path, body), [legacy, charKey(path, body === "male" ? "female" : "male"), "thorn_male", "blood_female"]);
-    void ensureAtlas(scene, bodyKey).then((ok) => {
-      if (ok && recolorAtlas(scene, bodyKey, PATH_LOOKS[path], dressedKey(path, body))) this.useAtlas(dressedKey(path, body));
+    this.atlas = atlasOr(scene, dressedKey(body, this.look), [legacy, charKey(path, body === "male" ? "female" : "male"), "thorn_male", "blood_female"]);
+    void ensureAtlas(scene, `body_${body}`).then((ok) => {
+      if (ok) this.dress();
       else
         void ensureAtlas(scene, legacy).then((ok2) => {
           if (ok2) this.useAtlas(legacy);
         });
     });
+    const part = () => scene.add.image(0, 0, "fx", "shadow").setVisible(false);
+    this.cape = part();
+    this.head = part();
+    this.shoulderL = part();
+    this.shoulderR = part();
+    this.weaponMain = part();
+    this.weaponOff = part();
+    layer.add([this.cape, this.head, this.shoulderL, this.shoulderR, this.weaponMain, this.weaponOff]);
     this.shadow = scene.add.image(0, 0, "fx", "shadow").setScale(0.62, 0.62);
     this.sprite = scene.add.sprite(0, 0, this.atlas ?? "fx", this.atlas ? "idle/0/0" : "shadow");
     this.label = scene.add
@@ -86,6 +119,25 @@ export class Character {
   /** Pixel-art set and its scale, for whole-pixel camera zoom. */
   get pixelScale(): number | null {
     return this.meta.pixel ? this.meta.scale : null;
+  }
+
+  /** Changes what the character wears (the body is re-dyed, gear re-coloured). */
+  setLook(look: CharacterLook) {
+    if (JSON.stringify(look) === JSON.stringify(this.look)) return;
+    this.look = look;
+    this.dress();
+  }
+
+  setWeapon(weapon: WeaponId) {
+    this.weapon = weapon;
+  }
+
+  private dress() {
+    const src = `body_${this.body}`;
+    if (!this.scene.textures.exists(src)) return;
+    const key = dressedKey(this.body, this.look);
+    if (recolorAtlas(this.scene, src, this.look, key)) this.useAtlas(key);
+    this.gear = gearFor(this.scene, this.look);
   }
 
   private useAtlas(key: string | null) {
@@ -133,7 +185,7 @@ export class Character {
     this.shadow.setPosition(scr.x, scr.y).setDepth(this.depth - 1);
     this.label.setPosition(scr.x, scr.y - this.meta.height - 14).setScale(1 / this.scene.cameras.main.zoom);
     if (!this.atlas) {
-      const k = atlasOr(this.scene, dressedKey(this.path, this.body), [charKey(this.path, this.body), "thorn_male", "blood_female"]);
+      const k = atlasOr(this.scene, dressedKey(this.body, this.look), [charKey(this.path, this.body), "thorn_male", "blood_female"]);
       if (!k) return;
       this.useAtlas(k);
     }
@@ -197,6 +249,76 @@ export class Character {
     this.wasRolling = s.dodgeT > 0;
     const name = `${anim}/${dir}/${frame}`;
     if (this.sprite.texture.key !== atlas || this.sprite.frame.name !== name) this.sprite.setTexture(atlas, name);
+    this.placeGear(name, dir, frame, scr);
+  }
+
+  /**
+   * The paper doll: head piece, shoulders, cape and weapons pinned to this frame's anchors, each
+   * in front of or behind the body depending on which way the character faces.
+   */
+  private placeGear(name: string, dir: number, frame: number, scr: { x: number; y: number }) {
+    const parts = [this.cape, this.head, this.shoulderL, this.shoulderR, this.weaponMain, this.weaponOff];
+    const a = this.meta.anchors?.[name];
+    const gear = this.gear;
+    if (!a || !gear) {
+      for (const p of parts) p.setVisible(false);
+      return;
+    }
+    const sc = this.meta.scale;
+    const at = (x: number | null, y: number | null) => ({ x: scr.x + (x ?? 0) * sc, y: scr.y + (y ?? 0) * sc });
+    const mirror = dir >= 5;
+    const view = dir === 2 || dir === 6 ? "side" : dir >= 3 && dir <= 5 ? "back" : "front";
+    const away = view === "back";
+    const d = this.depth;
+    const show = (img: Phaser.GameObjects.Image, frameName: string, p: { x: number; y: number }, depth: number, flip = mirror) => {
+      if (!this.scene.textures.get(gear).has(frameName)) return img.setVisible(false);
+      return img.setTexture(gear, frameName).setPosition(p.x, p.y).setScale(sc).setFlipX(flip).setDepth(depth).setVisible(true);
+    };
+    const L = this.look;
+
+    // Head piece on the head anchor (the mask has nothing to show from behind).
+    if (L.head === "none" || (L.head === "mask" && away)) this.head.setVisible(false);
+    else show(this.head, `h/${L.head}/${view}`, at(a[6], a[7]), d + 0.3);
+
+    // Shoulders: plates on both shoulders, or a fur mantle on the neck.
+    if (L.shoulders === "sode") {
+      show(this.shoulderL, "s/sode", at(a[13], a[14]), d + 0.2, false);
+      show(this.shoulderR, "s/sode", at(a[15], a[16]), d + 0.2, true);
+    } else if (L.shoulders === "fur") {
+      show(this.shoulderL, view === "side" ? "s/fur_side" : "s/fur_front", at(a[9], (a[10] ?? 0) + 2), d + 0.2);
+      this.shoulderR.setVisible(false);
+    } else {
+      this.shoulderL.setVisible(false);
+      this.shoulderR.setVisible(false);
+    }
+
+    // Cape from the neck: behind the body unless we see the back, swinging with the run.
+    if (L.cape < 0) this.cape.setVisible(false);
+    else {
+      const sway = this.anim === "run" ? (frame % 3) : 1;
+      show(this.cape, `c/${view}/${sway}`, at(a[9], a[10]), away ? d + 0.15 : d - 0.5);
+    }
+
+    // Weapons: in hand while standing, striking or casting; stowed on the back when running,
+    // rolling or down (those frames carry no hand anchors).
+    const [main, off] = WEAPON_PARTS[this.weapon];
+    const handFront = !away;
+    const place = (img: Phaser.GameObjects.Image, part: string | null, hx: number | null, hy: number | null, ang: number | null, front: boolean, stowSide: number) => {
+      if (!part) return img.setVisible(false);
+      if (hx !== null && hy !== null && ang !== null) {
+        // A bow is held upright, whatever the arm does.
+        const angle = part === "bow" ? (mirror ? -0.15 : 0.15) : ang;
+        return show(img, `w/${part}/${angleFrame(angle)}`, at(hx, hy), front ? d + 0.4 : d - 0.4, false);
+      }
+      // Stowed: across the back, hilt over the shoulder.
+      const ax = (a[11] ?? 0) + stowSide * 2;
+      const ay = (a[12] ?? 0) - 3;
+      const stow = part === "bow" ? -0.5 : -2.25;
+      const angle = mirror ? Math.PI - stow : stow;
+      return show(img, `w/${part}/${angleFrame(angle + stowSide * 0.25)}`, at(ax, ay), away ? d + 0.35 : d - 0.6, false);
+    };
+    place(this.weaponMain, main, a[0], a[1], a[2], handFront, 0);
+    place(this.weaponOff, off, a[3], a[4], a[5], handFront && view !== "side", main ? 1 : 0);
   }
 
   private footstep(x: number, y: number, at: { x: number; y: number }) {
@@ -212,6 +334,7 @@ export class Character {
   }
 
   destroy() {
+    for (const p of [this.cape, this.head, this.shoulderL, this.shoulderR, this.weaponMain, this.weaponOff]) p.destroy();
     this.sprite.destroy();
     this.shadow.destroy();
     this.label.destroy();

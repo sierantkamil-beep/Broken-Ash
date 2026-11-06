@@ -49,7 +49,7 @@ def derive(key):
 
         # Flinch: the upper body snaps back a pixel or two, then recovers a little.
         back = 1 if BACK[d] else 0
-        h1 = split_shift(rot, waist, back, -1)
+        h1 = split_shift(rot, waist, back, 0)
         h2 = split_shift(rot, waist, back * 2, 0)
         save([h1, h2, h1], key, "hit", d)
 

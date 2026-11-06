@@ -17,6 +17,11 @@ export interface AtlasMeta {
   anims: Record<string, number>;
   /** How tall the figure stands, in screen pixels (for name tags and health bars). */
   height: number;
+  /**
+   * Where gear attaches on each frame, relative to the feet, in atlas pixels (tools/pixellab/anchors.py):
+   * [hand x, y, angle, off x, y, angle, head x, y, top y, neck x, y, torso x, y, shoulder L x, y, R x, y].
+   */
+  anchors?: Record<string, (number | null)[]>;
 }
 
 /** Frame counts of the older Blender-rendered sets (tools/art/anims.py), which carry no meta. */
@@ -29,7 +34,7 @@ export function atlasMeta(scene: Phaser.Scene, key: string | null): AtlasMeta {
   const m = (scene.textures.get(key).customData as { meta?: Partial<AtlasMeta> & { artScale?: number } }).meta;
   if (!m?.pixel) return LEGACY;
   const scale = m.artScale ?? 2;
-  return { pixel: true, scale, anims: { ...LEGACY_FRAMES, ...m.anims }, height: (m.height ?? 70) * scale };
+  return { pixel: true, scale, anims: { ...LEGACY_FRAMES, ...m.anims }, height: (m.height ?? 70) * scale, anchors: m.anchors };
 }
 
 /**

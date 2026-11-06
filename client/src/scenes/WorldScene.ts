@@ -26,7 +26,7 @@ import { Interpolation } from "../net/Interpolation";
 import { Prediction } from "../net/Prediction";
 import { $ } from "../ui/dom";
 import { Hud } from "../ui/Hud";
-import { barOf, pathOf } from "../net/loadout";
+import { barOf, lookOf, pathOf, weaponOf } from "../net/loadout";
 import { GroundLayer } from "../world/GroundLayer";
 import { Lighting, type LightSource } from "../world/Lighting";
 import { Petals } from "../world/Petals";
@@ -381,6 +381,8 @@ export class WorldScene extends Phaser.Scene {
       const bar = barOf(v);
       this.hud.setBar(pathOf(v), bar.skills, bar.key);
       this.me.char.setBar(bar.skills);
+      this.me.char.setLook(lookOf(v));
+      this.me.char.setWeapon(weaponOf(v));
       this.hud.updateMe({ ...v, stamina: (100 * b.stamina) / BALANCE.player.staminaMax });
     }
     let partner: Remote | null = null;
@@ -389,6 +391,8 @@ export class WorldScene extends Phaser.Scene {
       const s = r.interp.sample(time);
       if (!s) continue;
       r.char.setBar(barOf(r.view).skills);
+      r.char.setLook(lookOf(r.view));
+      r.char.setWeapon(weaponOf(r.view));
       if (r.view.cast && r.view.cast !== r.lastCast) r.char.playCast(r.view.cast);
       r.lastCast = r.view.cast;
       r.char.update({ ...s, downed: r.view.downed }, delta);
