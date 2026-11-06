@@ -81,8 +81,8 @@ export interface Cinematic {
    * pick). The option's flag is set, and its `then` scene (if any) plays next.
    */
   choice?: { t: number; prompt: string; options: { label: string; flag: string; then?: string }[] };
-  /** When the scene ends (played out or skipped): set these flags, and/or travel somewhere. */
-  onEnd?: { flags?: string[]; travel?: { to: string; spawn: number } };
+  /** When the scene ends (played out or skipped): set these flags, travel somewhere, play the next scene. */
+  onEnd?: { flags?: string[]; travel?: { to: string; spawn: number }; next?: string };
 }
 
 export interface CinematicFrame {

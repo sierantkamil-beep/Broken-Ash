@@ -50,12 +50,15 @@ for porting its systems.
 shared/   Pure logic + data used by both sides (no Phaser/Colyseus/Node imports).
   src/view.ts        Top-down projection (world cells ↔ screen px, CELL = 64), 8 sprite directions, depth.
   src/movement.ts    Body, InputFrame, stepBody (accel, dodge roll, stamina), circle-vs-grid collision.
-  src/map.ts         AreaMap, CollisionGrid. src/maps/ maps written as code (MapBuilder).
+  src/map.ts         AreaMap (exits, encounters, NPCs, levers, gates via prop `until`), CollisionGrid.
+  src/maps/          Maps written as code (MapBuilder): soramei.ts (courtyard), act1.ts (cells, farmstead,
+                     sap-mine, Harrow's road); index.ts (MAPS, START_MAP = the cells).
   src/cinematic.ts   Cinematic timeline types, evaluateCinematic (seekable), validation.
   src/combat/        types.ts (SkillDef, Shape, Effect, StatusId, PathDef), geometry.ts (hit tests).
   src/data/          paths.ts (8 paths: resource, sustain, 3 signature skills, home weapons), weapons.ts
                      (9 weapon types × mastery trees), looks.ts (dyes, skin tones, armour/head/shoulders,
-                     validLook), greyed.ts (enemies, waves), props.ts, cinematics.ts.
+                     validLook), greyed.ts (enemies, waves), props.ts, cinematics.ts (+ act1scenes.ts,
+                     written with scene.ts: lines of dialogue timed from their length).
   src/loadout.ts     The skill bar: weapon basic/RMB/key 1 (+ passives, home affinity) + path signature;
                      masteryLevel, validPicks. Server and client resolve the same bar from synced inputs.
   src/balance.ts     Every tunable number, each with its reason.
@@ -93,7 +96,8 @@ tools/
   audio/  build.py (music, ambience, effects, combat sounds).
   fx/     build.py (skill-effect pixel animations in element palettes → client/public/assets/fx/spells.*).
   catalogue/ catalogue.ts (writes docs/catalogue.md).
-  e2e/    play.cjs (two Electron windows host/join and fight), gore.cjs (each kind of death), menu.cjs (walks the menus, creation,
+  e2e/    play.cjs (two Electron windows host/join and fight at the courtyard), act1.cjs (every Act 1 area
+          from a story save, the cells from the start), gore.cjs (each kind of death), menu.cjs (walks the menus, creation,
           lobby, mastery panel), gallery.cjs (every skill's shape, page by page), icons.cjs (every icon on
           one sheet); screenshots in tools/e2e/out.
 ```

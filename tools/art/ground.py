@@ -164,7 +164,101 @@ def water(seed):
     return col
 
 
-GROUND = {"paving": flagstones, "moss": moss_ground, "gravel": gravel, "dirt": dirt, "water": water}
+def slabs(seed):
+    """Dungeon floor: big square slabs with deep grout, damp and stained (the cells under the keep)."""
+    ys, xs = np.mgrid[0:N, 0:N].astype(np.float32)
+    k = CELLS
+    u = (xs / N * k) % 1
+    v = (ys / N * k) % 1
+    grout = np.clip(1 - np.minimum(np.minimum(u, 1 - u), np.minimum(v, 1 - v)) * N / k / 3.5, 0, 1)
+    rng = np.random.default_rng(seed)
+    tone = rng.uniform(-0.1, 0.1, (k, k))[(ys / N * k).astype(int) % k, (xs / N * k).astype(int) % k]
+    fine = periodic_noise(seed + 1, 1.1)
+    damp = periodic_noise(seed + 2, 2.8)
+    col = mix(rgb("#3e3c38"), rgb("#2c2a27"), damp)
+    col = col * (1 + tone[..., None]) * (0.8 + 0.35 * fine[..., None])
+    col = mix(col, rgb("#121110"), grout * 0.85)
+    stain = np.clip((periodic_noise(seed + 3, 2.0) - 0.7) * 4, 0, 1)
+    col = mix(col, rgb("#2a0a08"), stain * 0.55)
+    return col * shade((1 - grout) * 0.8 + fine * 0.2, 6)[..., None]
+
+
+def rock(seed):
+    """Mine floor: rough dark rock with amber veins of sap seeping through the cracks."""
+    coarse = periodic_noise(seed, 2.6)
+    fine = periodic_noise(seed + 1, 0.8)
+    veins = np.clip(1 - np.abs(periodic_noise(seed + 2, 1.6) - 0.5) * 14, 0, 1)
+    col = mix(rgb("#22201c"), rgb("#3a3630"), coarse)
+    col = col * (0.75 + 0.45 * fine[..., None])
+    col = mix(col, rgb("#c87818"), veins * 0.55)
+    return col * shade(coarse * 0.6 + fine * 0.7, 8)[..., None]
+
+
+def planks(seed):
+    """Wooden boards along world x (cages, the farmstead's floors, mine walkways)."""
+    ys, xs = np.mgrid[0:N, 0:N].astype(np.float32)
+    rows = CELLS * 4
+    board = (ys / N * rows).astype(int)
+    v = (ys / N * rows) % 1
+    gap = np.clip(1 - np.minimum(v, 1 - v) * N / rows / 1.6, 0, 1)
+    rng = np.random.default_rng(seed)
+    tone = rng.uniform(-0.12, 0.12, rows)[board % rows]
+    grain = periodic_noise(seed + 1, 0.7)
+    streak = 0.5 + 0.5 * np.sin(xs / N * math.tau * 9 + grain * 6 + board * 1.7)
+    col = mix(rgb("#4a3424"), rgb("#6a4e34"), streak * 0.5 + grain * 0.5)
+    col = col * (1 + tone[..., None])
+    col = mix(col, rgb("#140c08"), gap * 0.9)
+    return col * shade((1 - gap) * 0.6 + streak * 0.2, 6)[..., None]
+
+
+def mud(seed):
+    coarse = periodic_noise(seed, 2.5)
+    fine = periodic_noise(seed + 1, 0.7)
+    puddle = np.clip((coarse - 0.62) * 4, 0, 1)
+    col = mix(rgb("#2a2018"), rgb("#3e3022"), fine)
+    col = mix(col, rgb("#161210"), puddle * 0.8)
+    glint = np.clip((fine - 0.75) * 5, 0, 1) * puddle
+    col = mix(col, rgb("#4a4a48"), glint * 0.5)
+    return col * shade(coarse * 0.4 + fine * 0.6, 5)[..., None]
+
+
+def sap(seed):
+    """Pools of World-Ash sap: thick amber, glowing faintly where it is deep (impassable, like water)."""
+    coarse = periodic_noise(seed, 2.9)
+    ripple = periodic_noise(seed + 1, 1.5)
+    col = mix(rgb("#5a2a04"), rgb("#a85a0a"), coarse)
+    glint = np.clip((ripple - 0.7) * 5, 0, 1)
+    col = mix(col, rgb("#f0b040"), glint * 0.6)
+    return col
+
+
+def scorched(seed):
+    """Burnt earth: black ash, charred stubble, the odd ember still glowing."""
+    coarse = periodic_noise(seed, 2.4)
+    fine = periodic_noise(seed + 1, 0.6)
+    col = mix(rgb("#141210"), rgb("#2e2a26"), coarse)
+    col = col * (0.8 + 0.4 * fine[..., None])
+    ash = np.clip((fine - 0.6) * 3, 0, 1)
+    col = mix(col, rgb("#5a5652"), ash * 0.5)
+    ember = np.clip((periodic_noise(seed + 2, 0.4) - 0.9) * 12, 0, 1)
+    col = mix(col, rgb("#e0601a"), ember)
+    return col * shade(coarse * 0.5 + fine * 0.6, 5)[..., None]
+
+
+def grass(seed):
+    """Forest grass of the North-Grove: dark green, tufted, a few fallen leaves."""
+    coarse = periodic_noise(seed, 2.4)
+    fine = periodic_noise(seed + 1, 0.5)
+    tufts = np.clip((periodic_noise(seed + 2, 0.9) - 0.5) * 3, 0, 1)
+    col = mix(rgb("#1e2a14"), rgb("#34461e"), coarse)
+    col = mix(col, rgb("#4a5e26"), tufts * 0.6)
+    col = col * (0.82 + 0.3 * fine[..., None])
+    p = petals(seed + 3, 4)
+    col = mix(col, rgb("#7a4a18"), p * 0.7)
+    return col * shade(coarse * 0.4 + fine * 0.6 + tufts * 0.4, 6)[..., None]
+
+
+GROUND = {"paving": flagstones, "moss": moss_ground, "gravel": gravel, "dirt": dirt, "water": water, "slabs": slabs, "rock": rock, "planks": planks, "mud": mud, "sap": sap, "scorched": scorched, "grass": grass}
 
 
 def sample(tex, u, v):
@@ -254,7 +348,7 @@ def main():
             for cx in range(CELLS):
                 im, pivot = square(tex, cx, cy, 0, edge)
                 frames.append((f"{name}_{cx}_{cy}", im, pivot))
-                if name != "water":
+                if name not in ("water", "sap"):
                     im, pivot = square(tex, cx, cy, 0.25, edge)
                     frames.append((f"{name}_{cx}_{cy}_soft", im, pivot))
         print("ground", name, flush=True)

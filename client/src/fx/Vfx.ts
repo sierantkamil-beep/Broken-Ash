@@ -129,6 +129,14 @@ export class Vfx {
         this.hooks.playSound("sfx_gore", 0.7, p);
         break;
       }
+      case "lever":
+        this.hooks.playSound("sfx_slam", 0.35, undefined);
+        break;
+      case "opened":
+        // Iron grinding open somewhere in the area.
+        this.hooks.playSound("sfx_gate_bang", 0.8);
+        this.hooks.shake(0.006, 600);
+        break;
       case "unitAtk":
         this.spells.unitAttack(e.kind, e.atk, e.x, e.y, e.aim, e.ax, e.ay);
         break;

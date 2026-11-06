@@ -193,13 +193,36 @@ export interface Wave {
   spawns: { kind: GreyedKind; count: number }[];
 }
 
+/** The bleeding-cells under the keep (Act 1, the tutorial): the dead prisoners get up. */
+export const CELL_BREAK: Wave[] = [
+  { title: "Martwi wstają", spawns: [{ kind: "shambler", count: 3 }] },
+  { title: "Straż już nie żyje", spawns: [{ kind: "shambler", count: 2 }, { kind: "runner", count: 2 }] },
+];
+
 /**
- * The night of the escape: the Greyed break through Soramei's vermilion gate in waves, then the
- * Tapper himself comes for his runaway stock.
+ * The night of the escape: the Greyed break through Soramei's vermilion gate in waves until Itheru's
+ * men can get you out. (The Tapper waits in the sap-mine, where he belongs.)
  */
 export const GATE_ASSAULT: Wave[] = [
   { title: "Brama pęka", spawns: [{ kind: "shambler", count: 5 }] },
   { title: "Szybcy", spawns: [{ kind: "runner", count: 4 }, { kind: "shambler", count: 3 }] },
   { title: "Rozdęci", spawns: [{ kind: "bloated", count: 2 }, { kind: "runner", count: 3 }, { kind: "shambler", count: 3 }] },
-  { title: "Upuszczacz", spawns: [{ kind: "tapper", count: 1 }, { kind: "shambler", count: 2 }] },
+  { title: "Ostatni szturm", spawns: [{ kind: "bloated", count: 1 }, { kind: "runner", count: 4 }, { kind: "shambler", count: 4 }] },
+];
+
+/** The Drowned Sap-Mine: the shaft hall, the flooded gallery, the Tapper's bleeding room. */
+export const MINE_HALL: Wave[] = [
+  { title: "Górnicy", spawns: [{ kind: "miner", count: 2 }, { kind: "shambler", count: 2 }] },
+  { title: "Z głębi szybu", spawns: [{ kind: "miner", count: 2 }, { kind: "runner", count: 2 }] },
+];
+export const MINE_GALLERY: Wave[] = [
+  { title: "Utopieni", spawns: [{ kind: "drowned", count: 2 }, { kind: "shambler", count: 2 }] },
+  { title: "Pożeracze", spawns: [{ kind: "eater", count: 2 }, { kind: "drowned", count: 1 }, { kind: "shambler", count: 2 }] },
+];
+export const TAPPER_FIGHT: Wave[] = [{ title: "Upuszczacz", spawns: [{ kind: "tapper", count: 1 }, { kind: "shambler", count: 2 }] }];
+
+/** Harrow's scouts on the forest road: the first humans of the Iron March. */
+export const HARROW_SCOUTS: Wave[] = [
+  { title: "Zwiadowcy Harrowa", spawns: [{ kind: "crossbow", count: 2 }, { kind: "manatarms", count: 1 }] },
+  { title: "Żelazna Marchia", spawns: [{ kind: "crossbow", count: 2 }, { kind: "manatarms", count: 2 }] },
 ];

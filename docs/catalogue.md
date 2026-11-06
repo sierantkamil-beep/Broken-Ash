@@ -5,7 +5,7 @@
 
 ## Contents
 
-- [shared](#shared) — 22 files, 5 test files
+- [shared](#shared) — 25 files, 5 test files
 - [server](#server) — 11 files, 5 test files
 - [client](#client) — 36 files, 3 test files
 - [desktop](#desktop) — 3 files, 1 test files
@@ -25,18 +25,21 @@ Pure game logic and data used by server and client. No Phaser, Colyseus or Node 
 | `shared/src/combat/geometry.ts` | Smallest difference between two angles, in radians (0..π). | `angleDiff`, `pointSegmentDistance`, `Caster`, `shapeHits`, `aimLanding` | `shared/src/combat/types` |
 | `shared/src/combat/types.ts` | Combat data model: skills are data (shape + effects), interpreted by server/src/game/Combat.ts. | `PathId`, `BodyType`, `PeopleId`, `Faction`, `StatusId`, `Shape`, `Effect`, `SkillAnim`, `WeaponId`, `SkillDef`, `ResourceDef`, `PathDef`, `STATUS_INFO` | — |
 | `shared/src/constants.ts` | Network and simulation constants shared by server and client. | `DEFAULT_PORT`, `ROOM_NAME`, `MAX_PLAYERS`, `SIM_HZ`, `SIM_DT`, `PATCH_HZ`, `INTERP_DELAY_MS`, `MAX_NAME_LENGTH`, `MSG` | — |
-| `shared/src/data/cinematics.ts` | Prolog — plays the first time the two of you enter the Soramei courtyard. | `CINEMATICS` | `shared/src/cinematic` |
-| `shared/src/data/greyed.ts` | Every enemy kind. | `GreyedKind`, `EnemyAttack`, `EnemyDef`, `GREYED`, `Wave`, `GATE_ASSAULT` | `shared/src/combat/types` |
+| `shared/src/data/act1scenes.ts` | Pień, the first thing you see: the title over your cell, then the dead begin to move. | `ACT1_SCENES` | `shared/src/cinematic`, `shared/src/data/scene` |
+| `shared/src/data/cinematics.ts` | Prolog — plays the first time the two of you come up into the Soramei courtyard from the cells. | `CINEMATICS` | `shared/src/cinematic`, `shared/src/data/act1scenes` |
+| `shared/src/data/greyed.ts` | Every enemy kind. | `GreyedKind`, `EnemyAttack`, `EnemyDef`, `GREYED`, `Wave`, `CELL_BREAK`, `GATE_ASSAULT`, `MINE_HALL`, `MINE_GALLERY`, `TAPPER_FIGHT`, `HARROW_SCOUTS` | `shared/src/combat/types` |
 | `shared/src/data/looks.ts` | How a path dresses the shared male/female body (a "look"): colour ramps, dark to light, that replace the body's cloth and leather-trim colours. | `Look`, `PATH_LOOKS`, `DYES`, `SKIN_TONES`, `ArmourId`, `HeadId`, `ShoulderId`, `ARMOURS`, `HEADS`, `SHOULDERS`, `CharacterLook`, `DEFAULT_LOOKS`, `validLook` | `shared/src/combat/types` |
 | `shared/src/data/paths.ts` | The eight paths (design.md §4): 2 melee, 4 magic, 2 ranged. | `PATHS`, `PATH_IDS`, `PEOPLES` | `shared/src/combat/build`, `shared/src/combat/types` |
 | `shared/src/data/props.ts` | Prop catalogue: gameplay facts only (footprint, what blocks, lights). | `PropDef`, `PROPS`, `PropKind`, `PROP_KINDS` | — |
+| `shared/src/data/scene.ts` | A line of a scene: who says it (narration when omitted) and where the camera is meanwhile. | `Line`, `SceneSpec`, `readMs`, `scene` | `shared/src/cinematic` |
 | `shared/src/data/weapons.ts` | The nine weapon types (design.md §4 "Weapons and mastery"). | `SkillSlot`, `Mod`, `PassiveDef`, `WeaponDef`, `WEAPONS`, `WEAPON_IDS`, `WEAPON_SKILLS` | `shared/src/combat/build`, `shared/src/combat/types` |
 | `shared/src/i18n.ts` | Polish plural forms: 1 → one, 2–4 (but not 12–14) → few, everything else → many. | `plural`, `count` | — |
 | `shared/src/index.ts` | — | * from "./constants.js", * from "./balance.js", * from "./view.js", * from "./i18n.js", * from "./map.js", * from "./movement.js", * from "./cinematic.js", * from "./data/props.js", * from "./data/cinematics.js", * from "./maps/index.js", * from "./types.js", * from "./combat/types.js", * from "./combat/geometry.js", * from "./data/paths.js", * from "./data/greyed.js", * from "./data/looks.js", * from "./data/weapons.js", * from "./combat/build.js", * from "./loadout.js" | `shared/src/balance`, `shared/src/cinematic`, `shared/src/combat/build`, `shared/src/combat/geometry`, `shared/src/combat/types`, `shared/src/constants`, `shared/src/data/cinematics`, `shared/src/data/greyed`, `shared/src/data/looks`, `shared/src/data/paths`, `shared/src/data/props`, `shared/src/data/weapons`, `shared/src/i18n`, `shared/src/loadout`, `shared/src/map`, `shared/src/maps/index`, `shared/src/movement`, `shared/src/types`, `shared/src/view` |
 | `shared/src/loadout.ts` | A character's skill bar: the weapon's basic, RMB and key-1 skills (from its mastery tree), then the path's three signature skills (design.md §4). | `Picks`, `DEFAULT_PICKS`, `masteryLevel`, `masteryProgress`, `isWeapon`, `validPicks`, `Loadout`, `resolveLoadout`, `allSkills` | `shared/src/balance`, `shared/src/combat/types`, `shared/src/data/weapons` |
 | `shared/src/map.ts` | A rectangle of cells (continuous: x ∈ [x, x + w), y ∈ [y, y + h)). | `Region`, `inRegion`, `Exit`, `Encounter`, `Npc`, `AreaMap`, `GroundType`, `BLOCKING_GROUND`, `PropPlacement`, `CollisionGrid` | `shared/src/combat/types`, `shared/src/data/greyed`, `shared/src/data/props` |
+| `shared/src/maps/act1.ts` | Pień — the bleeding-cells under the keep. | `SORAMEI_CELLS`, `FARMSTEAD`, `SAP_MINE`, `HARROW_ROAD` | `shared/src/data/greyed`, `shared/src/maps/builder` |
 | `shared/src/maps/builder.ts` | Small helper for writing maps as code: readable, deterministic, diffable. | `MapBuilder` | `shared/src/data/props`, `shared/src/map` |
-| `shared/src/maps/index.ts` | — | `MAPS`, `START_MAP` | `shared/src/map`, `shared/src/maps/soramei` |
+| `shared/src/maps/index.ts` | Act 1 opens in the bleeding-cells under Soramei Keep. | `MAPS`, `START_MAP` | `shared/src/map`, `shared/src/maps/act1`, `shared/src/maps/soramei` |
 | `shared/src/maps/soramei.ts` | Dziedziniec Soramei — the courtyard of the ruined Soramei Keep, the night of the escape (Act 1). | `SORAMEI_COURTYARD` | `shared/src/data/greyed`, `shared/src/maps/builder` |
 | `shared/src/movement.ts` | One player's movement state. | `Body`, `InputFrame`, `newBody`, `sanitizeInput`, `isInvulnerable`, `stepBody`, `moveWithCollision`, `overlaps`, `copyBody` | `shared/src/balance`, `shared/src/map`, `shared/src/view` |
 | `shared/src/types.ts` | Options a client sends when joining the room. | `JoinOptions`, `HitCause`, `FxEvent` | — |
@@ -63,7 +66,10 @@ Tests: `shared/src/cinematic.test.ts`, `shared/src/i18n.test.ts`, `shared/src/ma
 - `PATCH_HZ` (const, `shared/src/constants.ts`) — How often the server sends state patches.
 - `GreyedKind` (type, `shared/src/data/greyed.ts`) — Every enemy kind.
 - `GREYED` (const, `shared/src/data/greyed.ts`) — The Greyed (design.md §1): the dead who rise near the roots.
-- `GATE_ASSAULT` (const, `shared/src/data/greyed.ts`) — The night of the escape: the Greyed break through Soramei's vermilion gate in waves, then the Tapper himself comes for his runaway stock.
+- `CELL_BREAK` (const, `shared/src/data/greyed.ts`) — The bleeding-cells under the keep (Act 1, the tutorial): the dead prisoners get up.
+- `GATE_ASSAULT` (const, `shared/src/data/greyed.ts`) — The night of the escape: the Greyed break through Soramei's vermilion gate in waves until Itheru's men can get you out.
+- `MINE_HALL` (const, `shared/src/data/greyed.ts`) — The Drowned Sap-Mine: the shaft hall, the flooded gallery, the Tapper's bleeding room.
+- `HARROW_SCOUTS` (const, `shared/src/data/greyed.ts`) — Harrow's scouts on the forest road: the first humans of the Iron March.
 - `Look` (interface, `shared/src/data/looks.ts`) — How a path dresses the shared male/female body (a "look"): colour ramps, dark to light, that replace the body's cloth and leather-trim colours.
 - `DYES` (const, `shared/src/data/looks.ts`) — Dyes a player can choose for cloth, trim and cape (character screen).
 - `SKIN_TONES` (const, `shared/src/data/looks.ts`) — Skin tones (light to dark), replacing the bodies' skin ramp.
@@ -72,6 +78,9 @@ Tests: `shared/src/cinematic.test.ts`, `shared/src/i18n.test.ts`, `shared/src/ma
 - `validLook` (function, `shared/src/data/looks.ts`) — A look from untrusted input (a client, a save file): every field clamped to what exists.
 - `PATHS` (const, `shared/src/data/paths.ts`) — The eight paths (design.md §4): 2 melee, 4 magic, 2 ranged.
 - `PropDef` (interface, `shared/src/data/props.ts`) — Prop catalogue: gameplay facts only (footprint, what blocks, lights).
+- `Line` (interface, `shared/src/data/scene.ts`) — A line of a scene: who says it (narration when omitted) and where the camera is meanwhile.
+- `readMs` (const, `shared/src/data/scene.ts`) — Reading time the validator asks for (about 15 characters a second plus a second), with room to breathe.
+- `scene` (function, `shared/src/data/scene.ts`) — Builds a cinematic from lines of dialogue, timing every subtitle from its length so each scene passes `validateCinematic` by construction, and moving the camera between speakers.
 - `SkillSlot` (type, `shared/src/data/weapons.ts`) — Which weapon-skill a passive touches.
 - `WEAPON_SKILLS` (const, `shared/src/data/weapons.ts`) — Every weapon skill by id (for clients resolving a fx event to its skill).
 - `plural` (function, `shared/src/i18n.ts`) — Polish plural forms: 1 → one, 2–4 (but not 12–14) → few, everything else → many.
@@ -89,6 +98,7 @@ Tests: `shared/src/cinematic.test.ts`, `shared/src/i18n.test.ts`, `shared/src/ma
 - `BLOCKING_GROUND` (const, `shared/src/map.ts`) — Ground you can't stand on.
 - `CollisionGrid` (class, `shared/src/map.ts`) — Which cells block movement.
 - `MapBuilder` (class, `shared/src/maps/builder.ts`) — Small helper for writing maps as code: readable, deterministic, diffable.
+- `START_MAP` (const, `shared/src/maps/index.ts`) — Act 1 opens in the bleeding-cells under Soramei Keep.
 - `Body` (interface, `shared/src/movement.ts`) — One player's movement state.
 - `InputFrame` (interface, `shared/src/movement.ts`) — One fixed simulation step of player intent.
 - `sanitizeInput` (function, `shared/src/movement.ts`) — Clamps untrusted input to the allowed shape.
@@ -305,11 +315,11 @@ Tests: `tools/catalogue/catalogue.test.ts`
 | `tools/art/characters.py` | Renders the playable characters: 8 paths × 2 bodies × every animation × 8 directions. | `facing_z`, `render_set`, `pack`, `write_index` |
 | `tools/art/common.py` | Shared Blender helpers for the sprite pipeline. | `reset_scene`, `add_shadow_catcher`, `render_with_shadow`, `composite_shadow`, `add_lights`, `setup_camera`, `render_to`, `stretch`, `load_frame`, `load_downsampled`, `trim` |
 | `tools/art/decals.py` | Painted decals: blood (flat on the top-down ground) and the Soramei crest for banners. | `to_ground`, `blood_pool`, `blood_plane`, `crest_path` |
-| `tools/art/ground.py` | Ground textures and small effect sprites, painted with numpy (no Blender needed). | `periodic_noise`, `shade`, `mix`, `rgb`, `petals`, `flagstones`, `moss_ground`, `gravel`, `dirt`, `water`, `sample`, `square`, `fx_frames`, `main` |
+| `tools/art/ground.py` | Ground textures and small effect sprites, painted with numpy (no Blender needed). | `periodic_noise`, `shade`, `mix`, `rgb`, `petals`, `flagstones`, `moss_ground`, `gravel`, `dirt`, `water`, `slabs`, `rock`, `planks`, `mud`, `sap`, `scorched`, `grass`, `sample`, `square`, `fx_frames`, `main` |
 | `tools/art/materials.py` | Procedural materials (Cycles). | `srgb`, `material`, `image_material` |
 | `tools/art/mh.py` | Builds skinned elf bodies in Blender from the MakeHuman CC0 base mesh (tools/art/mh_fetch.py). | `morph`, `to_blender`, `build`, `reset_pose`, `rotate`, `shift` |
 | `tools/art/mh_fetch.py` | Fetches the MakeHuman assets the character pipeline uses into tools/art/.mh (gitignored). | `main` |
-| `tools/art/models.py` | Procedural models for props and characters. | `link`, `mesh_obj`, `box`, `cyl`, `sphere`, `empty`, `modifier`, `curved_roof`, `tiled_roof_material`, `rocky`, `stone_material`, `mossy_stone_material`, `build_stone_lantern`, `build_paper_lantern`, `build_gate`, `build_blossom_tree`, `build_shrine`, `build_wall`, `build_rock`, `build_bamboo`, `build_banner`, `build_humanoid`, `pose` |
+| `tools/art/models.py` | Procedural models for props and characters. | `link`, `mesh_obj`, `box`, `cyl`, `sphere`, `empty`, `modifier`, `curved_roof`, `tiled_roof_material`, `rocky`, `stone_material`, `mossy_stone_material`, `build_stone_lantern`, `build_paper_lantern`, `build_gate`, `build_blossom_tree`, `build_shrine`, `build_wall`, `build_rock`, `build_bamboo`, `build_banner`, `build_humanoid`, `pose`, `build_bars`, `build_rockwall`, `build_brazier`, `build_torch_post`, `build_support`, `build_cart`, `build_barrel`, `build_crate`, `build_lever`, `build_pump`, `build_tent`, `build_palisade`, `build_house_burnt`, `build_campfire`, `build_dead_tree`, `build_pine` |
 | `tools/art/outfits.py` | Outfits, hair and weapons for the eight paths, built on a MakeHuman body from mh.py. | `cloth`, `silk`, `leather`, `lacquer`, `lamellar`, `metal`, `skin_material`, `hair_material`, `region_shell`, `robe`, `attach`, `joint`, `bone_head`, `bone_tail`, `palm`, `grip_axes`, `oriented`, `curve_blade`, `join`, `hold`, `scalp_filter`, `hair`, `base_layers`, `sash`, `wide_sleeves`, `mask`, `plate`, `build_path`, `war_fan`, `spirit_lantern`, `longbow`, `palette`, `build_human`, `build_greyed` |
 | `tools/art/pixelate.py` | The map's pixel-art pass: takes the Blender-rendered prop and ground atlases and turns every frame into pixel art that matches the PixelLab characters (one art pixel = 2×2 screen pixels), keeping the detail and the baked | `pixelate`, `run`, `run_chars` |
 | `tools/art/render.py` | Renders every sprite with Blender (bpy) and packs them into atlases for the client. | `render_frame`, `props` |
@@ -328,7 +338,7 @@ Tests: `tools/catalogue/catalogue.test.ts`
 ## Generated assets
 
 - **`client/public/assets/audio/`** (54 files): `amb_night_wind`, `music_gate_fight`, `music_soramei_night`, `sfx_bell`, `sfx_blade`, `sfx_blade_heavy`, `sfx_blade_spin`, `sfx_blood`, `sfx_blood_heavy`, `sfx_blowpipe`, `sfx_bow`, `sfx_bow_heavy`, `sfx_burst`, `sfx_cin_split`, `sfx_dodge`, `sfx_downed`, `sfx_drink`, `sfx_execute`, `sfx_fire`, `sfx_fire_heavy`, `sfx_gate_bang`, `sfx_gong_small`, `sfx_gore`, `sfx_greyed_death`, `sfx_groan_0`, `sfx_groan_1`, `sfx_groan_2`, `sfx_hit_flesh`, `sfx_horn`, `sfx_poison`, `sfx_revive`, `sfx_roots`, `sfx_slam`, `sfx_smoke`, `sfx_spirit`, `sfx_spirit_heavy`, `sfx_step_soft_0`, `sfx_step_soft_1`, `sfx_step_soft_2`, `sfx_step_soft_3`, `sfx_step_stone_0`, `sfx_step_stone_1`, `sfx_step_stone_2`, `sfx_step_stone_3`, `sfx_tapper_roar`, `sfx_throw`, `sfx_thunder`, `sfx_title_gong`, `sfx_victory`, `sfx_whoosh`, `sfx_wind`, `ui_click`, `ui_confirm`, `ui_hover`
-- **`client/public/assets/chars/`** (17 files): `bloated_greyed`, `blood_female`, `body_female`, `body_male`, `index`, `runner_greyed`, `shambler_greyed`, `tapper_greyed`, `thorn_male`
+- **`client/public/assets/chars/`** (23 files): `bloated_greyed`, `blood_female`, `body_female`, `body_male`, `drowned_greyed`, `eater_greyed`, `index`, `miner_greyed`, `runner_greyed`, `shambler_greyed`, `tapper_greyed`, `thorn_male`
 - **`client/public/assets/fx/`** (2 files): `spells`
 - **`client/public/assets/gear/`** (2 files): `gear`
 - **`client/public/assets/sprites/`** (10 files): `fx`, `ground`, `ground_px`, `props`, `props_px`

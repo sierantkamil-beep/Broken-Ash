@@ -86,6 +86,6 @@ export const SORAMEI_COURTYARD = b.build({
   music: "music_soramei_night",
   ambience: "amb_night_wind",
   introCinematic: "prolog",
-  // The night of the escape: the Greyed break through the gate in waves until the Tapper comes.
-  encounters: [{ id: "gate", waves: GATE_ASSAULT, spawnAt: [{ x: 14.5, y: 1.2 }], gate: true, repeat: true, clearFlag: "escaped" }],
+  // The night of the escape: the Greyed break through the gate in waves; holding it gets you out.
+  encounters: [{ id: "gate", waves: GATE_ASSAULT, spawnAt: [{ x: 14.5, y: 1.2 }], gate: true, clearFlag: "gate_held", clearCinematic: "escape" }],
 });

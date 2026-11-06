@@ -188,3 +188,23 @@ looked broken and why; all of it was fixed.
 - The client rebuilds the world on arrival (ground, props, night, blood layer, bounds, people and
   exits), shows exits as lit thresholds with where they lead, NPCs as dressed characters with a talk
   prompt, and the choice as an overlay (keys 1–3 or a click).
+
+### Act 1, "Popiół na czole" (Phase 5)
+- The route of the vertical slice, five areas (`shared/src/maps/act1.ts` + the courtyard):
+  **Pień** (the bleeding-cells: the game starts here, behind broken bars; stepping into the hall
+  wakes the dead, the stairs open once they're down) → **Dziedziniec Soramei** (the prolog, the gate
+  assault; holding the gate plays *escape*: Fenshō takes you out) → **Pogorzelisko** (the farmstead
+  hub: Itheru gives it to you and Maeve shows up; Itheru, Maeve and the freed captives can be talked
+  to) → **Zatopiona Kopalnia Żywicy** (the shaft hall with miners, the flooded gallery with plank
+  bridges, the drowned and the corpse-eaters, two pump levers at its ends that must be pulled
+  together to lift the bars, the Tapper's bleeding room with the cages; freed captives move to the
+  farmstead) → **Trakt Harrowa** (the Iron March scouts' camp: crossbowmen and men-at-arms, then the
+  choice: execute or let go, saved for Act 5) → the **downer** back at the farmstead (the North-Grove
+  burns, Itheru summoned to the capital) and "Koniec Aktu I".
+- Gates: props that stand only until a story flag is set (`until`); the server rebuilds its walls and
+  paths, the client its prediction grid, and the bars sink away. Lever groups: every lever of a group
+  pulled within 1.5 s sets its flag (two players, not one running between them).
+- Scenes are written as lines of dialogue (`shared/src/data/scene.ts`), timed from their length so
+  each one passes the reading-speed check; scenes can chain (`onEnd.next`). 16 new scenes in
+  `act1scenes.ts`. The Tapper moved from the gate's last wave to the mine, where the design puts him.
+- `tools/e2e/act1.cjs` photographs each area from a story save and plays the cells from the start.

@@ -94,7 +94,7 @@ function bot(w: World, p: PlayerSim) {
 }
 
 function setup(paths: PathId[], encounter: boolean, seed = 1, weapon?: WeaponId) {
-  const w = new World(undefined, seed);
+  const w = new World("soramei_courtyard", seed);
   w.encounter = encounter;
   const ps = paths.map((path, i) => w.addPlayer(`p${i}`, { name: `P${i}`, path, weapon }));
   for (const p of ps) w.voteSkip(p.id);

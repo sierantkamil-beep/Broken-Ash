@@ -54,6 +54,8 @@ export const BALANCE = {
     exitDwell: 0.8,
     /** How close (cells) you must stand to talk to someone (F). */
     talkRange: 1.6,
+    /** Seconds within which all levers of a group must be pulled: two people, not one running between them. */
+    leverWindow: 1.5,
     /** Seconds a boss spends drinking a phase heal (long enough to punish with a stagger). */
     bossChannel: 3,
     /** Corpse-eaters: ignore bodies when a foe is this close; smell them this far; eat for this long; heal and grow by this much per body. */

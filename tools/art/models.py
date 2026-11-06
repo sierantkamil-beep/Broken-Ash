@@ -556,3 +556,179 @@ def pose(piv, anim, f, frames):
         piv["elbowR"].location = (0.35, -0.25, -0.5)
         rot("elbowR", 1.2, 0.4)
     bpy.context.view_layer.update()
+
+
+# ----------------------------------------------------------------------------- Act 1 props
+# The cells under Soramei Keep, the Drowned Sap-Mine, the burned farmstead, Harrow's road.
+
+
+def _wood():
+    return material("wood", P["wood"], 0.7, P["wood_dark"], 12.0, bump=0.2)
+
+
+def _iron():
+    return material("iron", srgb("#3a3836"), 0.5, srgb("#22201e"), 8.0, metallic=0.8, bump=0.2)
+
+
+def _fire_glow():
+    return material("fire_glow", srgb("#ffb050"), 0.5, emission=srgb("#ff7a20"), emission_strength=9)
+
+
+def build_bars(kind):
+    """Iron cell bars, one cell long, along x or y (with a stone sill and a lintel)."""
+    iron = _iron()
+    st = stone_material()
+    along_x = kind == "bars_x"
+    for i in range(5):
+        t = -0.4 + i * 0.2
+        cyl(f"bar{i}", 0.025, 0.025, 1.9, (t, 0, 0.1) if along_x else (0, t, 0.1), iron, segs=6)
+    box("sill", (1.0, 0.18, 0.1) if along_x else (0.18, 1.0, 0.1), (0, 0, 0.05), st)
+    box("lintel", (1.0, 0.12, 0.08) if along_x else (0.12, 1.0, 0.08), (0, 0, 2.0), iron)
+
+
+def build_rockwall(v=0):
+    """A block of rough dark stone: dungeon and mine walls, one cell, tall enough to read as a wall."""
+    rnd = random.Random(500 + v)
+    dark = material("dark_stone", srgb("#3a3632"), 0.95, srgb("#22201c"), 4.0, bump=0.5)
+    box("core", (1.02, 1.02, 1.6), (0, 0, 0.8), dark, bevel=0.04)
+    for i in range(3):
+        rocky(f"lump{i}", rnd.uniform(0.18, 0.3), (rnd.uniform(-0.35, 0.35), rnd.uniform(-0.35, 0.35), 1.6), dark, seed=v * 7 + i, squash=0.5)
+
+
+def build_brazier(_v=0):
+    iron = _iron()
+    for a in range(3):
+        ang = a * math.tau / 3
+        cyl(f"leg{a}", 0.025, 0.025, 0.7, (math.cos(ang) * 0.18, math.sin(ang) * 0.18, 0), iron, rot=(math.cos(ang) * 0.2, math.sin(ang) * -0.2, 0), segs=6)
+    cyl("bowl", 0.22, 0.3, 0.16, (0, 0, 0.68), iron, segs=14)
+    sphere("coals", 0.24, (0, 0, 0.82), _fire_glow(), scale=(1, 1, 0.35))
+
+
+def build_torch_post(_v=0):
+    """A torch on a wooden post (the farmstead, the mine's galleries)."""
+    cyl("post", 0.06, 0.05, 1.8, (0, 0, 0), _wood(), segs=8)
+    cyl("cup", 0.07, 0.1, 0.16, (0, 0, 1.78), _iron(), segs=8)
+    sphere("flame", 0.09, (0, 0, 1.98), _fire_glow(), scale=(1, 1, 1.6))
+
+
+def build_support(_v=0):
+    """A mine's timber frame: two posts and a cap beam."""
+    w = _wood()
+    cyl("postL", 0.1, 0.1, 2.0, (-0.4, 0, 0), w, segs=8)
+    cyl("postR", 0.1, 0.1, 2.0, (0.4, 0, 0), w, segs=8)
+    box("cap", (1.1, 0.24, 0.22), (0, 0, 2.05), w)
+
+
+def build_cart(_v=0):
+    """A mine cart heaped with sap-soaked ore."""
+    iron = _iron()
+    box("tub", (1.5, 0.8, 0.55), (0, 0, 0.5), material("cart_wood", srgb("#4a3424"), 0.8, bump=0.3))
+    for x in (-0.55, 0.55):
+        for y in (-0.42, 0.42):
+            cyl(f"wheel{x}{y}", 0.2, 0.2, 0.08, (x, y, 0.2), iron, rot=(math.pi / 2, 0, 0), segs=12)
+    sap = material("sap_ore", srgb("#a85a0a"), 0.3, srgb("#5a2a04"), 6.0, emission=srgb("#7a3a04"), emission_strength=0.6)
+    sphere("ore", 0.6, (0, 0, 0.78), sap, scale=(1.1, 0.6, 0.35))
+
+
+def build_barrel(v=0):
+    w = material("barrel_wood", srgb("#5a3e26"), 0.75, srgb("#3a2818"), 10.0, bump=0.2)
+    cyl("barrel", 0.3, 0.3, 0.8, (0, 0, 0), w, segs=14)
+    for z in (0.12, 0.66):
+        cyl(f"hoop{z}", 0.31, 0.31, 0.05, (0, 0, z), _iron(), segs=14)
+    if v == 1:
+        cyl("lid", 0.3, 0.3, 0.02, (0, 0, 0.8), w, segs=14)
+
+
+def build_crate(_v=0):
+    w = material("crate_wood", srgb("#6a4e34"), 0.8, srgb("#4a3424"), 12.0, bump=0.25)
+    box("crate", (0.75, 0.75, 0.7), (0, 0, 0.35), w, bevel=0.02)
+    for a in (0.785, -0.785):
+        box(f"brace{a}", (0.06, 0.04, 0.95), (0, -0.38, 0.35), _wood(), rot=(0, a, 0))
+
+
+def build_lever(_v=0):
+    """The sap pump's lever: an iron handle on a stone block (both have to be pulled together)."""
+    box("block", (0.5, 0.5, 0.5), (0, 0, 0.25), stone_material())
+    cyl("handle", 0.035, 0.035, 0.8, (0, 0, 0.5), _iron(), rot=(0.5, 0, 0), segs=8)
+    sphere("knob", 0.07, (0, -0.38, 1.18), material("lever_knob", srgb("#8a2a1a"), 0.4))
+
+
+def build_pump(_v=0):
+    """A noble house's sap pump: a tank, a wheel and pipes, still dripping."""
+    iron = _iron()
+    sap = material("sap_tank", srgb("#9a4a08"), 0.2, srgb("#5a2a04"), 6.0, coat=0.8, emission=srgb("#8a4006"), emission_strength=0.8)
+    cyl("tank", 0.6, 0.6, 1.4, (0, 0, 0), sap, segs=18)
+    for z in (0.15, 0.7, 1.25):
+        cyl(f"band{z}", 0.62, 0.62, 0.06, (0, 0, z), iron, segs=18)
+    cyl("wheel", 0.5, 0.5, 0.08, (0.75, 0, 1.0), iron, rot=(0, math.pi / 2, 0), segs=16)
+    cyl("pipe", 0.08, 0.08, 1.2, (0, 0.6, 0.3), iron, rot=(math.pi / 2, 0, 0), segs=8)
+
+
+def build_tent(_v=0):
+    """A canvas tent on a ridge pole (the farmstead's first shelter)."""
+    canvas = material("canvas", srgb("#8a7a5e"), 0.9, srgb("#6a5a42"), 8.0, bump=0.3)
+    bm = bmesh.new()
+    pts = [(-1.2, -1.2, 0), (1.2, -1.2, 0), (1.2, 1.2, 0), (-1.2, 1.2, 0), (0, -1.3, 1.7), (0, 1.3, 1.7)]
+    v = [bm.verts.new(p) for p in pts]
+    for f in ((0, 1, 4), (1, 2, 5, 4), (2, 3, 5), (3, 0, 4, 5)):
+        bm.faces.new([v[i] for i in f])
+    mesh_obj("tent", bm, canvas)
+    cyl("pole", 0.04, 0.04, 1.8, (0, -1.3, 0), _wood(), segs=6)
+
+
+def build_palisade(kind):
+    """Sharpened logs, one cell, along x or y."""
+    w = material("palisade_wood", srgb("#5a4028"), 0.8, srgb("#3a2818"), 10.0, bump=0.3)
+    along_x = kind == "palisade_x"
+    for i in range(4):
+        t = -0.375 + i * 0.25
+        x, y = (t, 0) if along_x else (0, t)
+        cyl(f"log{i}", 0.12, 0.12, 1.7 + (i % 2) * 0.15, (x, y, 0), w, segs=8)
+        cyl(f"tip{i}", 0.12, 0.0, 0.3, (x, y, 1.7 + (i % 2) * 0.15), w, segs=8)
+
+
+def build_house_burnt(_v=0):
+    """A farmhouse burned to its frame: charred posts, a fallen beam, ash where the floor was."""
+    char = material("charred", srgb("#1a1614"), 0.9, srgb("#2a2420"), 6.0, bump=0.5)
+    ash = material("ash_floor", srgb("#3a3632"), 0.95)
+    box("floor", (3.6, 2.6, 0.08), (0, 0, 0.04), ash)
+    for x in (-1.7, 0, 1.7):
+        for y in (-1.2, 1.2):
+            h = 2.2 if (x + y) % 2 else 1.4
+            box(f"post{x}{y}", (0.18, 0.18, h), (x, y, h / 2), char)
+    box("beam_top", (3.6, 0.2, 0.2), (0, -1.2, 2.25), char)
+    box("beam_fallen", (2.6, 0.2, 0.2), (0.3, 0.2, 0.35), char, rot=(0, 0.25, 0.5))
+    rocky("rubble", 0.4, (-1.0, 0.5, 0.1), ash, seed=4, squash=0.4)
+    sphere("embers", 0.3, (0.8, 0.6, 0.1), _fire_glow(), scale=(1, 1, 0.2))
+
+
+def build_campfire(_v=0):
+    """The bonfire (*Ognisko*): where you get up after you both fall."""
+    st = stone_material()
+    for i in range(8):
+        a = i * math.tau / 8
+        rocky(f"stone{i}", 0.12, (math.cos(a) * 0.38, math.sin(a) * 0.38, 0.06), st, seed=60 + i, squash=0.7)
+    for i in range(4):
+        a = i * math.tau / 4 + 0.4
+        box(f"log{i}", (0.6, 0.1, 0.1), (math.cos(a) * 0.1, math.sin(a) * 0.1, 0.12), _wood(), rot=(0, 0.35, a))
+    sphere("fire", 0.22, (0, 0, 0.28), _fire_glow(), scale=(1, 1, 1.8))
+
+
+def build_dead_tree(v=0):
+    """A dead, leafless tree: the North-Grove after the sap stopped."""
+    rnd = random.Random(700 + v)
+    bark = material("dead_bark", srgb("#3a322a"), 0.9, srgb("#22201a"), 8.0, bump=0.5)
+    cyl("trunk", 0.3, 0.16, 2.6, (0, 0, 0), bark, segs=10)
+    for i in range(5):
+        a = rnd.uniform(0, math.tau)
+        z = rnd.uniform(1.2, 2.4)
+        cyl(f"branch{i}", 0.08, 0.02, rnd.uniform(0.9, 1.5), (0, 0, z), bark, rot=(math.cos(a) * 0.9, math.sin(a) * 0.9, 0), segs=6)
+
+
+def build_pine(v=0):
+    """A dark pine of the road through the Grove."""
+    rnd = random.Random(800 + v)
+    cyl("trunk", 0.16, 0.12, 1.0, (0, 0, 0), material("pine_bark", srgb("#3a2a1e"), 0.9), segs=8)
+    needles = material("pine_needles", srgb("#1e3220"), 0.8, srgb("#122016"), 4.0, sss=0.1, bump=0.3)
+    for i, (r, z) in enumerate(((1.1, 0.8), (0.85, 1.6), (0.6, 2.3), (0.3, 2.9))):
+        cyl(f"tier{i}", r * rnd.uniform(0.9, 1.1), 0.05, 1.0, (0, 0, z), needles, segs=10)

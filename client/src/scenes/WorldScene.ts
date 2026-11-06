@@ -97,6 +97,8 @@ export class WorldScene extends Phaser.Scene {
   private props!: PropLayer;
   private ground: GroundLayer | null = null;
   private life: AreaLife | null = null;
+  /** A fixed camera (cell x, y, zoom) for automated screenshots; null in play. */
+  testView: { x: number; y: number; zoom: number } | null = null;
   /** Story flags as the server last sent them. */
   private flags = new Set<string>();
   private lighting!: Lighting;
@@ -132,7 +134,7 @@ export class WorldScene extends Phaser.Scene {
 
   create() {
     this.map = MAPS[START_MAP];
-    this.grid = CollisionGrid.fromMap(this.map);
+    this.grid = CollisionGrid.fromMap(this.map, this.flags);
     this.worldLayer = this.add.layer();
     this.overlayLayer = this.add.layer();
     this.audio = new AudioDirector(this);
@@ -141,7 +143,7 @@ export class WorldScene extends Phaser.Scene {
     this.worldLayer.add(this.ground.rt);
     // The camera never shows past the map's edge (no black void around the courtyard).
     this.cameras.main.setBounds(0, 0, this.map.width * CELL, this.map.height * CELL);
-    this.props = new PropLayer(this, this.map, this.worldLayer);
+    this.props = new PropLayer(this, this.map, this.worldLayer, this.flags);
     this.lighting = new Lighting(this, this.map.ambient, this.worldLayer);
     this.petals = new Petals(this, this.worldLayer);
     this.telegraphs = new Telegraphs(this, this.worldLayer);
@@ -367,6 +369,12 @@ export class WorldScene extends Phaser.Scene {
     });
     $s(state).listen("flags", (f: string) => {
       this.flags = new Set(f ? f.split(",") : []);
+      // A gate opened: the walls the prediction walks against change with it.
+      if (this.map.props.some((p) => p.until)) {
+        this.grid = CollisionGrid.fromMap(this.map, this.flags);
+        this.me?.pred.setGrid(this.grid);
+        this.props.setFlags(this.flags);
+      }
     });
     const syncChoice = () => this.cinematic.setChoice(state.choicePicks, state.chosen);
     $s(state).listen("choicePicks", syncChoice);
@@ -393,12 +401,12 @@ export class WorldScene extends Phaser.Scene {
     const map = MAPS[id];
     if (!map) return;
     this.map = map;
-    this.grid = CollisionGrid.fromMap(map);
+    this.grid = CollisionGrid.fromMap(map, this.flags);
     this.ground?.rt.destroy();
     this.ground = new GroundLayer(this, map);
     this.worldLayer.add(this.ground.rt);
     this.props.destroy();
-    this.props = new PropLayer(this, map, this.worldLayer);
+    this.props = new PropLayer(this, map, this.worldLayer, this.flags);
     this.lighting.setAmbient(map.ambient);
     this.cameras.main.setBounds(0, 0, map.width * CELL, map.height * CELL);
     this.vfx.initGore(map.width, map.height);
@@ -564,6 +572,10 @@ export class WorldScene extends Phaser.Scene {
     $("hud").classList.toggle("cinematic", this.cinematic.playing);
     if (this.cinematic.playing) {
       this.cinematic.update();
+    } else if (this.testView) {
+      // Automated checks (tools/e2e/act1.cjs) photograph an area from a fixed spot.
+      cam.setZoom(this.testView.zoom);
+      cam.centerOn(this.testView.x * CELL, this.testView.y * CELL);
     } else if (this.me) {
       const target = this.me.char.screen;
       const px = this.me.char.pixelScale;

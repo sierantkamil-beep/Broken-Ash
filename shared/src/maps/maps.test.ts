@@ -24,7 +24,8 @@ function reachable(grid: CollisionGrid, sx: number, sy: number): Set<number> {
 }
 
 describe.each(Object.values(MAPS))("map $id", (map) => {
-  const grid = CollisionGrid.fromMap(map);
+  // Reachability with every gate open: the closed ones are what the story opens.
+  const grid = CollisionGrid.fromMap(map, "open");
 
   it("has a consistent ground layer", () => {
     expect(map.ground.length).toBe(map.width * map.height);
@@ -56,5 +57,41 @@ describe.each(Object.values(MAPS))("map $id", (map) => {
 
   it("references an existing intro cinematic", () => {
     if (map.introCinematic) expect(CINEMATICS[map.introCinematic]).toBeDefined();
+  });
+
+  it("links exits to existing areas and spawns, reachable on foot", () => {
+    const area = reachable(grid, Math.floor(map.spawns[0].x), Math.floor(map.spawns[0].y));
+    for (const x of map.exits ?? []) {
+      expect(MAPS[x.to], x.to).toBeDefined();
+      expect(x.spawn).toBeLessThan(MAPS[x.to].spawns.length);
+      let touches = false;
+      for (let y = Math.floor(x.region.y); y < x.region.y + x.region.h; y++)
+        for (let cx = Math.floor(x.region.x); cx < x.region.x + x.region.w; cx++) if (area.has(y * map.width + cx)) touches = true;
+      expect(touches, `exit to ${x.to}`).toBe(true);
+    }
+  });
+
+  it("places encounters, NPCs, levers and the bonfire on reachable ground, with existing scenes", () => {
+    const area = reachable(grid, Math.floor(map.spawns[0].x), Math.floor(map.spawns[0].y));
+    const at = (x: number, y: number) => area.has(Math.floor(y) * map.width + Math.floor(x));
+    for (const e of map.encounters ?? []) {
+      for (const s of e.spawnAt) expect(at(s.x, s.y), `${e.id} spawn ${s.x},${s.y}`).toBe(true);
+      if (e.clearCinematic) expect(CINEMATICS[e.clearCinematic], e.clearCinematic).toBeDefined();
+    }
+    for (const n of map.npcs ?? []) if (n.scene) expect(CINEMATICS[n.scene], n.scene).toBeDefined();
+    for (const l of map.levers ?? []) {
+      // Someone must be able to stand within talking range of the lever.
+      let ok = false;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (at(l.x + dx, l.y + dy) && Math.hypot(dx, dy) <= BALANCE.combat.talkRange) ok = true;
+      expect(ok, `lever ${l.x},${l.y}`).toBe(true);
+    }
+    if (map.bonfire) expect(overlaps(map.bonfire.x, map.bonfire.y, BALANCE.player.radius, grid)).toBe(false);
+  });
+
+  it("closes its gates until their flag is set", () => {
+    const gates = map.props.filter((p) => p.until);
+    const closed = CollisionGrid.fromMap(map);
+    for (const g of gates) expect(closed.blocked(g.x, g.y)).toBe(true);
+    for (const g of gates) expect(CollisionGrid.fromMap(map, new Set([g.until!])).blocked(g.x, g.y)).toBe(false);
   });
 });

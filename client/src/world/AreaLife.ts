@@ -69,9 +69,15 @@ export class AreaLife {
       n.char.update({ x: def.x, y: def.y, vx: 0, vy: 0, facing: def.facing, dodgeT: 0 }, delta);
       if (me && def.scene && Math.hypot(me.x - def.x, me.y - def.y) <= 1.6) near = def;
     }
+    // Levers not yet pulled to the end (their group's flag still missing).
+    const lever = me && !near ? (this.map.levers ?? []).find((l) => !flags.has(l.flag) && Math.hypot(me.x - l.x, me.y - l.y) <= 1.6) : undefined;
     if (near && !fighting) {
       const s = worldToScreen(near.x, near.y);
-      this.prompt.setPosition(s.x, s.y - 150).setVisible(true).setScale(1 / this.scene.cameras.main.zoom);
+      this.prompt.setText("F — rozmowa").setPosition(s.x, s.y - 150).setVisible(true).setScale(1 / this.scene.cameras.main.zoom);
+    } else if (lever) {
+      const s = worldToScreen(lever.x, lever.y);
+      const others = (this.map.levers ?? []).filter((l) => l.group === lever.group).length;
+      this.prompt.setText(others > 1 ? "F — dźwignia (razem, w tej samej chwili)" : "F — dźwignia").setPosition(s.x, s.y - 90).setVisible(true).setScale(1 / this.scene.cameras.main.zoom);
     } else this.prompt.setVisible(false);
     for (const x of this.exits) {
       const open = !fighting && (!x.needs || flags.has(x.needs));

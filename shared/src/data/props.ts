@@ -60,6 +60,25 @@ export const PROPS = {
   banner: { name: "Chorągiew rodu Soramei", w: 1, h: 1, blocks: [[0, 0]], variants: 1 },
   corpse_greyed: { name: "Martwy Szary", w: 2, h: 1, blocks: [], variants: 2, flat: true },
   blood_pool: { name: "Krew", w: 1, h: 1, blocks: [], variants: 4, flat: true },
+  // Act 1: the cells under the keep, the Drowned Sap-Mine, the burned farmstead, Harrow's road.
+  bars_x: { name: "Kraty celi", w: 1, h: 1, blocks: [[0, 0]], variants: 1 },
+  bars_y: { name: "Kraty celi", w: 1, h: 1, blocks: [[0, 0]], variants: 1 },
+  rockwall: { name: "Skała", w: 1, h: 1, blocks: [[0, 0]], variants: 3 },
+  brazier: { name: "Kosz żarowy", w: 1, h: 1, blocks: [[0, 0]], light: { z: 0.85, radius: 4.5, color: 0xff8a3a, flicker: true, intensity: 1 }, variants: 1 },
+  torch_post: { name: "Pochodnia", w: 1, h: 1, blocks: [[0, 0]], light: { z: 2.0, radius: 4, color: 0xffa050, flicker: true, intensity: 0.95 }, variants: 1 },
+  support: { name: "Stempel", w: 1, h: 1, blocks: [[0, 0]], variants: 1 },
+  cart: { name: "Wózek z urobkiem", w: 2, h: 1, blocks: [[0, 0], [1, 0]], light: { z: 0.8, radius: 1.6, color: 0xc87818, intensity: 0.4, hidden: true }, variants: 1 },
+  barrel: { name: "Beczka", w: 1, h: 1, blocks: [[0, 0]], variants: 2 },
+  crate: { name: "Skrzynia", w: 1, h: 1, blocks: [[0, 0]], variants: 1 },
+  lever: { name: "Dźwignia pompy", w: 1, h: 1, blocks: [[0, 0]], variants: 1 },
+  pump: { name: "Pompa żywicy", w: 2, h: 2, blocks: [[0, 0], [1, 0], [0, 1], [1, 1]], light: { z: 0.8, radius: 2.4, color: 0xc87818, intensity: 0.6, hidden: true }, variants: 1 },
+  tent: { name: "Namiot", w: 3, h: 3, blocks: [[1, 1], [0, 1], [2, 1]], variants: 1 },
+  palisade_x: { name: "Palisada", w: 1, h: 1, blocks: [[0, 0]], variants: 1 },
+  palisade_y: { name: "Palisada", w: 1, h: 1, blocks: [[0, 0]], variants: 1 },
+  house_burnt: { name: "Spalona chata", w: 4, h: 3, blocks: [[0, 0], [1, 0], [2, 0], [3, 0], [0, 2], [3, 2]], light: { z: 0.2, radius: 2, color: 0xe0601a, flicker: true, intensity: 0.5, hidden: true }, variants: 1 },
+  campfire: { name: "Ognisko", w: 1, h: 1, blocks: [[0, 0]], light: { z: 0.4, radius: 5, color: 0xff8a3a, flicker: true, intensity: 1.1 }, variants: 1 },
+  dead_tree: { name: "Martwe drzewo", w: 2, h: 2, blocks: [[0, 0]], variants: 2 },
+  pine: { name: "Sosna", w: 2, h: 2, blocks: [[0, 0]], variants: 3 },
 } satisfies Record<string, PropDef>;
 
 export type PropKind = keyof typeof PROPS;

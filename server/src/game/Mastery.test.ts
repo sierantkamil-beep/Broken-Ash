@@ -53,7 +53,7 @@ describe("loadout", () => {
 
 describe("mastery in the world", () => {
   it("gains XP from weapon hits and announces a level-up", () => {
-    const w = new World();
+    const w = new World("soramei_courtyard");
     w.encounter = false;
     const p = w.addPlayer("a", { name: "A", path: "thorn", weapon: "glaive" });
     expect(p.weapon).toBe("glaive");
@@ -63,7 +63,7 @@ describe("mastery in the world", () => {
   });
 
   it("refuses loadout changes during a wave and validates them otherwise", () => {
-    const w = new World();
+    const w = new World("soramei_courtyard");
     w.encounter = false;
     const p = w.addPlayer("a", { name: "A", path: "ash" });
     expect(p.weapon).toBe("talismans");
@@ -76,7 +76,7 @@ describe("mastery in the world", () => {
   });
 
   it("restores saved progress and ignores junk in it", () => {
-    const w = new World();
+    const w = new World("soramei_courtyard");
     w.encounter = false;
     const p = w.addPlayer("a", { name: "A", path: "thorn", look: { skin: 99, head: "crown", cloth: 3 } }, {
       mastery: { blades: 5000, nope: 4 } as never,

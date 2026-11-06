@@ -38,10 +38,29 @@ PROPS = {
     "rock": (130, 120, 0.2, lambda v: M.build_rock(v), 3),
     "bamboo": (200, 360, 1.8, lambda v: M.build_bamboo(v), 2),
     "banner": (170, 290, 1.6, lambda v: M.build_banner(decals.crest_path(CACHE)), 1),
+    # Act 1: the cells, the mine, the farmstead, the road.
+    "bars_x": (130, 230, 1.0, lambda v: M.build_bars("bars_x"), 1),
+    "bars_y": (150, 280, 1.0, lambda v: M.build_bars("bars_y"), 1),
+    "rockwall": (130, 230, 0.8, lambda v: M.build_rockwall(v), 3),
+    "brazier": (150, 160, 0.45, lambda v: M.build_brazier(v), 1),
+    "torch_post": (150, 220, 1.0, lambda v: M.build_torch_post(v), 1),
+    "support": (150, 220, 1.0, lambda v: M.build_support(v), 1),
+    "cart": (200, 160, 0.4, lambda v: M.build_cart(v), 1),
+    "barrel": (160, 180, 0.3, lambda v: M.build_barrel(v), 2),
+    "crate": (160, 180, 0.3, lambda v: M.build_crate(v), 1),
+    "lever": (150, 160, 0.5, lambda v: M.build_lever(v), 1),
+    "pump": (220, 240, 0.8, lambda v: M.build_pump(v), 1),
+    "tent": (320, 320, 0.8, lambda v: M.build_tent(v), 1),
+    "palisade_x": (130, 200, 0.9, lambda v: M.build_palisade("palisade_x"), 1),
+    "palisade_y": (150, 250, 0.9, lambda v: M.build_palisade("palisade_y"), 1),
+    "house_burnt": (400, 340, 1.0, lambda v: M.build_house_burnt(v), 1),
+    "campfire": (130, 120, 0.2, lambda v: M.build_campfire(v), 1),
+    "dead_tree": (230, 300, 1.4, lambda v: M.build_dead_tree(v), 2),
+    "pine": (220, 300, 1.4, lambda v: M.build_pine(v), 3),
 }
 
 # Footprints in cells (Blender X × Y), for the shadow area. Must match shared/src/data/props.ts.
-FOOTPRINTS = {"gate_vermilion": (3, 1), "blossom_tree": (3, 3), "shrine": (4, 4), "bamboo": (1.2, 1.2)}
+FOOTPRINTS = {"gate_vermilion": (3, 1), "blossom_tree": (3, 3), "shrine": (4, 4), "bamboo": (1.2, 1.2), "cart": (2, 1), "pump": (2, 2), "tent": (3, 3), "house_burnt": (4, 3), "dead_tree": (2, 2), "pine": (2, 2)}
 
 
 

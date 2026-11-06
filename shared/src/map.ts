@@ -90,12 +90,17 @@ export interface AreaMap {
   /** Where you get up after you both fall (a campfire, *Ognisko*); the first spawn otherwise. */
   bonfire?: { x: number; y: number };
   npcs?: Npc[];
+  /**
+   * Levers: F pulls one; when every lever of a group has been pulled within a couple of seconds of
+   * each other (two players, two levers), the group's flag is set.
+   */
+  levers?: { x: number; y: number; group: string; flag: string }[];
 }
 
-export type GroundType = "paving" | "moss" | "gravel" | "dirt" | "water" | "void";
+export type GroundType = "paving" | "moss" | "gravel" | "dirt" | "water" | "void" | "slabs" | "rock" | "planks" | "mud" | "sap" | "scorched" | "grass";
 
 /** Ground you can't stand on. */
-export const BLOCKING_GROUND: ReadonlySet<GroundType> = new Set(["water", "void"]);
+export const BLOCKING_GROUND: ReadonlySet<GroundType> = new Set(["water", "void", "sap"]);
 
 export interface PropPlacement {
   kind: PropKind;
@@ -106,6 +111,8 @@ export interface PropPlacement {
   variant?: number;
   /** Mirrors the sprite horizontally (cheap extra variety). */
   flip?: boolean;
+  /** A gate: stands (and blocks) only until this story flag is set. */
+  until?: string;
 }
 
 /** Which cells block movement. Built once per map; out-of-bounds is always blocked. */
@@ -119,12 +126,17 @@ export class CollisionGrid {
     this.cells = new Uint8Array(width * height);
   }
 
-  static fromMap(map: AreaMap): CollisionGrid {
+  /**
+   * The walls of an area. Gates (props with `until`) stand while their flag is missing; pass the story
+   * flags, or "open" to treat every gate as open (map checks).
+   */
+  static fromMap(map: AreaMap, flags: ReadonlySet<string> | "open" = new Set()): CollisionGrid {
     const grid = new CollisionGrid(map.width, map.height);
     for (let i = 0; i < map.ground.length; i++) {
       if (BLOCKING_GROUND.has(map.groundTypes[map.ground[i]])) grid.cells[i] = 1;
     }
     for (const p of map.props) {
+      if (p.until && (flags === "open" || flags.has(p.until))) continue;
       for (const [dx, dy] of PROPS[p.kind].blocks) grid.set(p.x + dx, p.y + dy, true);
     }
     return grid;

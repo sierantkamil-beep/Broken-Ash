@@ -102,6 +102,8 @@ export class World implements Arena {
   private encs: EncState[] = [];
   /** Seconds both players have stood in an exit (a short beat before the fade). */
   private exitT = 0;
+  /** When each lever of the area was last pulled (a lever group's flag needs them all within a window). */
+  private readonly levers = new Map<number, number>();
   readonly players = new Map<string, PlayerSim>();
   readonly units = new Map<string, UnitSim>();
   projectiles: Projectile[] = [];
@@ -132,7 +134,7 @@ export class World implements Arena {
     for (const f of flags) this.flags.add(f);
     const map = MAPS[mapId] ?? MAPS[START_MAP];
     this.map = map;
-    this.grid = CollisionGrid.fromMap(map);
+    this.grid = CollisionGrid.fromMap(map, this.flags);
     this.loadEncounters();
   }
 
@@ -141,6 +143,12 @@ export class World implements Arena {
   setFlag(f: string) {
     if (this.flags.has(f)) return;
     this.flags.add(f);
+    // A gate opening changes the walls; the paths are recomputed from the new grid.
+    if (this.map.props.some((p) => p.until === f)) {
+      this.grid = CollisionGrid.fromMap(this.map, this.flags);
+      this.fields.clear();
+      this.fx.push({ t: "opened", flag: f });
+    }
     this.onStory?.();
   }
 
@@ -158,7 +166,8 @@ export class World implements Arena {
     const map = MAPS[mapId];
     if (!map) return;
     this.map = map;
-    this.grid = CollisionGrid.fromMap(map);
+    this.grid = CollisionGrid.fromMap(map, this.flags);
+    this.levers.clear();
     this.units.clear();
     this.projectiles = [];
     this.zones = [];
@@ -203,6 +212,24 @@ export class World implements Arena {
     }
     this.exitT += dt;
     if (this.exitT >= C.exitDwell) this.travel(exit.to, exit.spawn);
+  }
+
+  /**
+   * F at a lever pulls it. A group's flag is set once every lever of the group was pulled within
+   * `leverWindow` seconds: one player can't do it alone, the two must pull together.
+   */
+  private pullLever(p: PlayerSim): boolean {
+    const levers = this.map.levers ?? [];
+    const i = levers.findIndex((l) => !this.flags.has(l.flag) && Math.hypot(l.x - p.body.x, l.y - p.body.y) <= C.talkRange);
+    if (i < 0) return false;
+    const l = levers[i];
+    // F is held, so a lever is "pulled" every tick it's held; the click sounds once.
+    const last = this.levers.get(i);
+    if (last === undefined || this.time - last > 0.3) this.fx.push({ t: "lever", i });
+    this.levers.set(i, this.time);
+    const group = levers.map((o, j) => [o, j] as const).filter(([o]) => o.group === l.group);
+    if (group.every(([, j]) => this.levers.has(j) && this.time - this.levers.get(j)! <= C.leverWindow)) this.setFlag(l.flag);
+    return true;
   }
 
   /** NPCs present in this area given the story so far. */
@@ -354,7 +381,7 @@ export class World implements Arena {
     const def = CINEMATICS[c.id];
     this.cinematic = null;
     for (const f of def.onEnd?.flags ?? []) this.setFlag(f);
-    const next = def.choice && c.chosen !== undefined ? def.choice.options[c.chosen].then : undefined;
+    const next = (def.choice && c.chosen !== undefined ? def.choice.options[c.chosen].then : undefined) ?? def.onEnd?.next;
     if (def.onEnd?.travel) this.travel(def.onEnd.travel.to, def.onEnd.travel.spawn);
     if (next) this.startCinematic(next);
   }
@@ -476,6 +503,7 @@ export class World implements Arena {
         this.startCinematic(npc.scene);
         return;
       }
+      if (this.pullLever(p)) continue;
       const victim = [...this.units.values()].find((u) => !u.dead && u.faction === "greyed" && u.staggerT > 0 && near(p, u, C.interactRange + u.radius));
       if (victim) {
         this.fx.push({ t: "execute", by: p.id, id: victim.id });

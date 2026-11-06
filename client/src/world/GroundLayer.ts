@@ -6,7 +6,7 @@ import { framePivot } from "./frames";
  * Which ground draws its soft, feathered rim over which: higher priority creeps over lower
  * (moss over flagstones, flagstones over the pond's edge). Water and void stay crisp.
  */
-const PRIORITY: Record<GroundType, number> = { void: -1, water: 0, paving: 1, gravel: 2, dirt: 3, moss: 4 };
+const PRIORITY: Record<GroundType, number> = { void: -1, water: 0, sap: 0, slabs: 1, paving: 1, planks: 2, rock: 2, gravel: 2, mud: 3, dirt: 3, scorched: 3, moss: 4, grass: 4 };
 const SUPER = 4;
 
 /** Bakes the whole ground into one render texture once: hard squares first, then soft rims by priority. */
@@ -39,7 +39,7 @@ export class GroundLayer {
       const t = typeAt(x, y);
       if (t && t !== "void") draw(`${t}_${x % SUPER}_${y % SUPER}`, x, y);
     }
-    const types = [...new Set(map.groundTypes)].filter((t) => t !== "water" && t !== "void").sort((a, b) => PRIORITY[a] - PRIORITY[b]);
+    const types = [...new Set(map.groundTypes)].filter((t) => t !== "water" && t !== "sap" && t !== "void").sort((a, b) => PRIORITY[a] - PRIORITY[b]);
     for (const t of types) {
       for (const [x, y] of cells) {
         if (typeAt(x, y) !== t) continue;

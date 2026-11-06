@@ -1,7 +1,8 @@
 import type { Cinematic } from "../cinematic.js";
+import { ACT1_SCENES } from "./act1scenes.js";
 
 /**
- * Prolog — plays the first time the two of you enter the Soramei courtyard.
+ * Prolog — plays the first time the two of you come up into the Soramei courtyard from the cells.
  * Tone: quiet, cold narration over the ruined courtyard; one violent beat (the splitting of the
  * tree); ends on the two convicts and a shout from the gate that throws you into the game.
  * The narrator is unnamed on purpose (it's Sanoe, which players learn in Act 3).
@@ -25,7 +26,8 @@ const PROLOG: Cinematic = {
   ],
   startFade: 1,
   fades: [{ t: 0, dur: 3500, to: 0 }],
-  titles: [{ t: 1200, dur: 7000, title: "BROKEN ASH", subtitle: "Aeldrith. Dziewiętnaście lat po Złamaniu." }],
+  // The game's title opens the cells (act1scenes.ts); here the story of the tree is told.
+  titles: [],
   subtitles: [
     { t: 9000, dur: 5300, text: "Przez trzy tysiące lat Jesion Świata kwitł na czerwono." },
     { t: 14600, dur: 5400, text: "Jego żywica dawała nam młodość, nieśmiertelność i pychę." },
@@ -53,4 +55,5 @@ const PROLOG: Cinematic = {
 
 export const CINEMATICS: Record<string, Cinematic> = {
   [PROLOG.id]: PROLOG,
+  ...Object.fromEntries(ACT1_SCENES.map((c) => [c.id, c])),
 };

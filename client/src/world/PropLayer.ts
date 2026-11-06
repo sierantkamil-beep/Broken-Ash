@@ -5,7 +5,7 @@ import type { LightSource } from "./Lighting";
 import { hasFrame } from "./frames";
 
 /** Props tall enough to hide a player standing behind them; they fade while someone is back there. */
-const OCCLUDERS = new Set(["blossom_tree", "shrine", "gate_vermilion", "bamboo", "banner", "paper_lantern"]);
+const OCCLUDERS = new Set(["blossom_tree", "shrine", "gate_vermilion", "bamboo", "banner", "paper_lantern", "pine", "dead_tree", "tent", "house_burnt", "rockwall", "support", "pump"]);
 const DEPTH_FLAT = -1e6;
 
 interface Occluder {
@@ -19,13 +19,16 @@ export class PropLayer {
   private readonly glows: { img: Phaser.GameObjects.Image; seed: number; base: number }[] = [];
   /** Everything this layer placed, so a new area can clear it. */
   private readonly objects: Phaser.GameObjects.GameObject[] = [];
+  /** Gates: props that stand only until a story flag is set. */
+  private readonly gates: { img: Phaser.GameObjects.Image; until: string }[] = [];
 
-  constructor(scene: Phaser.Scene, map: AreaMap, layer: Phaser.GameObjects.Layer) {
+  constructor(private readonly scene: Phaser.Scene, map: AreaMap, layer: Phaser.GameObjects.Layer, flags: ReadonlySet<string> = new Set()) {
     map.props.forEach((p, i) => {
       const def: PropDef = PROPS[p.kind];
       if (def.flat && settings.gore === "reduced") return;
       const frame = `${p.kind}_${p.variant ?? 0}`;
       if (!hasFrame(scene, "props", frame)) return;
+      if (p.until && flags.has(p.until)) return;
       const cx = p.x + def.w / 2;
       const cy = p.y + def.h / 2;
       const s = worldToScreen(cx, cy);
@@ -34,6 +37,7 @@ export class PropLayer {
       layer.add(img);
       this.objects.push(img);
       if (OCCLUDERS.has(p.kind)) this.occluders.push({ img, depth });
+      if (p.until) this.gates.push({ img, until: p.until });
       if (def.light) {
         const l = worldToScreen(cx, cy, def.light.z);
         this.lights.push({ x: l.x, y: s.y - def.light.z * Z_PX * 0.2, radius: def.light.radius * CELL, color: def.light.color, intensity: def.light.intensity ?? 1, flicker: def.light.flicker, seed: i * 7.3 });
@@ -45,6 +49,16 @@ export class PropLayer {
         this.glows.push({ img: glow, seed: i * 7.3, base: 0.55 });
       }
     });
+  }
+
+  /** The story moved on: gates whose flag is now set sink and fade away. */
+  setFlags(flags: ReadonlySet<string>) {
+    for (let i = this.gates.length - 1; i >= 0; i--) {
+      const g = this.gates[i];
+      if (!flags.has(g.until)) continue;
+      this.gates.splice(i, 1);
+      this.scene.tweens.add({ targets: g.img, alpha: 0, y: g.img.y + 24, duration: 900, ease: "Cubic.easeIn", onComplete: () => g.img.setVisible(false) });
+    }
   }
 
   destroy() {

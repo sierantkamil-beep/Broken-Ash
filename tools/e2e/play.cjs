@@ -15,12 +15,15 @@ const OUT = path.join(__dirname, "out");
 fs.mkdirSync(OUT, { recursive: true });
 const electronPath = require(path.join(ROOT, "desktop", "node_modules", "electron"));
 
-async function launch(params, tag) {
+async function launch(params, tag, story) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), `ash-${tag}-`));
+  // The host's story save: start at the courtyard (the cells come before it in a new game; act1.cjs plays those).
+  if (story) fs.writeFileSync(path.join(dir, "story.json"), JSON.stringify(story));
   const app = await _electron.launch({
     executablePath: electronPath,
     // No GPU on a CI box or under xvfb: let Chromium render WebGL in software.
     args: [path.join(ROOT, "desktop"), "--no-sandbox", "--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"],
-    env: { ...process.env, ASH_TEST_PARAMS: params, ASH_USER_DATA: fs.mkdtempSync(path.join(os.tmpdir(), `ash-${tag}-`)) },
+    env: { ...process.env, ASH_TEST_PARAMS: params, ASH_USER_DATA: dir },
   });
   const win = await app.firstWindow();
   win.on("pageerror", (e) => console.log(`[${tag}] pageerror`, e.message));
@@ -34,7 +37,7 @@ const scene = (win) => win.evaluate(() => window.__game?.()?.scene.getScene("wor
 (async () => {
   const hostPath = process.env.HOST_PATH ?? "thorn";
   const joinPath = process.env.JOIN_PATH ?? "blood";
-  const a = await launch(`autohost=1&name=Ayume&path=${hostPath}&body=male`, "host");
+  const a = await launch(`autohost=1&name=Ayume&path=${hostPath}&body=male`, "host", { area: "soramei_courtyard", flags: ["seen:cells_intro", "cells_cleared"] });
   await a.win.waitForFunction(() => !!window.__room, null, { timeout: 120000 });
   const b = await launch(`autojoin=1&address=localhost&name=Sanoe&path=${joinPath}&body=female`, "join");
   await b.win.waitForFunction(() => !!window.__room, null, { timeout: 120000 });

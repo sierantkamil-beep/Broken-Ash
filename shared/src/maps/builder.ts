@@ -44,9 +44,14 @@ export class MapBuilder {
     return this.groundTypes[this.ground[y * this.width + x]];
   }
 
-  prop(kind: PropKind, x: number, y: number, variant = 0, flip = false): this {
-    this.props.push({ kind, x, y, variant, flip: flip || undefined });
+  prop(kind: PropKind, x: number, y: number, variant = 0, flip = false, until?: string): this {
+    this.props.push({ kind, x, y, variant, flip: flip || undefined, until });
     return this;
+  }
+
+  /** A gate: a prop that stands (and blocks) only until the story flag is set. */
+  gate(kind: PropKind, x: number, y: number, until: string, variant = 0): this {
+    return this.prop(kind, x, y, variant, false, until);
   }
 
   build(meta: Omit<AreaMap, "width" | "height" | "groundTypes" | "ground" | "props">): AreaMap {

@@ -7,7 +7,7 @@ import { World } from "./World.js";
 
 /** A world past its intro, with no waves unless asked for. */
 function arena(paths: PathId[], encounter = false) {
-  const w = new World();
+  const w = new World("soramei_courtyard");
   w.encounter = encounter;
   const ps = paths.map((path, i) => w.addPlayer(`p${i}`, { name: `P${i}`, path }));
   for (const p of ps) w.voteSkip(p.id);
@@ -239,7 +239,7 @@ describe("going down", () => {
 });
 
 describe("the gate assault", () => {
-  it("breaks the gate, sends waves, and the Tapper comes last", () => {
+  it("breaks the gate, sends waves, and holding it gets you out of the keep", () => {
     const { w } = arena(["thorn", "blood"], true);
     run(w, BALANCE.combat.waveDelay + 4);
     expect(w.phase).toBe("fight");
@@ -250,7 +250,9 @@ describe("the gate assault", () => {
       run(w, 3);
       for (const u of [...w.units.values()]) dealDamage(w, undefined, u, 1e6, 0);
       run(w, BALANCE.combat.waveDelay + 4);
-      if (wave === 2) expect([...w.units.values()].some((u) => u.kind === "tapper")).toBe(true);
+      if (wave === 2) expect(w.wave).toBe(3);
     }
+    expect(w.flags.has("gate_held")).toBe(true);
+    expect(w.cinematic?.id).toBe("escape");
   });
 });
