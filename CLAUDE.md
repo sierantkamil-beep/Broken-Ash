@@ -32,8 +32,8 @@ for porting its systems.
 | Paths (classes) | 8: 2 melee, 4 magic, 2 ranged. No healers or pure tanks; every path deals damage, sustains itself and has co-op combos. | Always exactly two players; support roles would be boring. |
 | Building | Core pillar: the players build, furnish and defend their fortress (Ostoja). Raids outside the story are a **setting** (on by default). | The users love building. |
 | Language | Player-facing content in **Polish**; code, comments, docs, data keys in English. Avoid gendered verb forms where possible; counts via `plural()`. | User request; the two players are different genders. |
-| Art | **Our own**: Blender (`bpy`) renders every sprite through the game's iso camera; the ground is painted with numpy. Characters are built on the **MakeHuman CC0** base mesh, skeleton and weights (elven morph, our own outfits per path, skeletal animation). Higher-resolution, no pixel art. Free assets (CC0/CC-BY/CC-BY-SA) allowed only with a `CREDITS.md` entry; **nothing paid**. | User request ("character design was horrible"); uniqueness; no licence risk. |
-| Bodies | Each player picks a male or female body; every path is rendered for both. | User request. |
+| Art | **PixelLab** (pixellab.ai) generates the hard parts: the **two shared bodies** (male/female, 64 px, 8 rotations) and their motion (run, strike, cast; 5 directions, the other 3 mirrored). Everything else is ours, made from those pixels: path looks by **palette recolour** (`shared/src/data/looks.ts`, `client/src/assets/recolor.ts`), idle/hit/death/roll derived in `tools/pixellab/derive.py`, gear add-ons drawn on top later. Pixel art drawn at 2× with nearest filtering and whole-pixel zoom. Generations are scarce (40 on the trial): test one direction before buying the rest. Props/ground still from the Blender pipeline. Free assets (CC0/CC-BY/CC-BY-SA) only with a `CREDITS.md` entry; **nothing paid**. | User decision ("visuals still ugly"; "male/female models, animations within the skills, armour that actually appears"). |
+| Bodies | Each player picks a male or female body; **one body per sex for every path**, dressed by the path's look and gear. | User request. |
 | Combat | Skills are data (aimed shapes + effects + statuses), interpreted by the server; Greyed attacks are telegraphed on the ground; executions, downed/revive, wipes restart the wave. | design.md §5. |
 | Audio | **Synthesised into .ogg files** by `tools/audio/build.py` (numpy + ffmpeg); played through Phaser's Web Audio on three buses. | Original, re-tunable, nothing to license. |
 | Platform | **Windows desktop app only** (Electron). No browser version: the client is web tech inside Electron, never shipped or played in a browser. | User decision. |
@@ -71,6 +71,7 @@ client/   Phaser 3 + Vite.
                      per Greyed, index.json), audio — committed.
 desktop/  Electron shell (embedded server, UPnP/host report, app:// protocol). From Dinusie.
 tools/
+  pixellab/ PixelLab REST tooling + generated frames (src/), pack.py (atlases), derive.py (free clips).
   art/    render.py (props), characters.py (players + Greyed), mh_fetch.py / mh.py (MakeHuman bodies),
           outfits.py (path outfits, hair, weapons, Greyed), anims.py (poses), models.py, materials.py,
           decals.py, ground.py, common.py.
@@ -90,7 +91,10 @@ pnpm typecheck      # tsc in every package
 pnpm desktop        # build client + run Electron
 pnpm dist:win       # Windows portable .exe + installer (CI does this on push to main)
 pnpm art            # re-render props + ground (needs: pip install bpy numpy pillow)
-pnpm chars          # re-render characters (hours; resumable; python tools/art/characters.py path:body for one set)
+pnpm art:pack       # pack PixelLab frames (tools/pixellab/src) into atlases; bodies: add --palette tools/pixellab/body_palette.json
+                    # tools/pixellab/: api.py (REST client; the token is injected by the environment's proxy),
+                    # queue.py (one job at a time, skips what exists), derive.py (free idle/hit/death/roll),
+                    # ids.json (everything generated, so nothing is paid for twice)
 pnpm catalogue      # regenerate docs/catalogue.md
 pnpm audio          # re-synthesise audio (needs: numpy + ffmpeg)
 ```
@@ -103,8 +107,8 @@ shell passes `ASH_TEST_PARAMS` (e.g. `autohost=1&name=A&path=thorn&body=male`, o
 
 Art renders are cached in `tools/art/.cache` (gitignored); pass `--force` or delete it after changing a
 model. MakeHuman assets come from `python tools/art/mh_fetch.py` (gitignored `tools/art/.mh`). In bpy,
-`import bpy` must come before `import bmesh`. Frame counts per animation live in `tools/art/anims.py`
-FRAMES and `client/src/entities/Character.ts` ANIM_FRAMES — keep them equal. `python tools/art/render.py props` or `chars` renders one group. The Blender module lives in a
+`import bpy` must come before `import bmesh`. Character frame counts come from each atlas's meta
+(`pack.py` writes them), so nothing is hard-coded. `python tools/art/render.py props` or `chars` renders one group. The Blender module lives in a
 venv here (`/home/user/.venvs/art`); on another machine `pip install bpy numpy pillow` (Python 3.13).
 
 ## Conventions

@@ -63,3 +63,17 @@ What each milestone actually built. The plan is `docs/design.md` §11.
   Automated checks drive two real Electron windows (`pnpm e2e`): one hosts with the embedded server,
   the other joins, both skip the prolog and fight.
 - Fixed: Greyed whose sprite atlas hadn't loaded yet reported position (0, 0) to aiming and effects.
+
+### PixelLab bodies
+- **Art source switched to PixelLab.** One male and one female elf body (plain grey tunic, brown
+  leather) generated once and shared by every path; a path's look recolours cloth and leather from an
+  exact palette (the animations are snapped to it), so armour colours show on the character. Gear
+  add-ons (weapons, helmets, plates) will be drawn on top later.
+- Motion from PixelLab templates (cleaner loops than custom text animations at this size): run
+  (`running-6-frames`), strike (`surprise-uppercut`, a rising draw-and-cut), cast (`fireball`), five
+  directions each, mirrored to eight. Idle, hit, death and the dodge roll are derived for free.
+- Client: atlases describe themselves (pixel art, scale, frame counts, height); 2× nearest-filtered
+  pixels with whole-pixel zoom; melee paths' skills use the strike, magic and ranged the cast.
+- Budget: 40 trial generations; a rejected Thorn concept (kept for an NPC) and a rejected custom
+  sword-slash test are the only waste.
+

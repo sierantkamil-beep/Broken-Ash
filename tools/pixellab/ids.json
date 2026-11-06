@@ -357,6 +357,175 @@
         "enhanced_prompt": null,
         "enhance_usage": null
       }
+    },
+    {
+      "body": {
+        "character_id": "dda902fc-636a-4f90-a3bf-900d8488ee70",
+        "animation_name": "body_female_run",
+        "directions": [
+          "south-west"
+        ],
+        "mode": "template",
+        "template_animation_id": "running-6-frames",
+        "animation_group_id": "cf4c8732-d379-4fad-8b43-4848a1201b5c"
+      },
+      "response": {
+        "background_job_ids": [
+          "03c770c7-b84c-4092-a309-eb1f249a4ae2"
+        ],
+        "directions": [
+          "south-west"
+        ],
+        "animation_group_id": "cf4c8732-d379-4fad-8b43-4848a1201b5c",
+        "status": "processing",
+        "enhanced_prompt": null,
+        "enhance_usage": null
+      }
+    },
+    {
+      "body": {
+        "character_id": "dda902fc-636a-4f90-a3bf-900d8488ee70",
+        "animation_name": "body_female_run",
+        "directions": [
+          "west"
+        ],
+        "mode": "template",
+        "template_animation_id": "running-6-frames",
+        "animation_group_id": "cf4c8732-d379-4fad-8b43-4848a1201b5c"
+      },
+      "response": {
+        "background_job_ids": [
+          "785b7588-079f-4e59-96ea-0551fa8b17a1"
+        ],
+        "directions": [
+          "west"
+        ],
+        "animation_group_id": "cf4c8732-d379-4fad-8b43-4848a1201b5c",
+        "status": "processing",
+        "enhanced_prompt": null,
+        "enhance_usage": null
+      }
+    },
+    {
+      "body": {
+        "character_id": "dda902fc-636a-4f90-a3bf-900d8488ee70",
+        "animation_name": "body_female_run",
+        "directions": [
+          "north-west"
+        ],
+        "mode": "template",
+        "template_animation_id": "running-6-frames",
+        "animation_group_id": "cf4c8732-d379-4fad-8b43-4848a1201b5c"
+      },
+      "response": {
+        "background_job_ids": [
+          "a33e70c6-462b-4b0c-9d0f-63d30a0daad2"
+        ],
+        "directions": [
+          "north-west"
+        ],
+        "animation_group_id": "cf4c8732-d379-4fad-8b43-4848a1201b5c",
+        "status": "processing",
+        "enhanced_prompt": null,
+        "enhance_usage": null
+      }
+    },
+    {
+      "body": {
+        "character_id": "dda902fc-636a-4f90-a3bf-900d8488ee70",
+        "animation_name": "body_female_run",
+        "directions": [
+          "north"
+        ],
+        "mode": "template",
+        "template_animation_id": "running-6-frames",
+        "animation_group_id": "cf4c8732-d379-4fad-8b43-4848a1201b5c"
+      },
+      "response": {
+        "background_job_ids": [
+          "fc97630b-32d5-43be-9b7f-c6990abd0891"
+        ],
+        "directions": [
+          "north"
+        ],
+        "animation_group_id": "cf4c8732-d379-4fad-8b43-4848a1201b5c",
+        "status": "processing",
+        "enhanced_prompt": null,
+        "enhance_usage": null
+      }
+    }
+  ],
+  "body_male_strike": [
+    {
+      "body": {
+        "character_id": "b428afd7-fdc7-4021-8a22-8760ad962fc9",
+        "animation_name": "body_male_strike",
+        "directions": [
+          "south"
+        ],
+        "mode": "v3",
+        "frame_count": 6,
+        "keep_first_frame": true,
+        "action_description": "a fast, powerful one-handed sword slash: the right arm winds up high over the right shoulder, then sweeps diagonally down and across the body to the left hip, the torso twisting into the cut, hand clenched as if gripping a sword hilt, then a short follow-through"
+      },
+      "response": {
+        "background_job_ids": [
+          "64564966-1407-4103-8203-3a4e4db1de3c"
+        ],
+        "directions": [
+          "south"
+        ],
+        "animation_group_id": "b8779430-a8a0-4f1b-a4c0-46d3ac9ae887",
+        "status": "processing",
+        "enhanced_prompt": null,
+        "enhance_usage": null
+      }
+    },
+    {
+      "body": {
+        "character_id": "b428afd7-fdc7-4021-8a22-8760ad962fc9",
+        "animation_name": "body_male_strike",
+        "directions": [
+          "south"
+        ],
+        "mode": "template",
+        "template_animation_id": "surprise-uppercut"
+      },
+      "response": {
+        "background_job_ids": [
+          "059d1df3-554d-4f83-8009-ebeaaa9cf046"
+        ],
+        "directions": [
+          "south"
+        ],
+        "animation_group_id": "5284f565-1e1c-4bf7-a281-c0632babf171",
+        "status": "processing",
+        "enhanced_prompt": null,
+        "enhance_usage": null
+      }
+    },
+    {
+      "body": {
+        "character_id": "b428afd7-fdc7-4021-8a22-8760ad962fc9",
+        "animation_name": "body_male_strike",
+        "directions": [
+          "south-west"
+        ],
+        "mode": "template",
+        "template_animation_id": "surprise-uppercut"
+      },
+      "response": {
+        "background_job_ids": [
+          "e0f31b82-77c6-49d2-af0e-03ac9ac8bcaf"
+        ],
+        "directions": [
+          "south-west"
+        ],
+        "animation_group_id": "38c133a3-0c3f-4f16-848a-8bdde217453d",
+        "status": "processing",
+        "enhanced_prompt": null,
+        "enhance_usage": null
+      }
     }
   ]
 }
