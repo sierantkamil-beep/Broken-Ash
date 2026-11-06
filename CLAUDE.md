@@ -67,7 +67,6 @@ client/   Phaser 3 + Vite.
   src/scenes/        BootScene (atlases + audio), WorldScene (title drift, play, cinematics).
   src/world/         GroundLayer (baked ground), PropLayer (props, light sources, occlusion fade),
                      Lighting (night multiply + lights), Petals (falling blossom).
-  src/net/           Prediction (own player), Interpolation (partner).
   src/cinematic/     CinematicPlayer (camera, DOM overlay, events).
   src/entities/      Character (paper doll: dyed body + gear on anchors), UnitSprite (Greyed, thralls, corpses).
   src/fx/            Vfx (skill visuals, blood, gore, damage numbers), Telegraphs (enemy wind-ups);
