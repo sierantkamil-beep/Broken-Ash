@@ -96,3 +96,32 @@ What each milestone actually built. The plan is `docs/design.md` §11.
 - **Menu.** Title screen with keyboard navigation, saved characters, three-column creation with
   full path and weapon explanations and a live paper-doll preview, lobby for host/join.
 
+
+### Gear on the body (cd9e871)
+- Derived clips record their transforms and anchors follow them (with the body's rotation); head,
+  shoulders and cape pre-turned in 16 steps for rolls and falls; whole-pixel anchors with one pixel
+  origin for body and gear; doll QA contact sheets (`tools/pixellab/doll_qa.py`).
+
+### Visual reset: top-down, gear locked, exact skill shapes
+The visual layer had gone wrong (gear jumping between hands, ink that didn't match the hits), so it
+was reset before anything new is added.
+- **Top-down 3/4 view** instead of isometric: square 64 px cells (`shared/src/view.ts`), WASD straight
+  along the screen (shared `stepBody`, so server and prediction agree), round ground shapes, the ground
+  cut into squares, the courtyard re-laid (the south edge closed by low rocks so nothing tall hides
+  the players). The PixelLab bodies were already "high top-down". The balance bot now sidesteps
+  walls when backing off (backing straight into the south rocks pinned it).
+- **Gear causes found and fixed:** mirrored directions (NE/E/SE) measured anchors from the source
+  frame's pivot, putting all gear up to ~50 px off the body; weapons now flip with the body about the
+  grip; the run has hand picks (the weapon stays in hand, at a steady carry angle) instead of jumping
+  to the back on every start and stop; strike and cast blades point out from the torso (measured from
+  the nearer shoulder they flipped ~180° mid-swing); head, neck and torso are median-steadied and the
+  shoulders follow the neck; the cape swings as a pendulum; the armour pattern keeps one origin per
+  clip; a cast's facing survives reconciliation; sharp remote turns switch instead of sweeping. A test
+  (`tools/pixellab/anchors.test.ts`) guards the mirrors, the run and the head track.
+- **Skill visuals are the exact hit shapes** in the path accent (`client/src/fx/shapes.ts`, shared with
+  the telegraphs); bolts are dots of their real radius and end where the server stopped them
+  (`boltEnd`). The painted ink compositions are gone; the ink painter still draws the skill icons.
+- Still to do: the three east-facing clips are mirrors, so a strike there is left-handed (true
+  east-facing clips need PixelLab generations: 2 left of 40); map props and the Greyed are still
+  isometric renders; walk speed, ranges and the knives/bow balance shift (68→111 / 79→65 in the
+  sim) need a pass after a playtest.

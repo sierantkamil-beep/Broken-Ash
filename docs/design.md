@@ -329,7 +329,7 @@ and your armour are **visible** on the character.
 ## 5. Combat
 
 - **Movement:** WASD, free 8-way movement (no tiles), along the screen (W is straight up the screen).
-  Mouse aims. Camera: **isometric** (2:1), zoomable a little with the wheel.
+  Mouse aims. Camera: **top-down 3/4** (square cells, like Dinusie), zoomable a little with the wheel.
 - **Buttons:** LMB basic attack, RMB + 1–5 skills, **Space = dodge roll** with short invulnerability,
   Q/E consumables, F interact / execute / revive, B build mode.
 - **Stamina:** dodging and heavy attacks cost stamina. You can't spam rolls.
@@ -530,7 +530,13 @@ come from **PixelLab**; everything else is ours, made to match: the map is rende
 put through a pixel-art pass that keeps its detail (art resolution, generous per-prop palettes, dark
 silhouette outline), gear is hand-placed pixel parts, and skill effects are shadow-ink.
 
-**Skill effects: shadow-ink, always.** Every skill visual (now and every future one) is sumi-e ink:
+**Reset after B1 (the visual layer).** The camera is **top-down 3/4** (square 64 px cells, ground flat,
+everything standing drawn upright), not isometric. Skill visuals are, for now, **the exact hit shapes**
+in the path accent, so what you see is what hits; ink comes back one effect at a time on top of them.
+Map art is to be redrawn for the top-down view (PixelLab tilesets/objects as generations allow);
+until then the ground is cut into squares and the Blender props are the old renders.
+
+**Skill effects: shadow-ink, always (the goal).** Every skill visual (now and every future one) is sumi-e ink:
 tapered brush strokes, blots and splatter, dry-brush streaks, enso rings, smoky ink trails. A black ink
 core with a pale rice-paper rim and one accent colour per path (Thorn vermilion, Bark moss, Blood
 crimson, Ash ember, Storm pale indigo, Graves lantern teal, Dusk amber, Sting venom green), so the ink
@@ -594,7 +600,7 @@ Colyseus 0.16 (embedded server: *Hostuj grę* / *Dołącz* + IP), Electron Windo
   pipeline, talent engine, skill evolution, dungeon mechanics, quest & cutscene-dialogue engine,
   `plural()`, audio engine.
 - **Rewritten:** movement & collision (continuous positions, circle colliders), skill targeting (aimed
-  cones, lines, circles), client-side prediction, isometric renderer.
+  cones, lines, circles), client-side prediction, top-down renderer.
 - **New:** grid inventory, crafting/alchemy, building (placement grid, structures with health, NPC housing
   and jobs, raids), choice & consequence flags (`story.flags`), companion AI, gore system.
 
@@ -605,7 +611,7 @@ Colyseus 0.16 (embedded server: *Hostuj grę* / *Dołącz* + IP), Electron Windo
 | # | Milestone | Done when |
 |---|---|---|
 | **B0** ✅ | Scaffold | Networking, hosting and the desktop shell ported from Dinusie; two players move freely in a test room over IP; tests + typecheck green. *Also done: the Blender sprite pipeline, ground painter, audio synthesiser, the cinematic system with the prolog, and the Soramei courtyard.* Dinusie's skill, talent, evolution and dungeon systems come over in B1–B4, when each is needed. |
-| **B1** | Combat slice | **All eight paths** with 6 skills each, MakeHuman-based elf characters (both body types), dodge, stamina, poise, executions, gore, 3 Greyed types, the Tapper boss, character creation. *Playtest: is fighting fun?* |
+| **B1** | Combat slice | **All eight paths** with 6 skills each, MakeHuman-based elf characters (both body types), dodge, stamina, poise, executions, gore, 3 Greyed types, the Tapper boss, character creation. **Also: gear that stays on the body in every direction and animation, skill visuals that match their hits.** *Playtest: is fighting fun?* |
 | **B2** | Items & alchemy | Grid inventory, affixes, 3 ashen uniques, salvage, herbs → potions/oils/bombs, belt. |
 | **B3** | Building basics | Build mode, walls/floors/doors/roofs in wood, workbench, garden plots, storage, decoration, blueprints, saved on the host. *Playtest: is building fun on its own?* |
 | **B4** | Vertical slice | Act 1 complete: prison escape, Itheru, Maeve, the farmstead, the Drowned Sap-Mine, Harrow's scouts, the downer ending. Talent trees + evolution for Thorn and Blood. *Playtest: do we care about Itheru?* |
@@ -620,10 +626,10 @@ Every milestone ends with a playtest and a bug-fix pass before the next one star
 ---
 
 ## Decided
-- Isometric camera.
+- Top-down 3/4 camera (replaced the isometric camera after B1).
 - Raids outside the story are a setting (on by default).
 - The five-act curve stays as written.
 - **Building height:** a ground floor plus one upper storey under the roof. Cellars and undercrofts
   are separate interior areas reached by stairs, built like small dungeons. No multi-level castles:
-  in the isometric view taller buildings would hide the fighting behind them.
+  taller buildings would hide the fighting behind them.
 - **B1 brings all eight paths**, not two.
