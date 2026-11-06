@@ -79,7 +79,12 @@ export class UnitSprite {
 
   /** How tall the unit stands on screen (for health bars and hit effects). */
   get height() {
-    return this.meta.pixel ? this.meta.height : this.view.kind === "tapper" ? 220 : this.view.kind === "bloated" ? 150 : 140;
+    if (this.meta.pixel) return this.meta.height;
+    // Rendered atlases: the standing frame's pixels above its feet (the pivot), so a re-render at a
+    // new size or camera moves the bar with it.
+    const f = this.atlas ? this.scene.textures.getFrame(this.atlas, "idle/0/0") : null;
+    if (f && f.pivotY > 0) return Math.round(f.pivotY * f.height * this.meta.scale) + 6;
+    return this.view.kind === "tapper" ? 220 : this.view.kind === "bloated" ? 150 : 140;
   }
 
   get def() {

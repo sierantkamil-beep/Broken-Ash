@@ -125,3 +125,23 @@ was reset before anything new is added.
   east-facing clips need PixelLab generations: 2 left of 40); map props and the Greyed are still
   isometric renders; walk speed, ranges and the knives/bow balance shift (68→111 / 79→65 in the
   sim) need a pass after a playtest.
+
+### Visual audit, part 2: camera, map art, icons, HUD, menus
+An audit of every screen (title, creation, lobby, HUD, mastery, prolog, fight) found what still
+looked broken and why; all of it was fixed.
+- **Camera:** bounds on the map and a minimum zoom, so there is never black void past the edge;
+  play zoom crisp and never under 1:1 (characters stay 124 px); the title drift and the prolog
+  re-framed for the top-down map (they were tuned for the twice-as-wide iso map).
+- **Map art re-rendered top-down** in Blender: props, walls (straight one-cell segments that tile),
+  shrine, gate, lanterns, corpses, blood pools and both Greyed, through a 35° camera stretched so the
+  ground is square; the Greyed scaled to stand as tall as the players; `Z_PX` follows the art.
+- **Skill icons are crisp pixel art** built from data: the skill's shape (crescent, bar, bolt,
+  target, burst, pool, chevron) plus a badge for its main effect, on an accent plate, 24 px at 2×.
+  They replace the ink icons (unreadable speckle) in the HUD, menus, mastery and lobby. A pixel
+  title mark (an enso around the split World-Ash) sits beside the name instead of under it; weapon
+  cards show whole-pixel weapon icons.
+- **HUD:** the stamina ticks no longer cross the whole HUD (two stray black lines); key badges,
+  names in tooltips, taller bars, key hints fade after a minute.
+- **Mastery panel:** chosen / locked by level / "not now" look different; sticky header, a scroll
+  fade, the HUD steps back while it's open.
+- Polish letters in the heading font (latin-ext); colour and spacing tokens in the stylesheet.

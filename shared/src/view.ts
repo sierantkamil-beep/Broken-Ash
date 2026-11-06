@@ -6,8 +6,11 @@
  */
 /** Screen pixels per cell (32 art pixels at 2×, the size of a PixelLab top-down tile). */
 export const CELL = 64;
-/** Screen pixels per unit of height: upright things keep their full height in a 3/4 view. */
-export const Z_PX = CELL;
+/**
+ * Screen pixels per unit of height. The map art is rendered 35° from straight down and stretched so
+ * the ground is square (tools/art/common.py), which leaves heights at tan 35° ≈ 0.7 of a cell.
+ */
+export const Z_PX = CELL * Math.tan((35 * Math.PI) / 180);
 
 export function worldToScreen(x: number, y: number, z = 0): { x: number; y: number } {
   return { x: x * CELL, y: y * CELL - z * Z_PX };

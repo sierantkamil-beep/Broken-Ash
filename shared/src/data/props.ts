@@ -11,7 +11,8 @@ export interface PropDef {
   /** Cells (relative to the footprint origin) that block movement. */
   blocks: [number, number][];
   /** Light source, if any: height above ground (cells), radius (cells), colour, flicker. */
-  light?: { z: number; radius: number; color: number; flicker?: boolean; intensity?: number };
+  /** `hidden`: the flame is under a roof, so it lights the ground but shows no halo of its own. */
+  light?: { z: number; radius: number; color: number; flicker?: boolean; intensity?: number; hidden?: boolean };
   /** Number of rendered variants. */
   variants: number;
   /** Flat props (gore, decals) are drawn under everything standing. */
@@ -48,7 +49,7 @@ export const PROPS = {
       [0, 2], [1, 2], [2, 2],
       [0, 3], [1, 3], [2, 3],
     ],
-    light: { z: 1.0, radius: 3.2, color: 0xff7a3a, flicker: true, intensity: 0.7 },
+    light: { z: 1.0, radius: 3.2, color: 0xff7a3a, flicker: true, intensity: 0.7, hidden: true },
     variants: 1,
   },
   wall_x: { name: "Mur", w: 1, h: 1, blocks: [[0, 0]], variants: 1 },

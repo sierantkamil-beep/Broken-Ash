@@ -94,7 +94,7 @@ Tests: `shared/src/cinematic.test.ts`, `shared/src/i18n.test.ts`, `shared/src/ma
 - `JoinOptions` (interface, `shared/src/types.ts`) — Options a client sends when joining the room.
 - `FxEvent` (type, `shared/src/types.ts`) — A transient combat event the server broadcasts for visuals and sound (MSG.fx).
 - `CELL` (const, `shared/src/view.ts`) — Screen pixels per cell (32 art pixels at 2×, the size of a PixelLab top-down tile).
-- `Z_PX` (const, `shared/src/view.ts`) — Screen pixels per unit of height: upright things keep their full height in a 3/4 view.
+- `Z_PX` (const, `shared/src/view.ts`) — Screen pixels per unit of height.
 - `screenDirToWorld` (function, `shared/src/view.ts`) — Turns a screen-space direction (WASD: dx right, dy down) into a unit world direction.
 - `DIRECTIONS` (const, `shared/src/view.ts`) — Eight sprite directions, index 0 = facing screen-south (towards the viewer), clockwise.
 - `directionIndex` (function, `shared/src/view.ts`) — Sprite direction index (0 = screen south, then clockwise: SW, W, NW, N, NE, E, SE) for a world-space facing angle.
@@ -279,8 +279,8 @@ Tests: `tools/catalogue/catalogue.test.ts`
 | `tools/art/anims.py` | Animation library for MakeHuman-rigged characters: poses as bone rotations, sampled per frame. | `ease`, `beats`, `stance`, `guard_pose`, `pose`, `attack` |
 | `tools/art/atlas.py` | Atlas packing shared by every art tool; no Blender import, so numpy-only painters can use it. | `pack_atlas` |
 | `tools/art/characters.py` | Renders the playable characters: 8 paths × 2 bodies × every animation × 8 directions. | `facing_z`, `render_set`, `pack`, `write_index` |
-| `tools/art/common.py` | Shared Blender helpers for the sprite pipeline. | `reset_scene`, `add_shadow_catcher`, `render_with_shadow`, `composite_shadow`, `add_lights`, `setup_camera`, `render_to`, `load_downsampled`, `trim` |
-| `tools/art/decals.py` | Painted decals: blood (flat, projected to the iso view) and the Soramei crest for banners. | `to_iso`, `blood_pool`, `blood_plane`, `crest_path` |
+| `tools/art/common.py` | Shared Blender helpers for the sprite pipeline. | `reset_scene`, `add_shadow_catcher`, `render_with_shadow`, `composite_shadow`, `add_lights`, `setup_camera`, `render_to`, `stretch`, `load_frame`, `load_downsampled`, `trim` |
+| `tools/art/decals.py` | Painted decals: blood (flat on the top-down ground) and the Soramei crest for banners. | `to_ground`, `blood_pool`, `blood_plane`, `crest_path` |
 | `tools/art/ground.py` | Ground textures and small effect sprites, painted with numpy (no Blender needed). | `periodic_noise`, `shade`, `mix`, `rgb`, `petals`, `flagstones`, `moss_ground`, `gravel`, `dirt`, `water`, `sample`, `square`, `fx_frames`, `main` |
 | `tools/art/materials.py` | Procedural materials (Cycles). | `srgb`, `material`, `image_material` |
 | `tools/art/mh.py` | Builds skinned elf bodies in Blender from the MakeHuman CC0 base mesh (tools/art/mh_fetch.py). | `morph`, `to_blender`, `build`, `reset_pose`, `rotate`, `shift` |

@@ -533,8 +533,10 @@ silhouette outline), gear is hand-placed pixel parts, and skill effects are shad
 **Reset after B1 (the visual layer).** The camera is **top-down 3/4** (square 64 px cells, ground flat,
 everything standing drawn upright), not isometric. Skill visuals are, for now, **the exact hit shapes**
 in the path accent, so what you see is what hits; ink comes back one effect at a time on top of them.
-Map art is to be redrawn for the top-down view (PixelLab tilesets/objects as generations allow);
-until then the ground is cut into squares and the Blender props are the old renders.
+The map props and the Greyed are re-rendered in Blender through a top-down camera (35° from
+straight down, stretched so the ground is square), and the ground is painted squares. Skill icons
+are **crisp pixel icons** (24 px at 2×) built from each skill's shape and main effect, in the path
+accent, so the HUD matches the pixel art and the hit shapes.
 
 **Skill effects: shadow-ink, always (the goal).** Every skill visual (now and every future one) is sumi-e ink:
 tapered brush strokes, blots and splatter, dry-brush streaks, enso rings, smoky ink trails. A black ink

@@ -28,17 +28,20 @@ BODIES = ["male", "female"]
 GREYED = ["shambler", "runner", "bloated", "tapper"]
 # Render order: two sets to test with first, then the enemies, then everything else.
 ORDER = [("thorn", "male"), ("blood", "female")] + [(g, "greyed") for g in GREYED] + [(p, b) for p in PATHS for b in BODIES if (p, b) not in (("thorn", "male"), ("blood", "female"))]
-FRAME = (300, 330, 0.95)
+FRAME = (230, 250, 0.95)
 # The Tapper is a third bigger and swings a cleaver: a larger frame.
-FRAMES_BY_KIND = {"tapper": (420, 440, 1.25)}
+FRAMES_BY_KIND = {"tapper": (320, 340, 1.25)}
+# Characters are drawn larger than the map's scale, to stand as tall as the PixelLab players (~124 px).
+ZOOM = 1.35
 SCREEN_DIRS = [(0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1), (1, 0), (1, 1)]
 
 
 def facing_z(dx, dy):
-    """Z rotation that turns a character built facing -Y towards a screen direction (see render.py)."""
-    wx = (dx / 64 + dy / 32) / 2
-    wy = (dy / 32 - dx / 64) / 2
-    return math.atan2(-wy, wx) + math.pi / 2
+    """
+    Z rotation that turns a character built facing -Y towards a screen direction. In the top-down
+    view a screen direction is the world direction (world +y is screen down, Blender −y).
+    """
+    return math.atan2(-dy, dx) + math.pi / 2
 
 
 def render_set(path, body):
@@ -61,7 +64,7 @@ def render_set(path, body):
         else:
             r = mh.build(body)
             O.build_path(r, path, O.palette(path, body))
-        C.setup_camera(w, h, tz)
+        C.setup_camera(w, h, tz, ZOOM)
         t0 = time.time()
         for i, (anim, d, f) in enumerate(missing):
             r["armature"].rotation_euler = (0, 0, facing_z(*SCREEN_DIRS[d]))
@@ -79,7 +82,7 @@ def pack(path, body):
     for anim, n in A.FRAMES.items():
         for d in range(8):
             for f in range(n):
-                im, pivot = C.trim(C.load_downsampled(os.path.join(folder, f"{anim}_{d}_{f}.png")), (w / 2, h / 2 + tz * C.Z_PX))
+                im, pivot = C.trim(C.load_frame(os.path.join(folder, f"{anim}_{d}_{f}.png"), h), (w / 2, h / 2 + tz * C.Z_PX * ZOOM))
                 frames.append((f"{anim}/{d}/{f}", im, pivot))
     os.makedirs(OUT, exist_ok=True)
     png = os.path.join(OUT, f"{path}_{body}.png")

@@ -1,9 +1,11 @@
 """
 Shared Blender helpers for the sprite pipeline.
 
-Conventions (must match shared/src/iso.ts):
+Conventions (must match shared/src/view.ts):
   * Game world (gx, gy, gz) maps to Blender (gx, -gy, gz). One cell = one Blender unit.
-  * Orthographic camera, 60° pitch, 45° yaw: one cell is a 128 × 64 px diamond at scale 1.
+  * Top-down 3/4 view: an orthographic camera tilted PITCH from straight down, no yaw (north is up).
+    The render is then stretched vertically by 1 / cos(PITCH), so the ground comes out square:
+    one cell is CELL × CELL px, as the game draws it, and one unit of height is Z_PX px.
   * Everything is rendered at SS× resolution and downsampled for clean anti-aliasing.
   * Each sprite gets a pivot: the pixel where its ground origin is, so the game can place it.
 """
@@ -15,14 +17,19 @@ import bpy
 import numpy as np
 from PIL import Image
 
-PX_PER_UNIT = 128 / math.sqrt(2)  # horizontal pixels per Blender unit at scale 1
-Z_PX = PX_PER_UNIT * math.cos(math.radians(30))
-PITCH = math.radians(60)
-YAW = math.radians(45)
+CELL = 64  # screen px per cell (shared/src/view.ts CELL)
+PX_PER_UNIT = CELL  # horizontal pixels per Blender unit at scale 1
+# 35° from straight down: high enough to read the ground like a map, low enough to see walls, trunks
+# and faces (PixelLab's "high top-down" bodies are drawn from about here).
+PITCH = math.radians(35)
+YAW = 0.0
+# After the ground stretch, a unit of height is tan(PITCH) cells tall (shared/src/view.ts Z_PX).
+Z_PX = CELL * math.tan(PITCH)
+GROUND_STRETCH = 1 / math.cos(PITCH)
 SS = 2  # supersampling factor
 
 # Camera view direction (from the rotation), used to back the camera away from its target.
-VIEW_DIR = (-math.sin(YAW) * math.sin(PITCH), math.cos(YAW) * math.sin(PITCH), -math.cos(PITCH))
+VIEW_DIR = (0.0, math.sin(PITCH), -math.cos(PITCH))
 
 
 def reset_scene(samples=20, footprint=None):
@@ -89,9 +96,8 @@ def composite_shadow(obj, with_shadow, pivot, footprint):
     shadow = np.clip(s[..., 3] - o[..., 3], 0, 1)
     h, w = shadow.shape
     ys, xs = np.mgrid[0:h, 0:w].astype(np.float32) + 0.5
-    a = (xs - pivot[0]) / 64
-    b = (ys - pivot[1]) / 32
-    gx, gy = (a + b) / 2, (b - a) / 2
+    # The stretched render shows the ground square: a pixel's ground cell is just its offset / CELL.
+    gx, gy = (xs - pivot[0]) / CELL, (ys - pivot[1]) / CELL
     rx, ry = footprint[0] / 2 + 0.55, footprint[1] / 2 + 0.55
     d = np.sqrt((gx / rx) ** 2 + (gy / ry) ** 2)
     feather = np.clip((1.0 - d) / 0.45, 0, 1) ** 1.5
@@ -104,11 +110,14 @@ def composite_shadow(obj, with_shadow, pivot, footprint):
 
 def add_lights():
     s = bpy.context.scene
-    # Key light from the upper left of the screen (the moon), a warm low fill from the right, a rim from behind.
+    # Key light from the front left of the screen (the moon), a warm low fill from the right, a rim
+    # from behind. Angles were set for the old 45° camera; turned by −45° they keep the same side of
+    # the screen with the camera facing north.
+    turn = -45
     for name, energy, rot, color in [
-        ("key", 3.2, (math.radians(28), 0, math.radians(-20)), (1.0, 0.97, 0.92)),
-        ("fill", 0.6, (math.radians(70), 0, math.radians(120)), (1.0, 0.72, 0.55)),
-        ("rim", 1.4, (math.radians(55), 0, math.radians(200)), (0.7, 0.8, 1.0)),
+        ("key", 3.2, (math.radians(28), 0, math.radians(-20 + turn)), (1.0, 0.97, 0.92)),
+        ("fill", 0.6, (math.radians(70), 0, math.radians(120 + turn)), (1.0, 0.72, 0.55)),
+        ("rim", 1.4, (math.radians(55), 0, math.radians(200 + turn)), (0.7, 0.8, 1.0)),
     ]:
         l = bpy.data.lights.new(name, "SUN")
         l.energy = energy
@@ -119,31 +128,57 @@ def add_lights():
         s.collection.objects.link(o)
 
 
-def setup_camera(width_px, height_px, target_z):
-    """Camera whose image centre looks at (0, 0, target_z). Returns the pivot of the world origin in final pixels."""
+def setup_camera(width_px, height_px, target_z, zoom=1.0):
+    """
+    Camera whose image centre looks at (0, 0, target_z), for a final (stretched) frame of
+    width_px × height_px. `zoom` draws at that many times the map's pixels per unit (characters:
+    the PixelLab players stand about 2.8 cells tall, bigger than true scale, and enemies must match).
+    Returns the pivot of the world origin in final pixels.
+    """
     s = bpy.context.scene
     s.render.resolution_x = width_px * SS
-    s.render.resolution_y = height_px * SS
+    # Rendered shorter, then stretched back to height_px (stretch()).
+    s.render.resolution_y = round(height_px / GROUND_STRETCH) * SS
     cam = bpy.data.cameras.new("cam")
     cam.type = "ORTHO"
     cam.sensor_fit = "HORIZONTAL"
-    cam.ortho_scale = width_px / PX_PER_UNIT
+    cam.ortho_scale = width_px / (PX_PER_UNIT * zoom)
     cam.clip_start = 0.1
     cam.clip_end = 200
     o = bpy.data.objects.new("cam", cam)
     s.collection.objects.link(o)
     o.rotation_euler = (PITCH, 0, YAW)
+    s.render.pixel_aspect_x = 1
+    s.render.pixel_aspect_y = 1
     dist = 60
     o.location = (-VIEW_DIR[0] * dist, -VIEW_DIR[1] * dist, target_z - VIEW_DIR[2] * dist)
     s.camera = o
     # The origin is target_z below the image centre.
-    return (width_px / 2, height_px / 2 + target_z * Z_PX)
+    return (width_px / 2, height_px / 2 + target_z * Z_PX * zoom)
 
 
 def render_to(path):
     s = bpy.context.scene
     s.render.filepath = path
     bpy.ops.render.render(write_still=True)
+
+
+def stretch(im, height_px):
+    """Stretches a downsampled render vertically to its final height (premultiplied, see above)."""
+    if im.height == height_px:
+        return im
+    a = np.asarray(im).astype(np.float32) / 255.0
+    pre = np.concatenate([a[..., :3] * a[..., 3:4], a[..., 3:4]], axis=-1)
+    big = Image.fromarray((pre * 255).round().astype(np.uint8), "RGBA").resize((im.width, height_px), Image.LANCZOS)
+    s = np.asarray(big).astype(np.float32) / 255.0
+    alpha = s[..., 3:4]
+    rgb = np.where(alpha > 1e-4, s[..., :3] / np.maximum(alpha, 1e-4), 0)
+    return Image.fromarray((np.concatenate([np.clip(rgb, 0, 1), alpha], axis=-1) * 255).round().astype(np.uint8), "RGBA")
+
+
+def load_frame(path, height_px):
+    """A finished frame: the supersampled render shrunk, then stretched so the ground is square."""
+    return stretch(load_downsampled(path), height_px)
 
 
 def load_downsampled(path):

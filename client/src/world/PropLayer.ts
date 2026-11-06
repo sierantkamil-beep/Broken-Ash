@@ -34,6 +34,7 @@ export class PropLayer {
       if (def.light) {
         const l = worldToScreen(cx, cy, def.light.z);
         this.lights.push({ x: l.x, y: s.y - def.light.z * Z_PX * 0.2, radius: def.light.radius * CELL, color: def.light.color, intensity: def.light.intensity ?? 1, flicker: def.light.flicker, seed: i * 7.3 });
+        if (def.light.hidden) return;
         // A soft additive halo at the flame itself.
         const glow = scene.add.image(l.x, l.y, "fx", "glow").setBlendMode(Phaser.BlendModes.ADD).setTint(def.light.color).setDepth(9.6e6).setScale(0.55).setAlpha(0.55);
         layer.add(glow);

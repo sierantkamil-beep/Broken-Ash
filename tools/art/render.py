@@ -24,19 +24,20 @@ OUT = os.path.join(ROOT, "client", "public", "assets", "sprites")
 CACHE = os.path.join(os.path.dirname(__file__), ".cache")
 FORCE = "--force" in sys.argv
 
-# Frame size (px at scale 1), camera target height, builder.
+# Final frame size (px, top-down view: CELL px per cell), camera target height, builder. Generous:
+# frames are trimmed, and a warning is printed if anything touches the edge.
 PROPS = {
-    "gate_vermilion": (360, 400, 1.7, lambda v: M.build_gate(v), 1),
-    "stone_lantern": (160, 220, 0.7, lambda v: M.build_stone_lantern(v), 1),
-    "paper_lantern": (220, 320, 1.2, lambda v: M.build_paper_lantern(v), 1),
-    "blossom_tree": (560, 620, 2.4, lambda v: M.build_blossom_tree(v), 3),
-    "shrine": (680, 600, 1.7, lambda v: M.build_shrine(v), 1),
-    "wall_x": (220, 280, 1.1, lambda v: M.build_wall("wall_x"), 1),
-    "wall_y": (220, 280, 1.1, lambda v: M.build_wall("wall_y"), 1),
-    "wall_post": (220, 300, 1.2, lambda v: M.build_wall("wall_post"), 1),
-    "rock": (180, 150, 0.2, lambda v: M.build_rock(v), 3),
-    "bamboo": (240, 420, 1.8, lambda v: M.build_bamboo(v), 2),
-    "banner": (200, 360, 1.6, lambda v: M.build_banner(decals.crest_path(CACHE)), 1),
+    "gate_vermilion": (320, 320, 1.7, lambda v: M.build_gate(v), 1),
+    "stone_lantern": (150, 190, 0.7, lambda v: M.build_stone_lantern(v), 1),
+    "paper_lantern": (190, 260, 1.2, lambda v: M.build_paper_lantern(v), 1),
+    "blossom_tree": (460, 480, 2.4, lambda v: M.build_blossom_tree(v), 3),
+    "shrine": (460, 480, 1.7, lambda v: M.build_shrine(v), 1),
+    "wall_x": (140, 230, 1.1, lambda v: M.build_wall("wall_x"), 1),
+    "wall_y": (130, 320, 1.1, lambda v: M.build_wall("wall_y"), 1),
+    "wall_post": (130, 240, 1.2, lambda v: M.build_wall("wall_post"), 1),
+    "rock": (130, 120, 0.2, lambda v: M.build_rock(v), 3),
+    "bamboo": (200, 360, 1.8, lambda v: M.build_bamboo(v), 2),
+    "banner": (170, 290, 1.6, lambda v: M.build_banner(decals.crest_path(CACHE)), 1),
 }
 
 # Footprints in cells (Blender X × Y), for the shadow area. Must match shared/src/data/props.ts.
@@ -55,7 +56,11 @@ def render_frame(key, w, h, tz, build, footprint=(1, 1)):
         C.setup_camera(w, h, tz)
         C.render_with_shadow(path, path_s)
     pivot = (w / 2, h / 2 + tz * C.Z_PX)
-    im = C.composite_shadow(C.load_downsampled(path), C.load_downsampled(path_s), pivot, footprint)
+    im = C.composite_shadow(C.load_frame(path, h), C.load_frame(path_s, h), pivot, footprint)
+    a = im.getchannel("A")
+    edge = max(max(a.crop((0, 0, w, 1)).getdata()), max(a.crop((0, h - 1, w, h)).getdata()), max(a.crop((0, 0, 1, h)).getdata()), max(a.crop((w - 1, 0, w, h)).getdata()))
+    if edge > 8:
+        print(f"WARNING {key}: touches the frame edge, enlarge its frame", flush=True)
     return C.trim(im, pivot)
 
 
@@ -74,7 +79,7 @@ def props():
             M.pose(piv, "dead", 0, 1)
             decals.blood_plane(v)
 
-        im, pivot = render_frame(f"prop_corpse_{v}", 320, 220, 0.15, build_corpse, (2, 1.4))
+        im, pivot = render_frame(f"prop_corpse_{v}", 260, 200, 0.15, build_corpse, (2, 1.4))
         frames.append((f"corpse_greyed_{v}", im, pivot))
     for v in range(4):
         im, pivot = decals.blood_pool(v)

@@ -1,4 +1,4 @@
-"""Painted decals: blood (flat, projected to the iso view) and the Soramei crest for banners."""
+"""Painted decals: blood (flat on the top-down ground) and the Soramei crest for banners."""
 import math
 import os
 import random
@@ -6,7 +6,7 @@ import random
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 
-ISO_W, ISO_H = 128, 64
+CELL = 64  # screen px per cell (shared/src/view.ts)
 
 
 def _blood_mask(seed, size=256):
@@ -48,25 +48,14 @@ def _blood_rgba(seed, size=256):
     return Image.fromarray((np.clip(rgba, 0, 1) * 255).astype(np.uint8), "RGBA")
 
 
-def to_iso(im, cells=1.0):
-    """Projects a top-down square image covering `cells`×`cells` onto the ground diamond."""
-    w, h = int(ISO_W * cells), int(ISO_H * cells)
-    src = np.asarray(im).astype(np.float32)
-    S = src.shape[0]
-    ys, xs = np.mgrid[0:h, 0:w].astype(np.float32) + 0.5
-    a = (xs - w / 2) / (w / 2)
-    b = ys / (h / 2) - 1
-    u = (a + b) / 2 + 0.5
-    v = (b - a) / 2 + 0.5
-    inside = (u >= 0) & (u < 1) & (v >= 0) & (v < 1)
-    ui = np.clip((u * S).astype(int), 0, S - 1)
-    vi = np.clip((v * S).astype(int), 0, S - 1)
-    out = src[vi, ui] * inside[..., None]
-    return Image.fromarray(out.astype(np.uint8), "RGBA")
+def to_ground(im, cells=1.0):
+    """A top-down square image covering `cells` × `cells`, at the game's CELL px per cell."""
+    n = max(1, int(round(CELL * cells)))
+    return im.resize((n, n), Image.LANCZOS)
 
 
 def blood_pool(v):
-    im = to_iso(_blood_rgba(40 + v), cells=1.5 if v % 2 == 0 else 1.1)
+    im = to_ground(_blood_rgba(40 + v), cells=1.5 if v % 2 == 0 else 1.1)
     return im, (im.width / 2, im.height / 2)
 
 
