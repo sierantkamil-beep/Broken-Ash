@@ -99,7 +99,9 @@ def rel_anchor(a, pivot, mirror_w=None):
     [hand x, y, angle, off x, y, angle, head x, y, top y, neck x, y, torso x, y, shoulder L x, y,
     R x, y, rotation]. Anchors are whole art pixels; the pivot sits on a half or whole pixel, so the
     client lands every part on the body's own pixel grid. Hands are null when stowed or hidden.
-    A mirrored frame flips x, angles and the rotation."""
+    A mirrored frame flips x, angles and the rotation: `pivot` is then the MIRRORED frame's pivot, so a
+    mirrored anchor is exactly its source anchor reflected about the feet. Gear on a mirrored frame is
+    flipped about its own origin too, so body and gear flip together as one picture."""
     if a is None:
         return None
 
@@ -170,10 +172,12 @@ def pack(key):
                 hit = next((f for f in frames if f[0] == src_name), None)
                 if hit:
                     im = hit[1].transpose(Image.FLIP_LEFT_RIGHT)
-                    extra.append((f"{anim}/{i}/{k}", im, (im.width - hit[2][0], hit[2][1])))
-                    r = rel_anchor(anchors.get(f"{anim}/{DIRS[mirror]}/{k}"), hit[2], mirror_w=im.width)
+                    mpivot = (im.width - hit[2][0], hit[2][1])
+                    extra.append((f"{anim}/{i}/{k}", im, mpivot))
+                    # Measured from the mirrored frame's own pivot (measuring from the source pivot put
+                    # every piece of gear w - 2·pivot pixels off the body in NE, E and SE).
+                    r = rel_anchor(anchors.get(f"{anim}/{DIRS[mirror]}/{k}"), mpivot, mirror_w=im.width)
                     if r:
-                        # Mirrored pixels: x measured from the mirrored pivot is just negated.
                         rel[f"{anim}/{i}/{k}"] = r
                 else:
                     hit = next((f for f in frames if f[0] == f"{anim}/0/{k}"), None)

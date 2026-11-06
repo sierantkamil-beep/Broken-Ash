@@ -30,6 +30,8 @@ const turnFrame = (a: number) => ((Math.round(a / ((2 * Math.PI) / TURNS)) % TUR
 /** Cells travelled per full run cycle: matches the stride of the drawn run, so feet don't slide. */
 const STRIDE_PER_CYCLE = 1.9;
 const DEATH_FRAME_MS = 110;
+/** Cape swing per run frame: a pendulum, so it never jumps from one side straight to the other. */
+const CAPE_SWAY = [0, 1, 2, 1];
 
 export interface CharacterState {
   x: number;
@@ -294,8 +296,11 @@ export class Character {
 
     // Shoulders: plates on both shoulders, or a fur mantle on the neck.
     if (L.shoulders === "sode") {
-      show(this.shoulderL, `s/sode/${turnFrame(rot)}`, at(a[13], a[14]), d + 0.2, false);
-      show(this.shoulderR, `s/sode/${turnFrame(-rot)}`, at(a[15], a[16]), d + 0.2, true);
+      // One plate picture for both shoulders, the right one flipped. A mirrored frame's rotation is
+      // already the source's negated, so the source turn is recovered before picking the frame.
+      const srcRot = mirror ? -rot : rot;
+      show(this.shoulderL, `s/sode/${turnFrame(srcRot)}`, at(a[13], a[14]), d + 0.2, false);
+      show(this.shoulderR, `s/sode/${turnFrame(-srcRot)}`, at(a[15], a[16]), d + 0.2, true);
     } else if (L.shoulders === "fur") {
       show(this.shoulderL, `${view === "side" ? "s/fur_side" : "s/fur_front"}/${turn}`, at(a[9], (a[10] ?? 0) + 2), d + 0.2);
       this.shoulderR.setVisible(false);
@@ -304,30 +309,35 @@ export class Character {
       this.shoulderR.setVisible(false);
     }
 
-    // Cape from the neck: behind the body unless we see the back, swinging with the run.
+    // Cape from the neck: behind the body unless we see the back. It swings back and forth with the
+    // run (0, 1, 2, 1 …), never snapping from one side to the other.
     if (L.cape < 0) this.cape.setVisible(false);
     else {
-      const sway = this.anim === "run" ? (frame % 3) : 1;
+      const sway = this.anim === "run" ? CAPE_SWAY[frame % CAPE_SWAY.length] : 1;
       show(this.cape, `c/${view}/${sway}/${turn}`, at(a[9], a[10]), away ? d + 0.15 : d - 0.5);
     }
 
-    // Weapons: in hand while standing, striking or casting; stowed on the back when running,
-    // rolling or down (those frames carry no hand anchors).
+    // Weapons: in hand whenever the frame has hands (standing, running, striking, casting); stowed
+    // across the back only while rolling or down. A mirrored frame shows the source frame's weapon
+    // flipped about the grip, exactly like the body's pixels, so the blade's edge stays on its side
+    // and the weapon never drifts off the hand.
     const [main, off] = WEAPON_PARTS[this.weapon];
     const handFront = !away;
+    // Angles in the gear atlas are the source (unmirrored) picture's; a mirrored anchor angle a is
+    // the source's π − a.
+    const src = (ang: number) => (mirror ? Math.PI - ang : ang);
     const place = (img: Phaser.GameObjects.Image, part: string | null, hx: number | null, hy: number | null, ang: number | null, front: boolean, stowSide: number) => {
       if (!part) return img.setVisible(false);
       if (hx !== null && hy !== null && ang !== null) {
         // A bow is held upright, whatever the arm does.
-        const angle = part === "bow" ? (mirror ? -0.15 : 0.15) : ang;
-        return show(img, `w/${part}/${angleFrame(angle)}`, at(hx, hy), front ? d + 0.4 : d - 0.4, false);
+        const angle = part === "bow" ? 0.15 : src(ang);
+        return show(img, `w/${part}/${angleFrame(angle)}`, at(hx, hy), front ? d + 0.4 : d - 0.4);
       }
-      // Stowed: across the back, hilt over the shoulder.
-      const ax = (a[11] ?? 0) + stowSide * 2;
+      // Stowed: across the back, hilt over the shoulder, turning with the body (roll, fall).
+      const ax = (a[11] ?? 0) + (mirror ? -stowSide : stowSide) * 2;
       const ay = (a[12] ?? 0) - 3;
       const stow = part === "bow" ? -0.5 : -2.25;
-      const angle = mirror ? Math.PI - stow : stow;
-      return show(img, `w/${part}/${angleFrame(angle + stowSide * 0.25 + rot)}`, at(ax, ay), away ? d + 0.35 : d - 0.6, false);
+      return show(img, `w/${part}/${angleFrame(stow + stowSide * 0.25 + (mirror ? -rot : rot))}`, at(ax, ay), away ? d + 0.35 : d - 0.6);
     };
     place(this.weaponMain, main, a[0], a[1], a[2], handFront, 0);
     place(this.weaponOff, off, a[3], a[4], a[5], handFront && view !== "side", main ? 1 : 0);

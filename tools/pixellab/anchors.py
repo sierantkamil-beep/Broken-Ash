@@ -251,8 +251,10 @@ def frames(key, anim, d):
     return [(int(n[:-4]), Image.open(os.path.join(folder, n)).convert("RGBA")) for n in names]
 
 
-def resolve(pick, cands, im, shoulders):
-    """A pick is a candidate number, a token (top/left/right: that extreme of the figure), or -1."""
+def resolve(pick, cands, im, shoulder):
+    """A pick is a candidate number, a token (top/left/right: that extreme of the figure), or -1.
+    The arm's angle is measured from the hand's OWN shoulder: measuring from whichever shoulder was
+    nearer flipped the weapon by ~180° whenever the hand crossed the body."""
     if pick == -1 or pick is None:
         return None
     if isinstance(pick, int):
@@ -272,8 +274,13 @@ def resolve(pick, cands, im, shoulders):
             m = max(x for x, _ in pts)
             sel = [p for p in pts if p[0] >= m - 2]
         x, y = sum(p[0] for p in sel) / len(sel), sum(p[1] for p in sel) / len(sel)
-    sh = min(shoulders, key=lambda s: (s[0] - x) ** 2 + (s[1] - y) ** 2)
-    return [round(x, 1), round(y, 1), round(math.atan2(y - sh[1], x - sh[0]), 3)]
+    return [round(x, 1), round(y, 1), round(math.atan2(y - shoulder[1], x - shoulder[0]), 3)]
+
+
+def own_shoulders(a, d):
+    """(main hand's shoulder, off hand's shoulder): the right hand's is on our left facing us."""
+    sl, sr = a["shoulders"]
+    return (sl, sr) if RIGHT_ON_LEFT[d] else (sr, sl)
 
 
 def standing(key, d, picks):
@@ -282,8 +289,9 @@ def standing(key, d, picks):
     a = anchors_for(im, d)
     rows = picks.get(f"{key}/idle/{d}")
     c = candidates(im)
-    a["hand"] = resolve(rows[0][0], c, im, a["shoulders"]) if rows else None
-    a["off"] = resolve(rows[0][1], c, im, a["shoulders"]) if rows else None
+    sm, so = own_shoulders(a, d)
+    a["hand"] = resolve(rows[0][0], c, im, sm) if rows else None
+    a["off"] = resolve(rows[0][1], c, im, so) if rows else None
     return a
 
 
@@ -329,12 +337,36 @@ def snap(a):
     return out
 
 
-def steady_head(clip):
-    """Head, neck and top follow the body; a one-frame jump while both neighbours agree is a misread."""
-    for k in ("head", "neck"):
+def median3(vals, loop):
+    """Each value replaced by the median of itself and its neighbours (wrapping round on loops)."""
+    n = len(vals)
+    out = []
+    for i in range(n):
+        if loop:
+            w = [vals[(i - 1) % n], vals[i], vals[(i + 1) % n]]
+        else:
+            w = vals[max(0, i - 1) : i + 2]
+        out.append(sorted(w)[len(w) // 2])
+    return out
+
+
+def steady_head(clip, d, loop=False):
+    """Head, neck and torso follow the body without the detector's wobble (hair swinging moves the
+    hair centroid by 2-4 px a frame): a one-frame jump while both neighbours agree is a misread, and
+    a 3-frame median takes out the rest. Shoulders then sit at the fixed span from the steadied neck,
+    so plates no longer jump with the raw hair centroid."""
+    if not clip:
+        return
+    for k in ("head", "neck", "torso"):
         track = smooth([[*a[k], 0.0] for _, a in clip])
-        for (_, a), v in zip(clip, track):
-            a[k] = v[:2]
+        xs = median3([v[0] for v in track], loop)
+        ys = median3([v[1] for v in track], loop)
+        for (_, a), x, y in zip(clip, xs, ys):
+            a[k] = [x, y]
+    span = SHOULDER_SPAN[d]
+    for _, a in clip:
+        nx, ny = a["neck"]
+        a["shoulders"] = [[nx + span[0], ny + 1], [nx + span[1], ny + 1]]
 
 
 def compute(key):
@@ -343,7 +375,7 @@ def compute(key):
       the way derive.py moved its pixels, with a rotation so gear turns with the body. Death and
       roll carry the weapon stowed (no hands).
     - PixelLab clips (run, strike, cast): body points from the detector, steadied across the clip;
-      hands from the picks on strike and cast (run carries the weapon stowed)."""
+      hands from the picks on run, strike and cast, so the weapon stays in hand while running."""
     picks = json.load(open(os.path.join(HERE, "anchor_picks.json")))
     over = {}
     opath = os.path.join(HERE, "anchor_overrides.json")
@@ -366,15 +398,33 @@ def compute(key):
                 if a is None:
                     continue
                 a["hand"] = a["off"] = None
-                rows = picks.get(f"{key}/{anim}/{d}") if anim in ("strike", "cast") else None
+                a["rot"] = 0.0
+                clip.append((n, a, im))
+            # Steady the body points first: hands are measured from the steadied shoulders.
+            steady_head([(n, a) for n, a, _ in clip], d, loop=anim == "run")
+            rows = picks.get(f"{key}/{anim}/{d}")
+            # Running carries the weapon at the standing pose's angle: only the hand swings, the
+            # blade doesn't whip round with every arm swing.
+            carry = standing(key, d, picks) if anim == "run" else None
+            for n, a, im in clip:
                 if rows:
                     pk = rows[min(n, len(rows) - 1)]
                     cands = candidates(im)
-                    a["hand"] = resolve(pk[0], cands, im, a["shoulders"])
-                    a["off"] = resolve(pk[1], cands, im, a["shoulders"])
-                a["rot"] = 0.0
-                clip.append((n, a))
-            steady_head(clip)
+                    sm, so = own_shoulders(a, d)
+                    a["hand"] = resolve(pk[0], cands, im, sm)
+                    a["off"] = resolve(pk[1], cands, im, so)
+                    for k in ("hand", "off"):
+                        h = a[k]
+                        if not h:
+                            continue
+                        if carry:
+                            if carry.get(k):
+                                h[2] = carry[k][2]
+                        else:
+                            # Strikes and casts: the blade points out from the body through the hand.
+                            # Measured from a shoulder it flipped ~180° whenever the fist passed it.
+                            h[2] = round(math.atan2(h[1] - a["torso"][1], h[0] - a["torso"][0]), 3)
+            clip = [(n, a) for n, a, _ in clip]
             for n, a in clip:
                 out[f"{anim}/{d}/{n}"] = a
     for name in list(out):

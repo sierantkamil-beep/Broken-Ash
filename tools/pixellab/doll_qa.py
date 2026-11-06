@@ -71,12 +71,13 @@ def doll(body, gear, name, dirn, head, weapon, cape):
     def weap(part, h, front):
         if not part:
             return
+        # Mirrored frames show the source picture's weapon flipped about the grip.
         if h[0] is not None:
-            gearpart(f"w/{part}/{idx(h[2], ANGLES)}", h[0], h[1], False)
+            ang = 0.15 if part == "bow" else (math.pi - h[2] if mirror else h[2])
+            gearpart(f"w/{part}/{idx(ang, ANGLES)}", h[0], h[1], mirror)
         else:
             stow = -2.25 if part != "bow" else -0.5
-            ang = (math.pi - stow) if mirror else stow
-            gearpart(f"w/{part}/{idx(ang + rot, ANGLES)}", a[11], a[12] - 3, False)
+            gearpart(f"w/{part}/{idx(stow + (-rot if mirror else rot), ANGLES)}", a[11], a[12] - 3, mirror)
 
     if not a:
         place(canvas, im, piv, ox, oy, False)
@@ -90,7 +91,7 @@ def doll(body, gear, name, dirn, head, weapon, cape):
     if cape and away:
         gearpart(f"c/{view}/1/{turn}", a[9], a[10], mirror)
     gearpart(f"s/sode/{turn}", a[13], a[14], False)
-    gearpart(f"s/sode/{idx(rot, TURNS)}", a[15], a[16], True)
+    gearpart(f"s/sode/{idx(rot if mirror else -rot, TURNS)}", a[15], a[16], True)
     if head:
         gearpart(f"h/{head}/{view}/{turn}", a[6], a[7], mirror)
     if weapon and not away and not stowed:

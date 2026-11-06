@@ -35,7 +35,9 @@ export class Interpolation {
       y: a.y + (b.y - a.y) * k,
       vx: a.vx + (b.vx - a.vx) * k,
       vy: a.vy + (b.vy - a.vy) * k,
-      facing: a.facing + turn * k,
+      // Small turns blend; a sharp one (an about-face to cast) switches halfway, instead of
+      // sweeping through every sprite direction in between (and flipping the mirrored gear twice).
+      facing: Math.abs(turn) > Math.PI / 2 ? (k < 0.5 ? a.facing : b.facing) : a.facing + turn * k,
       dodgeT: k < 0.5 ? a.dodgeT : b.dodgeT,
     };
   }

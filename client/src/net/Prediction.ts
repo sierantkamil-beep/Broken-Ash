@@ -91,7 +91,12 @@ export class Prediction {
     const beforeY = this.renderY();
     this.pending = this.pending.filter((f) => f.seq > lastSeq);
     copyBody(this.body, server);
-    for (const f of this.pending) stepBody(this.body, f, SIM_DT, this.grid, this.speedMul, this.canDodge);
+    for (const f of this.pending) {
+      stepBody(this.body, f, SIM_DT, this.grid, this.speedMul, this.canDodge);
+      // Same as tick(): a cast turns you to the aim. Without it, the replay took the server's
+      // not-yet-turned facing and the character flicked away from the aim for a round trip.
+      if (f.cast !== undefined && f.aim !== undefined) this.body.facing = f.aim;
+    }
     this.prevX = this.body.x;
     this.prevY = this.body.y;
     const dx = beforeX - this.body.x;

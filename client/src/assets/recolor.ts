@@ -97,6 +97,18 @@ export function recolorAtlas(scene: Phaser.Scene, srcKey: string, look: Characte
   // Chest bands per frame, from the anchors (relative to each frame's pivot).
   const boxes: FrameBox[] = [];
   if (look.armour !== "none" && meta?.anchors) {
+    // The pattern's horizontal origin is one value per clip and direction (the median torso x):
+    // following each frame's torso x made the 4-px lacing crawl across the chest while running.
+    // Only the vertical band follows the frame, so the pattern bobs with the body.
+    const torsoXs = new Map<string, number[]>();
+    for (const name of src.getFrameNames()) {
+      const a = meta.anchors[name];
+      if (!a) continue;
+      const clip = name.slice(0, name.lastIndexOf("/"));
+      if (!torsoXs.has(clip)) torsoXs.set(clip, []);
+      torsoXs.get(clip)!.push(a[11] as number);
+    }
+    const median = (v: number[]) => [...v].sort((p, q) => p - q)[v.length >> 1];
     for (const name of src.getFrameNames()) {
       const a = meta.anchors[name];
       if (!a) continue;
@@ -104,7 +116,7 @@ export function recolorAtlas(scene: Phaser.Scene, srcKey: string, look: Characte
       const px = f.cutX + f.pivotX * f.cutWidth;
       const py = f.cutY + f.pivotY * f.cutHeight;
       const neckY = a[10] as number;
-      const torsoX = a[11] as number;
+      const torsoX = median(torsoXs.get(name.slice(0, name.lastIndexOf("/")))!);
       const torsoY = a[12] as number;
       boxes.push({ x: f.cutX, y: f.cutY, w: f.cutWidth, h: f.cutHeight, top: Math.round(py + neckY + 2), bottom: Math.round(py + torsoY + 5), cx: Math.round(px + torsoX) });
     }
