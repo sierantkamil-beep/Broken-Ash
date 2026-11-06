@@ -767,6 +767,199 @@
         "enhanced_prompt": null,
         "enhance_usage": null
       }
+    },
+    {
+      "body": {
+        "character_id": "b428afd7-fdc7-4021-8a22-8760ad962fc9",
+        "animation_name": "body_male_cast",
+        "directions": [
+          "west"
+        ],
+        "mode": "template",
+        "template_animation_id": "fireball",
+        "animation_group_id": "59d2d809-4050-407d-bf0f-c4a0c11ee8b8"
+      },
+      "response": {
+        "background_job_ids": [
+          "7f7062ce-f632-4697-b478-89444e6e8aa8"
+        ],
+        "directions": [
+          "west"
+        ],
+        "animation_group_id": "59d2d809-4050-407d-bf0f-c4a0c11ee8b8",
+        "status": "processing",
+        "enhanced_prompt": null,
+        "enhance_usage": null
+      }
+    },
+    {
+      "body": {
+        "character_id": "b428afd7-fdc7-4021-8a22-8760ad962fc9",
+        "animation_name": "body_male_cast",
+        "directions": [
+          "north-west"
+        ],
+        "mode": "template",
+        "template_animation_id": "fireball",
+        "animation_group_id": "59d2d809-4050-407d-bf0f-c4a0c11ee8b8"
+      },
+      "response": {
+        "background_job_ids": [
+          "d44ddee2-6c09-4b62-811c-2f55d1628f11"
+        ],
+        "directions": [
+          "north-west"
+        ],
+        "animation_group_id": "59d2d809-4050-407d-bf0f-c4a0c11ee8b8",
+        "status": "processing",
+        "enhanced_prompt": null,
+        "enhance_usage": null
+      }
+    },
+    {
+      "body": {
+        "character_id": "b428afd7-fdc7-4021-8a22-8760ad962fc9",
+        "animation_name": "body_male_cast",
+        "directions": [
+          "north"
+        ],
+        "mode": "template",
+        "template_animation_id": "fireball",
+        "animation_group_id": "59d2d809-4050-407d-bf0f-c4a0c11ee8b8"
+      },
+      "response": {
+        "background_job_ids": [
+          "b4473845-09a3-4446-952b-26b70481430c"
+        ],
+        "directions": [
+          "north"
+        ],
+        "animation_group_id": "59d2d809-4050-407d-bf0f-c4a0c11ee8b8",
+        "status": "processing",
+        "enhanced_prompt": null,
+        "enhance_usage": null
+      }
+    }
+  ],
+  "body_female_cast": [
+    {
+      "body": {
+        "character_id": "dda902fc-636a-4f90-a3bf-900d8488ee70",
+        "animation_name": "body_female_cast",
+        "directions": [
+          "south"
+        ],
+        "mode": "template",
+        "template_animation_id": "fireball"
+      },
+      "response": {
+        "background_job_ids": [
+          "1b2e888a-5e10-45f3-98b9-5cddc392d625"
+        ],
+        "directions": [
+          "south"
+        ],
+        "animation_group_id": "78ef3291-914e-411b-9110-022376eb24ca",
+        "status": "processing",
+        "enhanced_prompt": null,
+        "enhance_usage": null
+      }
+    },
+    {
+      "body": {
+        "character_id": "dda902fc-636a-4f90-a3bf-900d8488ee70",
+        "animation_name": "body_female_cast",
+        "directions": [
+          "south-west"
+        ],
+        "mode": "template",
+        "template_animation_id": "fireball",
+        "animation_group_id": "78ef3291-914e-411b-9110-022376eb24ca"
+      },
+      "response": {
+        "background_job_ids": [
+          "dae7bd9e-6a5a-44d4-8911-b8840ca8ab38"
+        ],
+        "directions": [
+          "south-west"
+        ],
+        "animation_group_id": "78ef3291-914e-411b-9110-022376eb24ca",
+        "status": "processing",
+        "enhanced_prompt": null,
+        "enhance_usage": null
+      }
+    },
+    {
+      "body": {
+        "character_id": "dda902fc-636a-4f90-a3bf-900d8488ee70",
+        "animation_name": "body_female_cast",
+        "directions": [
+          "west"
+        ],
+        "mode": "template",
+        "template_animation_id": "fireball",
+        "animation_group_id": "78ef3291-914e-411b-9110-022376eb24ca"
+      },
+      "response": {
+        "background_job_ids": [
+          "5601c5ad-9152-4adf-acff-7c33437001b2"
+        ],
+        "directions": [
+          "west"
+        ],
+        "animation_group_id": "78ef3291-914e-411b-9110-022376eb24ca",
+        "status": "processing",
+        "enhanced_prompt": null,
+        "enhance_usage": null
+      }
+    },
+    {
+      "body": {
+        "character_id": "dda902fc-636a-4f90-a3bf-900d8488ee70",
+        "animation_name": "body_female_cast",
+        "directions": [
+          "north-west"
+        ],
+        "mode": "template",
+        "template_animation_id": "fireball",
+        "animation_group_id": "78ef3291-914e-411b-9110-022376eb24ca"
+      },
+      "response": {
+        "background_job_ids": [
+          "e20e9f86-4291-49dc-8b01-54128991094c"
+        ],
+        "directions": [
+          "north-west"
+        ],
+        "animation_group_id": "78ef3291-914e-411b-9110-022376eb24ca",
+        "status": "processing",
+        "enhanced_prompt": null,
+        "enhance_usage": null
+      }
+    },
+    {
+      "body": {
+        "character_id": "dda902fc-636a-4f90-a3bf-900d8488ee70",
+        "animation_name": "body_female_cast",
+        "directions": [
+          "north"
+        ],
+        "mode": "template",
+        "template_animation_id": "fireball",
+        "animation_group_id": "78ef3291-914e-411b-9110-022376eb24ca"
+      },
+      "response": {
+        "background_job_ids": [
+          "26d93bdb-54b2-48a6-b6fd-a96948f7740c"
+        ],
+        "directions": [
+          "north"
+        ],
+        "animation_group_id": "78ef3291-914e-411b-9110-022376eb24ca",
+        "status": "processing",
+        "enhanced_prompt": null,
+        "enhance_usage": null
+      }
     }
   ]
 }
