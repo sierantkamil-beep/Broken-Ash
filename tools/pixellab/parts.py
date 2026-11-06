@@ -25,6 +25,7 @@ from PIL import Image
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 OUT = os.path.join(ROOT, "client", "public", "assets", "gear")
 ANGLES = 32
+TURNS = 16
 
 PAL = {
     "k": "#0d0b0e",  # outline
@@ -551,28 +552,36 @@ def build():
         for i in range(ANGLES):
             rot, piv = rotsprite(im, w["grip"], i * 2 * math.pi / ANGLES)
             frames.append((f"w/{name}/{i}", rot, piv))
+    # Worn gear in TURNS steps too, so it tumbles with the body in the roll and the fall
+    # (frame k is turned k·360/TURNS degrees clockwise).
+    def turned(name, im, piv):
+        frames.append((f"{name}/0", im, piv))
+        for k in range(1, TURNS):
+            rot, p2 = rotsprite(im, piv, k * 2 * math.pi / TURNS)
+            frames.append((f"{name}/{k}", rot, p2))
+
     for hid, views in HEADS.items():
         for view, h in views.items():
-            frames.append((f"h/{hid}/{view}", grid(h["art"]), h["pivot"]))
-    for sid, s in SHOULDERS.items():
-        frames.append((f"s/{sid}", grid(s["art"]), s["pivot"]))
+            turned(f"h/{hid}/{view}", grid(h["art"]), h["pivot"])
+    for sid, sh in SHOULDERS.items():
+        turned(f"s/{sid}", grid(sh["art"]), sh["pivot"])
     for view in ("front", "side", "back"):
         for sway in (-1, 0, 1):
             im, piv = cape(view, sway)
-            frames.append((f"c/{view}/{sway + 1}", im, piv))
+            turned(f"c/{view}/{sway + 1}", im, piv)
 
     frames.sort(key=lambda f: -f[1].height)
     x = y = shelf = width = 0
     placed = []
     for name, im, piv in frames:
-        if x + im.width + 2 > 1024:
+        if x + im.width + 2 > 2048:
             x, y, shelf = 0, y + shelf + 2, 0
         placed.append((name, im, piv, x, y))
         x += im.width + 2
         shelf = max(shelf, im.height)
         width = max(width, x)
     sheet = Image.new("RGBA", (width, y + shelf), (0, 0, 0, 0))
-    out = {"frames": {}, "meta": {"image": "gear.webp", "size": {"w": sheet.width, "h": sheet.height}, "scale": "1", "pixel": True, "angles": ANGLES, "weapons": WEAPON_PARTS}}
+    out = {"frames": {}, "meta": {"image": "gear.webp", "size": {"w": sheet.width, "h": sheet.height}, "scale": "1", "pixel": True, "angles": ANGLES, "turns": TURNS, "weapons": WEAPON_PARTS}}
     for name, im, piv, px_, py_ in placed:
         sheet.paste(im, (px_, py_))
         out["frames"][name] = {
@@ -581,7 +590,8 @@ def build():
             "trimmed": False,
             "spriteSourceSize": {"x": 0, "y": 0, "w": im.width, "h": im.height},
             "sourceSize": {"w": im.width, "h": im.height},
-            "pivot": {"x": round((piv[0] + 0.5) / im.width, 5), "y": round((piv[1] + 0.5) / im.height, 5)},
+            # The pivot on a pixel corner: placed at an anchor, the part's pixels line up with the body's.
+            "pivot": {"x": round(piv[0] / im.width, 5), "y": round(piv[1] / im.height, 5)},
         }
     os.makedirs(OUT, exist_ok=True)
     sheet.save(os.path.join(OUT, "gear.webp"), "WEBP", lossless=True, method=6)

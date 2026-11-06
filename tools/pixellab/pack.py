@@ -96,16 +96,18 @@ def frames_of(folder):
 
 def rel_anchor(a, pivot, mirror_w=None):
     """A frame's anchors relative to its pivot (feet), as a flat list the client reads:
-    [hand x, y, angle, off x, y, angle, head x, y, top y, neck x, y, torso x, y, shoulder L x, y, R x, y].
-    Hands are null when stowed or hidden. A mirrored frame flips x and angles."""
+    [hand x, y, angle, off x, y, angle, head x, y, top y, neck x, y, torso x, y, shoulder L x, y,
+    R x, y, rotation]. Anchors are whole art pixels; the pivot sits on a half or whole pixel, so the
+    client lands every part on the body's own pixel grid. Hands are null when stowed or hidden.
+    A mirrored frame flips x, angles and the rotation."""
     if a is None:
         return None
 
     def pt(p):
         x, y = p[0], p[1]
         if mirror_w is not None:
-            x = mirror_w - 1 - x
-        return [round(x - pivot[0], 1), round(y - pivot[1], 1)]
+            x = mirror_w - x
+        return [round(x - pivot[0], 2), round(y - pivot[1], 2)]
 
     def hand(h):
         if not h:
@@ -117,7 +119,10 @@ def rel_anchor(a, pivot, mirror_w=None):
     sl, sr = a["shoulders"]
     if mirror_w is not None:
         sl, sr = sr, sl
-    return [*hand(a.get("hand")), *hand(a.get("off")), *pt(a["head"]), round(a["top"] - pivot[1], 1), *pt(a["neck"]), *pt(a["torso"]), *pt(sl), *pt(sr)]
+    rot = a.get("rot", 0.0)
+    if mirror_w is not None:
+        rot = -rot
+    return [*hand(a.get("hand")), *hand(a.get("off")), *pt(a["head"]), round(a["top"] - pivot[1], 2), *pt(a["neck"]), *pt(a["torso"]), *pt(sl), *pt(sr), round(rot, 3)]
 
 
 def pack(key):

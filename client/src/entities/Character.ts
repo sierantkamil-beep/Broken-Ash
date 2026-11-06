@@ -24,6 +24,9 @@ const WEAPON_PARTS: Record<WeaponId, [string | null, string | null]> = {
   knives: ["knife", "knife"],
 };
 const angleFrame = (a: number) => ((Math.round(a / ((2 * Math.PI) / ANGLES)) % ANGLES) + ANGLES) % ANGLES;
+/** Worn gear (head, shoulders, cape) is pre-turned in this many steps (parts.py TURNS). */
+const TURNS = 16;
+const turnFrame = (a: number) => ((Math.round(a / ((2 * Math.PI) / TURNS)) % TURNS) + TURNS) % TURNS;
 /** Cells travelled per full run cycle: matches the stride of the drawn run, so feet don't slide. */
 const STRIDE_PER_CYCLE = 1.9;
 const DEATH_FRAME_MS = 110;
@@ -181,7 +184,8 @@ export class Character {
     const scr = worldToScreen(s.x, s.y);
     this.screen = scr;
     this.depth = depthOf(s.x, s.y) + 50;
-    this.sprite.setPosition(scr.x, scr.y).setDepth(this.depth);
+    // Whole screen pixels: the body and everything pinned to it share this origin.
+    this.sprite.setPosition(Math.round(scr.x), Math.round(scr.y)).setDepth(this.depth);
     this.shadow.setPosition(scr.x, scr.y).setDepth(this.depth - 1);
     this.label.setPosition(scr.x, scr.y - this.meta.height - 14).setScale(1 / this.scene.cameras.main.zoom);
     if (!this.atlas) {
@@ -265,8 +269,16 @@ export class Character {
       return;
     }
     const sc = this.meta.scale;
-    const at = (x: number | null, y: number | null) => ({ x: scr.x + (x ?? 0) * sc, y: scr.y + (y ?? 0) * sc });
+    // Body and gear share one whole-pixel origin (the sprite's own position), and anchors are whole
+    // art pixels from the feet: every part lands on the body's pixel grid and moves with it.
+    const ox = this.sprite.x;
+    const oy = this.sprite.y;
+    const at = (x: number | null, y: number | null) => ({ x: ox + (x ?? 0) * sc, y: oy + (y ?? 0) * sc });
     const mirror = dir >= 5;
+    // The body's own turn this frame (roll, fall): worn gear turns with it. A mirrored frame is the
+    // turned part flipped, which is the part turned the other way.
+    const rot = a[17] ?? 0;
+    const turn = turnFrame(mirror ? -rot : rot);
     const view = dir === 2 || dir === 6 ? "side" : dir >= 3 && dir <= 5 ? "back" : "front";
     const away = view === "back";
     const d = this.depth;
@@ -278,14 +290,14 @@ export class Character {
 
     // Head piece on the head anchor (the mask has nothing to show from behind).
     if (L.head === "none" || (L.head === "mask" && away)) this.head.setVisible(false);
-    else show(this.head, `h/${L.head}/${view}`, at(a[6], a[7]), d + 0.3);
+    else show(this.head, `h/${L.head}/${view}/${turn}`, at(a[6], a[7]), d + 0.3);
 
     // Shoulders: plates on both shoulders, or a fur mantle on the neck.
     if (L.shoulders === "sode") {
-      show(this.shoulderL, "s/sode", at(a[13], a[14]), d + 0.2, false);
-      show(this.shoulderR, "s/sode", at(a[15], a[16]), d + 0.2, true);
+      show(this.shoulderL, `s/sode/${turnFrame(rot)}`, at(a[13], a[14]), d + 0.2, false);
+      show(this.shoulderR, `s/sode/${turnFrame(-rot)}`, at(a[15], a[16]), d + 0.2, true);
     } else if (L.shoulders === "fur") {
-      show(this.shoulderL, view === "side" ? "s/fur_side" : "s/fur_front", at(a[9], (a[10] ?? 0) + 2), d + 0.2);
+      show(this.shoulderL, `${view === "side" ? "s/fur_side" : "s/fur_front"}/${turn}`, at(a[9], (a[10] ?? 0) + 2), d + 0.2);
       this.shoulderR.setVisible(false);
     } else {
       this.shoulderL.setVisible(false);
@@ -296,7 +308,7 @@ export class Character {
     if (L.cape < 0) this.cape.setVisible(false);
     else {
       const sway = this.anim === "run" ? (frame % 3) : 1;
-      show(this.cape, `c/${view}/${sway}`, at(a[9], a[10]), away ? d + 0.15 : d - 0.5);
+      show(this.cape, `c/${view}/${sway}/${turn}`, at(a[9], a[10]), away ? d + 0.15 : d - 0.5);
     }
 
     // Weapons: in hand while standing, striking or casting; stowed on the back when running,
@@ -315,7 +327,7 @@ export class Character {
       const ay = (a[12] ?? 0) - 3;
       const stow = part === "bow" ? -0.5 : -2.25;
       const angle = mirror ? Math.PI - stow : stow;
-      return show(img, `w/${part}/${angleFrame(angle + stowSide * 0.25)}`, at(ax, ay), away ? d + 0.35 : d - 0.6, false);
+      return show(img, `w/${part}/${angleFrame(angle + stowSide * 0.25 + rot)}`, at(ax, ay), away ? d + 0.35 : d - 0.6, false);
     };
     place(this.weaponMain, main, a[0], a[1], a[2], handFront, 0);
     place(this.weaponOff, off, a[3], a[4], a[5], handFront && view !== "side", main ? 1 : 0);

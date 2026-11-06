@@ -33,6 +33,10 @@ CLASS = {c: pack.classify(c) for c in PALETTE}
 RIGHT_ON_LEFT = {"south": True, "south-west": True, "west": True, "north-west": False, "north": False}
 
 
+# Shoulder offsets from the neck, per facing (left, right in screen x): wide face-on, close in profile.
+SHOULDER_SPAN = {"south": (-7, 6), "south-west": (-6, 4), "west": (-3, 2), "north-west": (-4, 6), "north": (-6, 7)}
+
+
 def region_map(im):
     im = pack.snap(im.copy(), PALETTE)
     px = im.load()
@@ -78,8 +82,11 @@ def anchors_for(im, direction):
     neck = (hx, hair_top + 12)
     band = [(x, y) for x, y in reg if hair_top + 13 <= y <= hair_top + 26 and reg[(x, y)] in ("cloth", "trim", "outline")]
     torso = (sum(x for x, _ in band) / len(band), sum(y for _, y in band) / len(band)) if band else (hx, hair_top + 20)
-    row = sorted(x for (x, y) in reg if y == hair_top + 13)
-    shoulders = ((row[0] + 1, hair_top + 13), (row[-1] - 1, hair_top + 13)) if row else ((hx - 6, hair_top + 13), (hx + 6, hair_top + 13))
+    # Shoulders sit a fixed span either side of the neck for each view. Measuring the widest row
+    # failed in side views, where long hair hanging down the back doubles the width.
+    span = SHOULDER_SPAN[direction]
+    sy = hair_top + 13
+    shoulders = ((hx + span[0], sy), (hx + span[1], sy))
 
     # Hands. The wrist wraps (leather) split each bare arm's skin in two: the forearm and the fist.
     # So a fist is a small skin blob touching a wrap; the bigger blob on the wrap's other side is the
@@ -269,55 +276,111 @@ def resolve(pick, cands, im, shoulders):
     return [round(x, 1), round(y, 1), round(math.atan2(y - sh[1], x - sh[0]), 3)]
 
 
+def standing(key, d, picks):
+    """The standing pose's anchors (the rotation image) with its picked hands."""
+    im = Image.open(os.path.join(HERE, "src", key, "_rotations", f"{d}.png")).convert("RGBA")
+    a = anchors_for(im, d)
+    rows = picks.get(f"{key}/idle/{d}")
+    c = candidates(im)
+    a["hand"] = resolve(rows[0][0], c, im, a["shoulders"]) if rows else None
+    a["off"] = resolve(rows[0][1], c, im, a["shoulders"]) if rows else None
+    return a
+
+
+def moved(a, t, stowed):
+    """The standing anchors carried through a derived frame's transform (derive.apply)."""
+    import derive
+
+    def pt(p):
+        x, y, _ = derive.apply(t, p[0], p[1])
+        return [x, y]
+
+    _, _, rot = derive.apply(t, a["head"][0], a["head"][1])
+    hx, hy = pt(a["head"])
+    tx, ty = pt([a["head"][0], a["top"]])
+    out = {
+        "head": [hx, hy],
+        "top": ty,
+        "neck": pt(a["neck"]),
+        "torso": pt(a["torso"]),
+        "shoulders": [pt(a["shoulders"][0]), pt(a["shoulders"][1])],
+        "rot": rot,
+    }
+    for k in ("hand", "off"):
+        h = a.get(k)
+        out[k] = None if (stowed or not h) else [*pt(h), h[2] + rot]
+    return out
+
+
+def snap(a):
+    """Whole art pixels: gear sits on the body's pixel grid, never half a pixel off."""
+    r = lambda v: int(round(v))
+    out = {
+        "head": [r(a["head"][0]), r(a["head"][1])],
+        "top": r(a["top"]),
+        "neck": [r(a["neck"][0]), r(a["neck"][1])],
+        "torso": [r(a["torso"][0]), r(a["torso"][1])],
+        "shoulders": [[r(p[0]), r(p[1])] for p in a["shoulders"]],
+        "rot": round(a.get("rot", 0.0), 3),
+    }
+    for k in ("hand", "off"):
+        h = a.get(k)
+        out[k] = [r(h[0]), r(h[1]), round(h[2], 3)] if h else None
+    return out
+
+
+def steady_head(clip):
+    """Head, neck and top follow the body; a one-frame jump while both neighbours agree is a misread."""
+    for k in ("head", "neck"):
+        track = smooth([[*a[k], 0.0] for _, a in clip])
+        for (_, a), v in zip(clip, track):
+            a[k] = v[:2]
+
+
 def compute(key):
-    """Anchors for every frame: body points from the detector, hands from the picks.
-    Idle and hit reuse the standing pose's hands, moved with the head (the breath and the flinch);
-    run, roll and death carry the weapon stowed, so they have no hands."""
+    """Anchors for every frame.
+    - Clips we derived ourselves (idle, hit, death, roll): the standing pose's anchors moved exactly
+      the way derive.py moved its pixels, with a rotation so gear turns with the body. Death and
+      roll carry the weapon stowed (no hands).
+    - PixelLab clips (run, strike, cast): body points from the detector, steadied across the clip;
+      hands from the picks on strike and cast (run carries the weapon stowed)."""
     picks = json.load(open(os.path.join(HERE, "anchor_picks.json")))
+    over = {}
+    opath = os.path.join(HERE, "anchor_overrides.json")
+    if os.path.exists(opath):
+        over = json.load(open(opath))
+    derived = json.load(open(os.path.join(HERE, "src", key, "derived.json")))
     out = {}
     for anim in sorted(os.listdir(os.path.join(HERE, "src", key))):
         if anim.startswith("_") or not os.path.isdir(os.path.join(HERE, "src", key, anim)):
             continue
         for d in DIRS:
-            idle0 = None
+            if anim in derived:
+                base = standing(key, d, picks)
+                for n, t in enumerate(derived[anim][d]):
+                    out[f"{anim}/{d}/{n}"] = moved(base, t, stowed=anim in ("death", "roll"))
+                continue
+            clip = []
             for n, im in frames(key, anim, d):
                 a = anchors_for(im, d)
                 if a is None:
                     continue
-                a.pop("hand", None)
-                a.pop("off", None)
-                src = anim if anim in ("strike", "cast") else ("idle" if anim in ("idle", "hit") else None)
-                if src:
-                    rows = picks.get(f"{key}/{src}/{d}")
-                    if rows:
-                        if src == anim:
-                            pk = rows[min(n, len(rows) - 1)]
-                            cands = candidates(im)
-                            a["hand"] = resolve(pk[0], cands, im, a["shoulders"])
-                            a["off"] = resolve(pk[1], cands, im, a["shoulders"])
-                        else:
-                            # Hit frames borrow the idle hands, moved by how far the head moved.
-                            if idle0 is None:
-                                im0 = frames(key, "idle", d)[0][1]
-                                b = anchors_for(im0, d)
-                                c0 = candidates(im0)
-                                idle0 = (b["head"], resolve(rows[0][0], c0, im0, b["shoulders"]), resolve(rows[0][1], c0, im0, b["shoulders"]))
-                            dx, dy = a["head"][0] - idle0[0][0], a["head"][1] - idle0[0][1]
-                            for k2, h in (("hand", idle0[1]), ("off", idle0[2])):
-                                a[k2] = [round(h[0] + dx, 1), round(h[1] + dy, 1), h[2]] if h else None
-                if anim == "idle":
-                    # Idle frames are the standing pose breathing: same hands as frame 0, with the bob.
-                    rows = picks.get(f"{key}/idle/{d}")
-                    if rows:
-                        im0 = frames(key, "idle", d)[0][1]
-                        b = anchors_for(im0, d)
-                        c0 = candidates(im0)
-                        h0 = resolve(rows[0][0], c0, im0, b["shoulders"])
-                        o0 = resolve(rows[0][1], c0, im0, b["shoulders"])
-                        dy = a["head"][1] - b["head"][1]
-                        a["hand"] = [h0[0], round(h0[1] + dy, 1), h0[2]] if h0 else None
-                        a["off"] = [o0[0], round(o0[1] + dy, 1), o0[2]] if o0 else None
+                a["hand"] = a["off"] = None
+                rows = picks.get(f"{key}/{anim}/{d}") if anim in ("strike", "cast") else None
+                if rows:
+                    pk = rows[min(n, len(rows) - 1)]
+                    cands = candidates(im)
+                    a["hand"] = resolve(pk[0], cands, im, a["shoulders"])
+                    a["off"] = resolve(pk[1], cands, im, a["shoulders"])
+                a["rot"] = 0.0
+                clip.append((n, a))
+            steady_head(clip)
+            for n, a in clip:
                 out[f"{anim}/{d}/{n}"] = a
+    for name in list(out):
+        for k, v in over.get(f"{key}/{name}", {}).items():
+            out[name][k] = v
+        out[name] = snap(out[name])
     with open(os.path.join(HERE, "src", key, "anchors.json"), "w") as f:
         json.dump(out, f, separators=(",", ":"))
     print(key, len(out), "frames anchored")
