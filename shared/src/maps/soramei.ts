@@ -1,3 +1,4 @@
+import { GATE_ASSAULT } from "../data/greyed.js";
 import { MapBuilder } from "./builder.js";
 
 /**
@@ -75,6 +76,7 @@ b.prop("blood_pool", 11, 13, 3);
 export const SORAMEI_COURTYARD = b.build({
   id: "soramei_courtyard",
   name: "Dziedziniec Soramei",
+  subtitle: "Akt I · Popiół na czole",
   spawns: [
     { x: 13.5, y: 15.5 },
     { x: 15.5, y: 15.5 },
@@ -84,4 +86,6 @@ export const SORAMEI_COURTYARD = b.build({
   music: "music_soramei_night",
   ambience: "amb_night_wind",
   introCinematic: "prolog",
+  // The night of the escape: the Greyed break through the gate in waves until the Tapper comes.
+  encounters: [{ id: "gate", waves: GATE_ASSAULT, spawnAt: [{ x: 14.5, y: 1.2 }], gate: true, repeat: true, clearFlag: "escaped" }],
 });

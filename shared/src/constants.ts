@@ -18,6 +18,8 @@ export const MSG = {
   skip: "skip",
   /** client → server: change weapon / tree picks ({ weapon, picks }); only outside a wave. */
   loadout: "loadout",
+  /** client → server: pick an option of the running cinematic's choice ({ option: number }). */
+  choice: "choice",
   /** server → client: a batch of FxEvents (hits, casts, deaths...) for visuals and sound. */
   fx: "fx",
 } as const;

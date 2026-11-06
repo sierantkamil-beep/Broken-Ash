@@ -76,6 +76,13 @@ export interface Cinematic {
   startFade?: number;
   /** Colour grading during the scene: 0 = normal, 1 = fully desaturated. */
   desaturate?: number;
+  /**
+   * A decision: at `t` the scene holds until both players pick the same option (each sees the other's
+   * pick). The option's flag is set, and its `then` scene (if any) plays next.
+   */
+  choice?: { t: number; prompt: string; options: { label: string; flag: string; then?: string }[] };
+  /** When the scene ends (played out or skipped): set these flags, and/or travel somewhere. */
+  onEnd?: { flags?: string[]; travel?: { to: string; spawn: number } };
 }
 
 export interface CinematicFrame {

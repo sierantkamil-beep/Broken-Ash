@@ -29,6 +29,7 @@ import { $ } from "../ui/dom";
 import { Hud } from "../ui/Hud";
 import { barOf, lookOf, pathOf, weaponOf } from "../net/loadout";
 import { ACCENTS } from "../fx/accents";
+import { AreaLife } from "../world/AreaLife";
 import { GroundLayer } from "../world/GroundLayer";
 import { Lighting, type LightSource } from "../world/Lighting";
 import { Petals } from "../world/Petals";
@@ -68,6 +69,10 @@ interface StateView {
   skipVotes: number;
   phase: string;
   wave: number;
+  mapId: string;
+  flags: string;
+  choicePicks: string;
+  chosen: number;
 }
 
 interface Remote {
@@ -90,6 +95,10 @@ export class WorldScene extends Phaser.Scene {
   private overlayCam!: Phaser.Cameras.Scene2D.Camera;
   private fog: Phaser.GameObjects.TileSprite[] = [];
   private props!: PropLayer;
+  private ground: GroundLayer | null = null;
+  private life: AreaLife | null = null;
+  /** Story flags as the server last sent them. */
+  private flags = new Set<string>();
   private lighting!: Lighting;
   private petals!: Petals;
   audio!: AudioDirector;
@@ -128,7 +137,8 @@ export class WorldScene extends Phaser.Scene {
     this.overlayLayer = this.add.layer();
     this.audio = new AudioDirector(this);
 
-    this.worldLayer.add(new GroundLayer(this, this.map).rt);
+    this.ground = new GroundLayer(this, this.map);
+    this.worldLayer.add(this.ground.rt);
     // The camera never shows past the map's edge (no black void around the courtyard).
     this.cameras.main.setBounds(0, 0, this.map.width * CELL, this.map.height * CELL);
     this.props = new PropLayer(this, this.map, this.worldLayer);
@@ -165,6 +175,7 @@ export class WorldScene extends Phaser.Scene {
       },
     });
     this.vfx.initGore(this.map.width, this.map.height);
+    this.life = new AreaLife(this, this.worldLayer, this.map, this.audio);
 
     // Fog drifts in screen space on its own camera, so zoom doesn't stretch it.
     const { width, height } = this.scale;
@@ -191,7 +202,9 @@ export class WorldScene extends Phaser.Scene {
         this.colorFx?.reset();
         if (a > 0) this.colorFx?.saturate(-a);
       },
-      onEnd: () => this.hud.banner(this.map.name, "Akt I · Popiół na czole"),
+      onEnd: () => this.hud.banner(this.map.name, this.map.subtitle ?? ""),
+      pick: (option) => this.room?.send(MSG.choice, { option }),
+      me: () => this.room?.sessionId ?? "",
     });
 
     const kb = this.input.keyboard!;
@@ -202,6 +215,12 @@ export class WorldScene extends Phaser.Scene {
       if (this.canAct()) this.me?.pred.pressDodge();
     });
     kb.on("keydown", (e: KeyboardEvent) => {
+      // During a scene's choice the number keys pick an option; otherwise they cast.
+      if (this.cinematic.choosing) {
+        const opt = { Digit1: 0, Digit2: 1, Digit3: 2 }[e.code];
+        if (opt !== undefined) this.room?.send(MSG.choice, { option: opt });
+        return;
+      }
       const slot = { Digit1: 2, Digit2: 3, Digit3: 4, Digit4: 5 }[e.code];
       if (slot !== undefined) this.cast(slot);
     });
@@ -342,6 +361,16 @@ export class WorldScene extends Phaser.Scene {
       else if (!state.cinematic && this.cinematic.playing) this.cinematic.stop();
       if (state.cinematic) this.cinematic.setSkipVotes(state.skipVotes, state.players.size);
     };
+    // Another area: rebuild the world around you (the server has already moved everyone).
+    $s(state).listen("mapId", (id: string) => {
+      if (id && id !== this.map.id) this.enterArea(id);
+    });
+    $s(state).listen("flags", (f: string) => {
+      this.flags = new Set(f ? f.split(",") : []);
+    });
+    const syncChoice = () => this.cinematic.setChoice(state.choicePicks, state.chosen);
+    $s(state).listen("choicePicks", syncChoice);
+    $s(state).listen("chosen", syncChoice);
     $s(state).listen("cinematic", syncCinematic);
     $s(state).listen("skipVotes", syncCinematic);
     $s(state).listen("phase", (phase: string) => {
@@ -352,7 +381,38 @@ export class WorldScene extends Phaser.Scene {
     syncCinematic();
     $("hud").hidden = false;
     this.time.delayedCall(600, () => {
-      if (!this.cinematic.playing) this.hud.banner(this.map.name, "Akt I · Popiół na czole");
+      if (!this.cinematic.playing) this.hud.banner(this.map.name, this.map.subtitle ?? "");
+    });
+  }
+
+  /**
+   * Swaps the area: new ground, props, night and blood layer, camera bounds, people and exits; the
+   * old dead are left behind. Positions come from the server's next snapshot.
+   */
+  private enterArea(id: string) {
+    const map = MAPS[id];
+    if (!map) return;
+    this.map = map;
+    this.grid = CollisionGrid.fromMap(map);
+    this.ground?.rt.destroy();
+    this.ground = new GroundLayer(this, map);
+    this.worldLayer.add(this.ground.rt);
+    this.props.destroy();
+    this.props = new PropLayer(this, map, this.worldLayer);
+    this.lighting.setAmbient(map.ambient);
+    this.cameras.main.setBounds(0, 0, map.width * CELL, map.height * CELL);
+    this.vfx.initGore(map.width, map.height);
+    this.life?.destroy();
+    this.life = new AreaLife(this, this.worldLayer, map, this.audio);
+    for (const c of this.corpses) c.destroy();
+    this.corpses = [];
+    this.corpseById.clear();
+    this.me?.pred.setGrid(this.grid);
+    if (map.music) this.audio.playMusic(map.music, 2500);
+    if (map.ambience) this.audio.playAmbience(map.ambience, 2500);
+    this.cameras.main.fadeIn(600, 0, 0, 0);
+    this.time.delayedCall(700, () => {
+      if (!this.cinematic.playing) this.hud.banner(map.name, map.subtitle ?? "");
     });
   }
 
@@ -535,6 +595,7 @@ export class WorldScene extends Phaser.Scene {
     for (const [id, r] of this.remotes) this.vfx.statuses(id, r.view.st, r.view.shield);
     for (const [id, u] of this.units) this.vfx.statuses(id, u.view.st);
     this.props.update(time, delta, watchers);
+    this.life?.update(this.flags, this.state?.phase === "fight", this.me ? this.me.pred.render() : null, delta);
     this.petals.update(time, delta);
     this.lighting.render(time, lights);
     for (const [i, f] of this.fog.entries()) {

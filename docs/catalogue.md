@@ -6,8 +6,8 @@
 ## Contents
 
 - [shared](#shared) — 22 files, 5 test files
-- [server](#server) — 10 files, 5 test files
-- [client](#client) — 35 files, 3 test files
+- [server](#server) — 11 files, 5 test files
+- [client](#client) — 36 files, 3 test files
 - [desktop](#desktop) — 3 files, 1 test files
 - [tools/catalogue](#toolscatalogue) — 1 files, 1 test files
 - [Python tools](#python-tools)
@@ -34,10 +34,10 @@ Pure game logic and data used by server and client. No Phaser, Colyseus or Node 
 | `shared/src/i18n.ts` | Polish plural forms: 1 → one, 2–4 (but not 12–14) → few, everything else → many. | `plural`, `count` | — |
 | `shared/src/index.ts` | — | * from "./constants.js", * from "./balance.js", * from "./view.js", * from "./i18n.js", * from "./map.js", * from "./movement.js", * from "./cinematic.js", * from "./data/props.js", * from "./data/cinematics.js", * from "./maps/index.js", * from "./types.js", * from "./combat/types.js", * from "./combat/geometry.js", * from "./data/paths.js", * from "./data/greyed.js", * from "./data/looks.js", * from "./data/weapons.js", * from "./combat/build.js", * from "./loadout.js" | `shared/src/balance`, `shared/src/cinematic`, `shared/src/combat/build`, `shared/src/combat/geometry`, `shared/src/combat/types`, `shared/src/constants`, `shared/src/data/cinematics`, `shared/src/data/greyed`, `shared/src/data/looks`, `shared/src/data/paths`, `shared/src/data/props`, `shared/src/data/weapons`, `shared/src/i18n`, `shared/src/loadout`, `shared/src/map`, `shared/src/maps/index`, `shared/src/movement`, `shared/src/types`, `shared/src/view` |
 | `shared/src/loadout.ts` | A character's skill bar: the weapon's basic, RMB and key-1 skills (from its mastery tree), then the path's three signature skills (design.md §4). | `Picks`, `DEFAULT_PICKS`, `masteryLevel`, `masteryProgress`, `isWeapon`, `validPicks`, `Loadout`, `resolveLoadout`, `allSkills` | `shared/src/balance`, `shared/src/combat/types`, `shared/src/data/weapons` |
-| `shared/src/map.ts` | An area of the world. | `AreaMap`, `GroundType`, `BLOCKING_GROUND`, `PropPlacement`, `CollisionGrid` | `shared/src/data/props` |
+| `shared/src/map.ts` | A rectangle of cells (continuous: x ∈ [x, x + w), y ∈ [y, y + h)). | `Region`, `inRegion`, `Exit`, `Encounter`, `Npc`, `AreaMap`, `GroundType`, `BLOCKING_GROUND`, `PropPlacement`, `CollisionGrid` | `shared/src/combat/types`, `shared/src/data/greyed`, `shared/src/data/props` |
 | `shared/src/maps/builder.ts` | Small helper for writing maps as code: readable, deterministic, diffable. | `MapBuilder` | `shared/src/data/props`, `shared/src/map` |
 | `shared/src/maps/index.ts` | — | `MAPS`, `START_MAP` | `shared/src/map`, `shared/src/maps/soramei` |
-| `shared/src/maps/soramei.ts` | Dziedziniec Soramei — the courtyard of the ruined Soramei Keep, the night of the escape (Act 1). | `SORAMEI_COURTYARD` | `shared/src/maps/builder` |
+| `shared/src/maps/soramei.ts` | Dziedziniec Soramei — the courtyard of the ruined Soramei Keep, the night of the escape (Act 1). | `SORAMEI_COURTYARD` | `shared/src/data/greyed`, `shared/src/maps/builder` |
 | `shared/src/movement.ts` | One player's movement state. | `Body`, `InputFrame`, `newBody`, `sanitizeInput`, `isInvulnerable`, `stepBody`, `moveWithCollision`, `overlaps`, `copyBody` | `shared/src/balance`, `shared/src/map`, `shared/src/view` |
 | `shared/src/types.ts` | Options a client sends when joining the room. | `JoinOptions`, `HitCause`, `FxEvent` | — |
 | `shared/src/view.ts` | Top-down 3/4 view (like Dinusie): square cells, the ground drawn flat, characters and props drawn upright as seen slightly from the front. | `CELL`, `Z_PX`, `worldToScreen`, `screenToWorld`, `screenDirToWorld`, `DIRECTIONS`, `directionIndex`, `depthOf` | — |
@@ -81,6 +81,10 @@ Tests: `shared/src/cinematic.test.ts`, `shared/src/i18n.test.ts`, `shared/src/ma
 - `masteryProgress` (function, `shared/src/loadout.ts`) — Progress towards the next level, 0–1 (1 at max).
 - `validPicks` (function, `shared/src/loadout.ts`) — Keeps only choices the level has unlocked; anything else falls back to the first option.
 - `allSkills` (function, `shared/src/loadout.ts`) — Every skill that can appear on a bar, by id (paths' signatures + every weapon skill).
+- `Region` (interface, `shared/src/map.ts`) — A rectangle of cells (continuous: x ∈ [x, x + w), y ∈ [y, y + h)).
+- `Exit` (interface, `shared/src/map.ts`) — A way out: both players standing in it travel to `to`, arriving at its spawn number `spawn`.
+- `Encounter` (interface, `shared/src/map.ts`) — A fight in an area: it starts when someone enters `trigger` (or on arrival without one), sends its waves from the spawn points, and can lock the exits until it's won (an ambush).
+- `Npc` (interface, `shared/src/map.ts`) — Someone to talk to: drawn as a character; F nearby plays their scene.
 - `AreaMap` (interface, `shared/src/map.ts`) — An area of the world.
 - `BLOCKING_GROUND` (const, `shared/src/map.ts`) — Ground you can't stand on.
 - `CollisionGrid` (class, `shared/src/map.ts`) — Which cells block movement.
@@ -113,13 +117,14 @@ Colyseus server. `game/` is the network-free simulation; `rooms/` forwards messa
 | `server/src/game/Combat.ts` | Damage-over-time caps (dps), so stacking stays strong but bounded. | `Projectile`, `Zone`, `Arena`, `fighters`, `fighterById`, `partnerOf`, `targetable`, `foesOf`, `addStatus`, `speedOf`, `tickStatuses`, `DamageOpts`, `causeOf`, `dealDamage`, `heal`, `gainResource`, `canCast`, `startCast`, `tickCasts`, `releaseGrab`, `spawnUnitBolt`, `tickProjectiles`, `gainMastery`, `push`, `tickZones`, `unitAttackHits` | `server/src/game/fighters`, @broken-ash/shared |
 | `server/src/game/Pathing.ts` | Flow fields: for a goal cell, every reachable cell's walking distance to it (8-connected, no corner cutting). | `FlowField` | @broken-ash/shared |
 | `server/src/game/Profiles.ts` | What the host remembers about each character between sessions: weapon mastery, tree picks and the last weapon, path and look. | `Profile`, `Profiles` | @broken-ash/shared, node:fs, node:path |
+| `server/src/game/Story.ts` | The shared story the host remembers between sessions: the flags (choices made, areas cleared, scenes seen) and the area you were in. | `StorySave`, `Story` | node:fs, node:path |
 | `server/src/game/Units.ts` | A thrall raised by the Path of Graves: a Shambler's body fighting on the players' side. | `thrallDef`, `makeUnit`, `tickUnits` | `server/src/game/Combat`, `server/src/game/Pathing`, `server/src/game/fighters`, @broken-ash/shared |
-| `server/src/game/World.ts` | What the host remembers about a character between sessions (server/src/game/Profiles.ts). | `RunningCinematic`, `JoinRequest`, `SavedProgress`, `Phase`, `World`, `sanitizeName` | `server/src/game/Combat`, `server/src/game/Pathing`, `server/src/game/Units`, `server/src/game/fighters`, @broken-ash/shared |
+| `server/src/game/World.ts` | Each player's pick for the scene's choice (option index), and whether it's been decided. | `RunningCinematic`, `JoinRequest`, `SavedProgress`, `Phase`, `World`, `sanitizeName` | `server/src/game/Combat`, `server/src/game/Pathing`, `server/src/game/Units`, `server/src/game/fighters`, @broken-ash/shared |
 | `server/src/game/fighters.ts` | A status on a fighter. | `Status`, `Fighter`, `CastState`, `PlayerSim`, `UnitSim`, `fighterPos` | @broken-ash/shared |
 | `server/src/index.ts` | — | — | `server/src/startServer`, @broken-ash/shared |
-| `server/src/rooms/WorldRoom.ts` | Thin network layer: forwards validated messages to the World and mirrors its state into the schema. | `WorldRoom` | `server/src/game/Profiles`, `server/src/game/World`, `server/src/game/fighters`, `server/src/schema/WorldState`, @broken-ash/shared, @colyseus/core |
+| `server/src/rooms/WorldRoom.ts` | Thin network layer: forwards validated messages to the World and mirrors its state into the schema. | `WorldRoom` | `server/src/game/Profiles`, `server/src/game/Story`, `server/src/game/World`, `server/src/game/fighters`, `server/src/schema/WorldState`, @broken-ash/shared, @colyseus/core |
 | `server/src/schema/WorldState.ts` | Synced player state. | `PlayerState`, `UnitState`, `WorldState` | @colyseus/schema |
-| `server/src/startServer.ts` | Where the host keeps saved characters (the desktop app passes its userData folder). | `RunningServer`, `ServerOptions`, `startServer` | `server/src/game/Profiles`, `server/src/rooms/WorldRoom`, @broken-ash/shared, @colyseus/core, @colyseus/ws-transport, node:http, node:os, node:path |
+| `server/src/startServer.ts` | Where the host keeps saved characters (the desktop app passes its userData folder). | `RunningServer`, `ServerOptions`, `startServer` | `server/src/game/Profiles`, `server/src/game/Story`, `server/src/rooms/WorldRoom`, @broken-ash/shared, @colyseus/core, @colyseus/ws-transport, node:http, node:os, node:path |
 
 Tests: `server/src/game/Combat.test.ts`, `server/src/game/Mastery.test.ts`, `server/src/game/Units.test.ts`, `server/src/game/World.test.ts`, `server/src/game/sim.test.ts`
 
@@ -139,6 +144,7 @@ Tests: `server/src/game/Combat.test.ts`, `server/src/game/Mastery.test.ts`, `ser
 - `unitAttackHits` (function, `server/src/game/Combat.ts`) — Shapes of the Greyed's attacks use the same hit test; the landing point is locked at wind-up.
 - `FlowField` (class, `server/src/game/Pathing.ts`) — Flow fields: for a goal cell, every reachable cell's walking distance to it (8-connected, no corner cutting).
 - `Profile` (interface, `server/src/game/Profiles.ts`) — What the host remembers about each character between sessions: weapon mastery, tree picks and the last weapon, path and look.
+- `StorySave` (interface, `server/src/game/Story.ts`) — The shared story the host remembers between sessions: the flags (choices made, areas cleared, scenes seen) and the area you were in.
 - `thrallDef` (function, `server/src/game/Units.ts`) — A thrall raised by the Path of Graves: a Shambler's body fighting on the players' side.
 - `tickUnits` (function, `server/src/game/Units.ts`) — The Greyed's (and thralls') behaviour: pick the nearest foe, walk the flow field to them, and when an attack is in range, lock its aim and telegraph it for its wind-up before it lands.
 - `SavedProgress` (interface, `server/src/game/World.ts`) — What the host remembers about a character between sessions (server/src/game/Profiles.ts).
@@ -178,7 +184,7 @@ Phaser 3 + Vite client: rendering, prediction, cinematics, audio, DOM UI.
 | `client/src/net/loadout.ts` | The synced fields a player's bar and look are resolved from (server/src/schema/WorldState.ts). | `LoadoutView`, `pathOf`, `weaponOf`, `masteryOf`, `barOf`, `lookOf`, `ALL_SKILLS` | @broken-ash/shared |
 | `client/src/net.ts` | Accepts "host", "host:port", IPv6 (bare or "[addr]:port") or a full ws:// / http:// URL, so players can paste whatever they were given. | `toServerUrl`, `joinWorld` | @broken-ash/shared, colyseus.js |
 | `client/src/scenes/BootScene.ts` | Loads the atlases (rendered by tools/art) and the sounds (tools/audio), with a thin progress line. | `BootScene` | `client/src/audio/AudioDirector`, phaser |
-| `client/src/scenes/WorldScene.ts` | The synced player fields (mirror of server/src/schema/WorldState.ts). | `WorldScene` | `client/src/assets/atlases`, `client/src/audio/AudioDirector`, `client/src/cinematic/CinematicPlayer`, `client/src/entities/Character`, `client/src/entities/UnitSprite`, `client/src/fx/Vfx`, `client/src/fx/accents`, `client/src/net`, `client/src/net/Interpolation`, `client/src/net/Prediction`, `client/src/net/loadout`, `client/src/ui/Hud`, `client/src/ui/dom`, `client/src/world/GroundLayer`, `client/src/world/Lighting`, `client/src/world/Petals`, `client/src/world/PropLayer`, @broken-ash/shared, phaser |
+| `client/src/scenes/WorldScene.ts` | The synced player fields (mirror of server/src/schema/WorldState.ts). | `WorldScene` | `client/src/assets/atlases`, `client/src/audio/AudioDirector`, `client/src/cinematic/CinematicPlayer`, `client/src/entities/Character`, `client/src/entities/UnitSprite`, `client/src/fx/Vfx`, `client/src/fx/accents`, `client/src/net`, `client/src/net/Interpolation`, `client/src/net/Prediction`, `client/src/net/loadout`, `client/src/ui/Hud`, `client/src/ui/dom`, `client/src/world/AreaLife`, `client/src/world/GroundLayer`, `client/src/world/Lighting`, `client/src/world/Petals`, `client/src/world/PropLayer`, @broken-ash/shared, phaser |
 | `client/src/settings.ts` | Per-player preferences, kept in localStorage (wrapped: storage can be unavailable). | `Settings`, `settings`, `saveSettings`, `onSettingsChange` | — |
 | `client/src/ui/Hud.ts` | The DOM HUD: your bars and skill bar, your partner, the boss, being downed. | `MeView`, `Hud` | `client/src/fx/accents`, `client/src/ui/dom`, `client/src/ui/pixelIcons`, @broken-ash/shared |
 | `client/src/ui/Mastery.ts` | The weapon mastery panel (K): your weapon's level and progress, its tree — RMB and key-1 choices, the passive rows — and switching weapons. | `Mastery` | `client/src/fx/accents`, `client/src/net/loadout`, `client/src/ui/dom`, `client/src/ui/pixelIcons`, @broken-ash/shared, colyseus.js |
@@ -188,6 +194,7 @@ Phaser 3 + Vite client: rendering, prediction, cinematics, audio, DOM UI.
 | `client/src/ui/menu/Preview.ts` | The character screen's live preview: a small Phaser game of its own showing the real paper doll — the same body atlas, recolour, armour and gear as in play — idling, running, attacking or rolling, turnable through all ei | `PreviewSpec`, `PreviewMode`, `Preview` | `client/src/audio/AudioDirector`, `client/src/entities/Character`, @broken-ash/shared, phaser |
 | `client/src/ui/menu/characters.ts` | Characters made on this computer: name, path, body, people, weapon and look. | `SavedCharacter`, `listCharacters`, `currentCharacter`, `saveCharacter`, `selectCharacter`, `deleteCharacter`, `newCharacter` | @broken-ash/shared |
 | `client/src/ui/pixelIcons.ts` | Skill icons as crisp pixel art: a 24 × 24 grid shown at exactly 2× (48 px), the same pixel size as the characters. | `ICON`, `ICON_SCALE`, `skillIcon`, `logoMark` | @broken-ash/shared |
+| `client/src/world/AreaLife.ts` | The living parts of an area beyond the fight: the people you can talk to (drawn as characters, dressed like their path, with a name; "F — rozmowa" when you're close), and the ways out (a glowing threshold with where it l | `AreaLife` | `client/src/audio/AudioDirector`, `client/src/entities/Character`, @broken-ash/shared, phaser |
 | `client/src/world/GroundLayer.ts` | Which ground draws its soft, feathered rim over which: higher priority creeps over lower (moss over flagstones, flagstones over the pond's edge). | `GroundLayer` | `client/src/world/frames`, @broken-ash/shared, phaser |
 | `client/src/world/Lighting.ts` | Screen position (px). | `LightSource`, `DEPTH_LIGHT`, `Lighting` | phaser |
 | `client/src/world/Petals.ts` | Red blossom petals drifting down across the view. | `Petals` | phaser |
@@ -248,6 +255,7 @@ Tests: `client/src/net/Prediction.test.ts`, `client/src/net.test.ts`, `client/sr
 - `ICON` (const, `client/src/ui/pixelIcons.ts`) — Skill icons as crisp pixel art: a 24 × 24 grid shown at exactly 2× (48 px), the same pixel size as the characters.
 - `skillIcon` (function, `client/src/ui/pixelIcons.ts`) — A skill's icon as a canvas at its pixel size; CSS shows it at exactly 2× (class `px-icon`).
 - `logoMark` (function, `client/src/ui/pixelIcons.ts`) — The title mark: an open vermilion enso (the brush circle) around the World-Ash, a pale Y-shaped tree split down its trunk by a red crack, 32 × 32 pixels shown at an integer scale beside the name.
+- `AreaLife` (class, `client/src/world/AreaLife.ts`) — The living parts of an area beyond the fight: the people you can talk to (drawn as characters, dressed like their path, with a name; "F — rozmowa" when you're close), and the ways out (a glowing threshold with where it l
 - `GroundLayer` (class, `client/src/world/GroundLayer.ts`) — Bakes the whole ground into one render texture once: hard squares first, then soft rims by priority.
 - `Lighting` (class, `client/src/world/Lighting.ts`) — Night: a render texture filled with the ambient colour, with every light stamped in additively, then multiplied over the scene.
 - `Petals` (class, `client/src/world/Petals.ts`) — Red blossom petals drifting down across the view.
@@ -320,7 +328,7 @@ Tests: `tools/catalogue/catalogue.test.ts`
 ## Generated assets
 
 - **`client/public/assets/audio/`** (54 files): `amb_night_wind`, `music_gate_fight`, `music_soramei_night`, `sfx_bell`, `sfx_blade`, `sfx_blade_heavy`, `sfx_blade_spin`, `sfx_blood`, `sfx_blood_heavy`, `sfx_blowpipe`, `sfx_bow`, `sfx_bow_heavy`, `sfx_burst`, `sfx_cin_split`, `sfx_dodge`, `sfx_downed`, `sfx_drink`, `sfx_execute`, `sfx_fire`, `sfx_fire_heavy`, `sfx_gate_bang`, `sfx_gong_small`, `sfx_gore`, `sfx_greyed_death`, `sfx_groan_0`, `sfx_groan_1`, `sfx_groan_2`, `sfx_hit_flesh`, `sfx_horn`, `sfx_poison`, `sfx_revive`, `sfx_roots`, `sfx_slam`, `sfx_smoke`, `sfx_spirit`, `sfx_spirit_heavy`, `sfx_step_soft_0`, `sfx_step_soft_1`, `sfx_step_soft_2`, `sfx_step_soft_3`, `sfx_step_stone_0`, `sfx_step_stone_1`, `sfx_step_stone_2`, `sfx_step_stone_3`, `sfx_tapper_roar`, `sfx_throw`, `sfx_thunder`, `sfx_title_gong`, `sfx_victory`, `sfx_whoosh`, `sfx_wind`, `ui_click`, `ui_confirm`, `ui_hover`
-- **`client/public/assets/chars/`** (13 files): `blood_female`, `body_female`, `body_male`, `index`, `runner_greyed`, `shambler_greyed`, `thorn_male`
+- **`client/public/assets/chars/`** (17 files): `bloated_greyed`, `blood_female`, `body_female`, `body_male`, `index`, `runner_greyed`, `shambler_greyed`, `tapper_greyed`, `thorn_male`
 - **`client/public/assets/fx/`** (2 files): `spells`
 - **`client/public/assets/gear/`** (2 files): `gear`
 - **`client/public/assets/sprites/`** (10 files): `fx`, `ground`, `ground_px`, `props`, `props_px`

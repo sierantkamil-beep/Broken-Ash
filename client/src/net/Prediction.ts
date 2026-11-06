@@ -33,7 +33,7 @@ export class Prediction {
   private castLatched: number | null = null;
 
   constructor(
-    private readonly grid: CollisionGrid,
+    private grid: CollisionGrid,
     x: number,
     y: number,
   ) {
@@ -83,6 +83,12 @@ export class Prediction {
     this.errX *= k;
     this.errY *= k;
     return out;
+  }
+
+  /** A new area: walls change (the next snapshot moves the body there). */
+  setGrid(grid: CollisionGrid) {
+    this.grid = grid;
+    this.pending = [];
   }
 
   /** Applies an authoritative snapshot and replays the inputs the server hasn't seen yet. */

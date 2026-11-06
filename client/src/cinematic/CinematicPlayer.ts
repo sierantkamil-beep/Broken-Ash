@@ -11,6 +11,10 @@ export interface CinematicHooks {
   zoomFor: (zoom: number) => number;
   setDesaturation: (amount: number) => void;
   onEnd: () => void;
+  /** Sends this player's pick for the scene's choice. */
+  pick: (option: number) => void;
+  /** This player's session id (to mark whose pick is whose). */
+  me: () => string;
 }
 
 /**
@@ -23,6 +27,9 @@ export class CinematicPlayer {
   private startedAt = 0;
   private lastT = 0;
   private skipVotes = { votes: 0, needed: 2 };
+  private picks = new Map<string, number>();
+  private chosen = -1;
+  private choiceShown = false;
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -40,6 +47,10 @@ export class CinematicPlayer {
     this.startedAt = this.scene.time.now - elapsedMs;
     this.lastT = elapsedMs;
     this.skipVotes = { votes: 0, needed: 2 };
+    this.picks.clear();
+    this.chosen = -1;
+    this.choiceShown = false;
+    $("cin-choice").hidden = true;
     $("cinema").hidden = false;
     $("cin-skip").hidden = false;
     this.renderSkip();
@@ -47,6 +58,44 @@ export class CinematicPlayer {
     const music = c.events.filter((e) => e.kind === "music" && e.t <= elapsedMs).pop();
     if (music && music.kind === "music") this.hooks.audio.playMusic(music.key, 1500);
     if (elapsedMs === 0) for (const e of c.events.filter((e) => e.t === 0)) this.fire(e);
+  }
+
+  /** The server's view of the choice: each player's pick ("id:option,…") and the decided option. */
+  setChoice(picks: string, chosen: number) {
+    this.picks = new Map(picks ? picks.split(",").map((p) => [p.split(":")[0], Number(p.split(":")[1])] as [string, number]) : []);
+    const was = this.chosen;
+    this.chosen = chosen;
+    const c = this.current;
+    // Decided: the scene goes on from the choice.
+    if (c?.choice && was < 0 && chosen >= 0) {
+      this.startedAt = this.scene.time.now - c.choice.t;
+      $("cin-choice").hidden = true;
+      this.choiceShown = false;
+    }
+    if (this.choiceShown) this.renderChoice();
+  }
+
+  /** Is the choice on screen (keys 1–3 pick)? */
+  get choosing() {
+    return this.choiceShown;
+  }
+
+  private renderChoice() {
+    const c = this.current;
+    if (!c?.choice) return;
+    const box = $("cin-choice");
+    (box.querySelector(".prompt") as HTMLElement).textContent = c.choice.prompt;
+    const opts = box.querySelector(".options") as HTMLElement;
+    opts.replaceChildren();
+    c.choice.options.forEach((o, i) => {
+      const b = document.createElement("button");
+      const who = [...this.picks].filter(([, v]) => v === i).map(([id]) => (id === this.hooks.me() ? "ty" : "partner"));
+      b.innerHTML = `<span>${i + 1}. ${o.label.replace(/</g, "&lt;")}</span><span class="who">${who.join(" · ")}</span>`;
+      if (this.picks.get(this.hooks.me()) === i) b.classList.add("mine");
+      b.addEventListener("click", () => this.hooks.pick(i));
+      opts.append(b);
+    });
+    box.hidden = false;
   }
 
   setSkipVotes(votes: number, needed: number) {
@@ -61,6 +110,8 @@ export class CinematicPlayer {
 
   /** The server ended (or both of you skipped) the scene. */
   stop() {
+    $("cin-choice").hidden = true;
+    this.choiceShown = false;
     if (!this.current) return;
     this.current = null;
     this.hooks.setDesaturation(0);
@@ -85,7 +136,16 @@ export class CinematicPlayer {
   update() {
     const c = this.current;
     if (!c) return;
-    const t = this.scene.time.now - this.startedAt;
+    let t = this.scene.time.now - this.startedAt;
+    // A choice holds the scene (the server waits there too) until both players agree.
+    if (c.choice && this.chosen < 0 && t >= c.choice.t) {
+      t = c.choice.t;
+      this.startedAt = this.scene.time.now - t;
+      if (!this.choiceShown) {
+        this.choiceShown = true;
+        this.renderChoice();
+      }
+    }
     const f = evaluateCinematic(c, t);
     for (const e of eventsBetween(c, this.lastT, t)) this.fire(e);
     this.lastT = t;

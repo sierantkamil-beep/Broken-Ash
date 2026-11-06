@@ -1,6 +1,7 @@
 import { Room, type Client } from "@colyseus/core";
-import { GATE_ASSAULT, MAX_PLAYERS, MSG, PATCH_HZ, SIM_DT, type JoinOptions } from "@broken-ash/shared";
+import { MAX_PLAYERS, MSG, PATCH_HZ, SIM_DT, type JoinOptions } from "@broken-ash/shared";
 import type { Profiles } from "../game/Profiles.js";
+import type { Story } from "../game/Story.js";
 import { World } from "../game/World.js";
 import type { PlayerSim } from "../game/fighters.js";
 import { PlayerState, UnitState, WorldState } from "../schema/WorldState.js";
@@ -16,10 +17,14 @@ export class WorldRoom extends Room<WorldState> {
   maxClients = MAX_PLAYERS;
   private world!: World;
   private profiles: Profiles | null = null;
+  private story: Story | null = null;
 
-  onCreate(opts: { profiles?: Profiles } = {}) {
+  onCreate(opts: { profiles?: Profiles; story?: Story } = {}) {
     this.profiles = opts.profiles ?? null;
-    this.world = new World();
+    this.story = opts.story ?? null;
+    // Pick the story up where you left it: the same flags, the same area.
+    this.world = new World(this.story?.data.area, Date.now(), this.story?.data.flags ?? []);
+    this.world.onStory = () => this.story?.save(this.world.flags, this.world.map.id);
     this.state = new WorldState();
     this.state.mapId = this.world.map.id;
     this.setPatchRate(1000 / PATCH_HZ);
@@ -31,6 +36,7 @@ export class WorldRoom extends Room<WorldState> {
       this.world.queueInputs(client.sessionId, frames);
     });
     this.onMessage(MSG.skip, (client) => this.world.voteSkip(client.sessionId));
+    this.onMessage(MSG.choice, (client, msg: unknown) => this.world.pickChoice(client.sessionId, msg));
     this.onMessage(MSG.loadout, (client, msg: unknown) => {
       if (!this.world.setLoadout(client.sessionId, msg)) return;
       const p = this.world.players.get(client.sessionId);
@@ -107,7 +113,12 @@ export class WorldRoom extends Room<WorldState> {
     this.state.skipVotes = c?.votes.size ?? 0;
     this.state.phase = w.phase;
     this.state.wave = w.wave + 1;
-    this.state.waveTitle = w.wave >= 0 ? GATE_ASSAULT[w.wave].title : "";
+    this.state.waveTitle = w.activeEncounter()?.title ?? "";
+    this.state.mapId = w.map.id;
+    const flags = [...w.flags].sort().join(",");
+    if (this.state.flags !== flags) this.state.flags = flags;
+    this.state.choicePicks = c ? [...c.picks].map(([id, o]) => `${id}:${o}`).join(",") : "";
+    this.state.chosen = c?.chosen ?? -1;
     this.state.wipeT = Math.max(0, round(w.wipeT, 0.1));
 
     for (const p of w.players.values()) {

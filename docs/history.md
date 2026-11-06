@@ -174,3 +174,17 @@ looked broken and why; all of it was fixed.
 - Executions: a held heartbeat on both fighters, a camera punch-in, a red flash, heavy shake.
 - Gib sprites drawn as pixel art in `tools/fx/build.py` (Greyed ash skin and human skin); the
   reduced-gore setting keeps sprays only. `tools/e2e/gore.cjs` photographs each kind of death.
+
+### Locations engine (Phase 4)
+- Areas: maps carry exits (both players stand in one to travel; closed by a story flag or while an
+  ambush is on), encounters (trigger regions, waves from spawn points, exit locks, a flag and a scene
+  on clear; the courtyard's gate assault is now one of these), a bonfire to get up at after a wipe,
+  and NPCs you talk to with F.
+- Story: flags (choices, cleared areas, scenes seen) and the current area are saved by the host
+  (`story.json`, Story.ts) and synced to clients; a session picks up where it stopped.
+- Scenes can end in a choice both players make (each sees the other's pick; it waits until you
+  agree, skipping only reaches the choice), setting a flag and optionally leading to another scene;
+  scenes can set flags and move you to another area when they end.
+- The client rebuilds the world on arrival (ground, props, night, blood layer, bounds, people and
+  exits), shows exits as lit thresholds with where they lead, NPCs as dressed characters with a talk
+  prompt, and the choice as an overlay (keys 1–3 or a click).

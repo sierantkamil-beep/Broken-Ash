@@ -20,6 +20,8 @@ export type FxEvent =
   | { t: "bolt"; id: number; skill: string; vfx: string; x: number; y: number; aim: number; speed: number; range: number; radius: number; owner: string }
   /** An enemy's blow landing: which attack, from where, which way (and the spot, for aimed slams). */
   | { t: "unitAtk"; id: string; kind: string; atk: string; aim: number; x: number; y: number; ax: number; ay: number }
+  /** The two of you arrived in another area (the client rebuilds the map). */
+  | { t: "arrive"; id: string; name: string }
   /** A boss crossed into a new phase (a banner and a roar). */
   | { t: "phase"; id: string; title: string; sub: string }
   /** A corpse was eaten (it's gone; blood where it lay). */

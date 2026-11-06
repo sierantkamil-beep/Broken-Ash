@@ -4,6 +4,7 @@ import { Server } from "@colyseus/core";
 import { WebSocketTransport } from "@colyseus/ws-transport";
 import { DEFAULT_PORT, ROOM_NAME } from "@broken-ash/shared";
 import path from "node:path";
+import { Story } from "./game/Story.js";
 import { Profiles } from "./game/Profiles.js";
 import { WorldRoom } from "./rooms/WorldRoom.js";
 
@@ -26,7 +27,7 @@ export async function startServer(opts: ServerOptions | number = {}): Promise<Ru
   const { port = DEFAULT_PORT, dataDir = process.env.ASH_DATA_DIR ?? path.resolve("data") } = typeof opts === "number" ? { port: opts } : opts;
   const httpServer = http.createServer();
   const gameServer = new Server({ transport: new WebSocketTransport({ server: httpServer }) });
-  gameServer.define(ROOM_NAME, WorldRoom, { profiles: new Profiles(dataDir) });
+  gameServer.define(ROOM_NAME, WorldRoom, { profiles: new Profiles(dataDir), story: new Story(dataDir) });
   // "::" accepts IPv4 and IPv6 alike, so a partner can join over IPv6 without port forwarding;
   // machines with IPv6 switched off fall back to the IPv4-only default.
   const hasIpv6 = Object.values(os.networkInterfaces()).some((list) => list?.some((i) => i.family === "IPv6"));

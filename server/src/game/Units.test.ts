@@ -12,6 +12,7 @@ function arena(paths: PathId[]) {
   for (const p of ps) w.voteSkip(p.id);
   // Units only act in a fight; a fight with living enemies doesn't send the next wave.
   w.encounter = true;
+  w.waves = false;
   w.phase = "fight";
   return { w, ps };
 }

@@ -11,6 +11,8 @@ import {
   PEOPLES,
   sanitizeInput,
   START_MAP,
+  inRegion,
+  type Encounter,
   stepBody,
   type AreaMap,
   type BodyType,
@@ -51,6 +53,18 @@ export interface RunningCinematic {
   id: string;
   elapsedMs: number;
   votes: Set<string>;
+  /** Each player's pick for the scene's choice (option index), and whether it's been decided. */
+  picks: Map<string, number>;
+  chosen?: number;
+}
+
+/** An encounter of the current area and how far it's got. */
+interface EncState {
+  def: Encounter;
+  state: "idle" | "active" | "cleared";
+  wave: number;
+  phase: "break" | "fight";
+  t: number;
 }
 
 export interface JoinRequest {
@@ -79,8 +93,15 @@ export type Phase = "waiting" | "break" | "fight" | "victory";
  * directly; rooms/WorldRoom.ts only forwards messages and mirrors state into the schema.
  */
 export class World implements Arena {
-  readonly map: AreaMap;
-  readonly grid: CollisionGrid;
+  map: AreaMap;
+  grid: CollisionGrid;
+  /** Story flags (choices made, areas cleared, scenes seen). The host saves them (Story.ts). */
+  readonly flags = new Set<string>();
+  /** Called when a flag is set or the area changes, so the host can save. */
+  onStory?: () => void;
+  private encs: EncState[] = [];
+  /** Seconds both players have stood in an exit (a short beat before the fade). */
+  private exitT = 0;
   readonly players = new Map<string, PlayerSim>();
   readonly units = new Map<string, UnitSim>();
   projectiles: Projectile[] = [];
@@ -98,19 +119,95 @@ export class World implements Arena {
   wipeT = 0;
   /** Set false in tests that want an empty courtyard. */
   encounter = true;
-  private readonly seenIntro = new Set<string>();
+  /** The area's encounters send waves (tests that place their own enemies turn this off). */
+  waves = true;
   private readonly fields = new Map<string, { field: FlowField; cell: number; at: number }>();
   private pendingSpawns: { kind: keyof typeof GREYED; at: number }[] = [];
 
   /** Seeded randomness: the simulation (and the balance tests) play out the same on every machine. */
   private seed: number;
 
-  constructor(mapId = START_MAP, seed = Date.now()) {
+  constructor(mapId = START_MAP, seed = Date.now(), flags: Iterable<string> = []) {
     this.seed = seed >>> 0;
-    const map = MAPS[mapId];
-    if (!map) throw new Error(`unknown map ${mapId}`);
+    for (const f of flags) this.flags.add(f);
+    const map = MAPS[mapId] ?? MAPS[START_MAP];
     this.map = map;
     this.grid = CollisionGrid.fromMap(map);
+    this.loadEncounters();
+  }
+
+  // ------------------------------------------------------------------------- story and areas
+
+  setFlag(f: string) {
+    if (this.flags.has(f)) return;
+    this.flags.add(f);
+    this.onStory?.();
+  }
+
+  private loadEncounters() {
+    this.encs = (this.map.encounters ?? []).map((def) => ({ def, state: def.clearFlag && this.flags.has(def.clearFlag) && !def.repeat ? "cleared" : "idle", wave: -1, phase: "break", t: 0 }));
+    this.phase = "waiting";
+    this.wave = -1;
+  }
+
+  /**
+   * Both players go to another area: the map is swapped, everyone stands at the arrival spawn, the
+   * fighting and the dead stay behind. The area's intro plays the first time.
+   */
+  travel(mapId: string, spawn = 0) {
+    const map = MAPS[mapId];
+    if (!map) return;
+    this.map = map;
+    this.grid = CollisionGrid.fromMap(map);
+    this.units.clear();
+    this.projectiles = [];
+    this.zones = [];
+    this.corpses = [];
+    this.fields.clear();
+    this.pendingSpawns = [];
+    this.exitT = 0;
+    for (const [i, p] of [...this.players.values()].entries()) {
+      const s = map.spawns[(spawn + i) % map.spawns.length];
+      Object.assign(p.body, newBody(s.x, s.y));
+      p.statuses.clear();
+      p.cast = null;
+      if (p.downed) {
+        p.downed = false;
+        p.hp = p.hpMax * C.reviveHealth;
+      }
+    }
+    this.loadEncounters();
+    this.fx.push({ t: "arrive", id: map.id, name: map.name });
+    this.playIntro();
+    this.onStory?.();
+  }
+
+  private playIntro() {
+    const intro = this.map.introCinematic;
+    if (!this.cinematic && intro && !this.flags.has(`seen:${intro}`)) {
+      this.setFlag(`seen:${intro}`);
+      this.startCinematic(intro);
+    }
+  }
+
+  /** Exits: both players (those standing) in an open exit for a moment → travel. */
+  private tickExits(dt: number) {
+    const exits = this.map.exits;
+    if (!exits?.length || this.players.size === 0) return;
+    const locked = this.encs.some((e) => e.state === "active" && e.def.lock);
+    const standing = [...this.players.values()].filter((p) => !p.downed);
+    const exit = locked ? undefined : exits.find((x) => (!x.needs || this.flags.has(x.needs)) && standing.length > 0 && standing.every((p) => inRegion(x.region, p.body.x, p.body.y)));
+    if (!exit) {
+      this.exitT = 0;
+      return;
+    }
+    this.exitT += dt;
+    if (this.exitT >= C.exitDwell) this.travel(exit.to, exit.spawn);
+  }
+
+  /** NPCs present in this area given the story so far. */
+  npcs() {
+    return (this.map.npcs ?? []).filter((n) => (!n.needs || this.flags.has(n.needs)) && (!n.unless || !this.flags.has(n.unless)));
   }
 
   // ------------------------------------------------------------------------- players
@@ -175,10 +272,7 @@ export class World implements Arena {
 
     // Joining mid-scene needs nothing special: the cinematic is synced state, so the newcomer
     // starts it at the same moment as the partner.
-    if (!this.cinematic && this.map.introCinematic && !this.seenIntro.has(this.map.id)) {
-      this.seenIntro.add(this.map.id);
-      this.startCinematic(this.map.introCinematic);
-    }
+    this.playIntro();
     return p;
   }
 
@@ -233,7 +327,36 @@ export class World implements Arena {
 
   startCinematic(id: string) {
     if (!CINEMATICS[id]) throw new Error(`unknown cinematic ${id}`);
-    this.cinematic = { id, elapsedMs: 0, votes: new Set() };
+    this.cinematic = { id, elapsedMs: 0, votes: new Set(), picks: new Map() };
+  }
+
+  /** A player picks an option of the scene's choice (MSG.choice). Untrusted input. */
+  pickChoice(id: string, raw: unknown) {
+    const c = this.cinematic;
+    const def = c ? CINEMATICS[c.id] : undefined;
+    const option = raw && typeof raw === "object" ? (raw as { option?: unknown }).option : undefined;
+    if (!c || !def?.choice || c.chosen !== undefined || !this.players.has(id)) return;
+    if (typeof option !== "number" || !Number.isInteger(option) || option < 0 || option >= def.choice.options.length) return;
+    if (c.elapsedMs < def.choice.t) return;
+    c.picks.set(id, option);
+    // Decided when everyone present picked the same option.
+    const picks = [...this.players.keys()].map((pid) => c.picks.get(pid));
+    if (picks.every((v) => v === option)) {
+      c.chosen = option;
+      this.setFlag(def.choice.options[option].flag);
+    }
+  }
+
+  /** A scene ends (played out or skipped): its flags, its travel, or the chosen option's next scene. */
+  private endCinematic() {
+    const c = this.cinematic;
+    if (!c) return;
+    const def = CINEMATICS[c.id];
+    this.cinematic = null;
+    for (const f of def.onEnd?.flags ?? []) this.setFlag(f);
+    const next = def.choice && c.chosen !== undefined ? def.choice.options[c.chosen].then : undefined;
+    if (def.onEnd?.travel) this.travel(def.onEnd.travel.to, def.onEnd.travel.spawn);
+    if (next) this.startCinematic(next);
   }
 
   /** A player wants to skip. The scene ends once every player present agrees. */
@@ -245,7 +368,15 @@ export class World implements Arena {
 
   private checkSkip() {
     const c = this.cinematic;
-    if (c && this.players.size > 0 && [...this.players.keys()].every((id) => c.votes.has(id))) this.cinematic = null;
+    // A choice can't be skipped past: the scene skips to the choice and waits there.
+    if (!c || this.players.size === 0 || ![...this.players.keys()].every((id) => c.votes.has(id))) return;
+    const def = CINEMATICS[c.id];
+    if (def.choice && c.chosen === undefined) {
+      c.elapsedMs = Math.max(c.elapsedMs, def.choice.t);
+      c.votes.clear();
+      return;
+    }
+    this.endCinematic();
   }
 
   // ------------------------------------------------------------------------- the step
@@ -253,8 +384,10 @@ export class World implements Arena {
   step(dt: number) {
     this.time += dt;
     if (this.cinematic) {
-      this.cinematic.elapsedMs += dt * 1000;
-      if (this.cinematic.elapsedMs >= CINEMATICS[this.cinematic.id].durationMs) this.cinematic = null;
+      const def = CINEMATICS[this.cinematic.id];
+      const waiting = def.choice && this.cinematic.chosen === undefined && this.cinematic.elapsedMs >= def.choice.t;
+      if (!waiting) this.cinematic.elapsedMs += dt * 1000;
+      if (this.cinematic.elapsedMs >= def.durationMs) this.endCinematic();
     }
     for (const p of this.players.values()) {
       p.credit = Math.min(MAX_CREDIT, p.credit + 1);
@@ -292,6 +425,7 @@ export class World implements Arena {
     if (this.encounter) tickUnits(this, dt, (t) => this.fieldTo(t));
     this.tickInteractions(dt);
     this.tickEncounter(dt);
+    this.tickExits(dt);
   }
 
   /** Resources and each path's own way of staying alive (design.md §4). */
@@ -336,6 +470,12 @@ export class World implements Arena {
         continue;
       }
       if (!p.act) continue;
+      // F next to someone with something to say plays their scene (when no one is fighting).
+      const npc = !this.encs.some((e) => e.state === "active") ? this.npcs().find((n) => n.scene && Math.hypot(n.x - p.body.x, n.y - p.body.y) <= C.talkRange) : undefined;
+      if (npc?.scene && !this.cinematic) {
+        this.startCinematic(npc.scene);
+        return;
+      }
       const victim = [...this.units.values()].find((u) => !u.dead && u.faction === "greyed" && u.staggerT > 0 && near(p, u, C.interactRange + u.radius));
       if (victim) {
         this.fx.push({ t: "execute", by: p.id, id: victim.id });
@@ -359,7 +499,8 @@ export class World implements Arena {
   private wipe() {
     this.wipeT = 0;
     for (const [i, p] of [...this.players.values()].entries()) {
-      const s = this.map.spawns[i % this.map.spawns.length];
+      const b = this.map.bonfire;
+      const s = b ? { x: b.x + (i ? 0.8 : -0.8), y: b.y + 0.6 } : this.map.spawns[i % this.map.spawns.length];
       Object.assign(p.body, newBody(s.x, s.y));
       p.downed = false;
       p.hp = p.hpMax;
@@ -370,67 +511,87 @@ export class World implements Arena {
     this.projectiles = [];
     this.zones = [];
     this.pendingSpawns = [];
-    if (this.phase === "fight") {
-      this.wave = Math.max(-1, this.wave - 1);
-      this.phase = "break";
-      this.phaseT = C.waveDelay;
+    // The fight in progress starts its current wave over.
+    for (const e of this.encs) if (e.state === "active" && e.phase === "fight") {
+      e.wave = Math.max(-1, e.wave - 1);
+      e.phase = "break";
+      e.t = C.waveDelay;
     }
   }
 
   // ------------------------------------------------------------------------- the gate assault
 
   private resetEncounter() {
-    this.phase = "waiting";
-    this.wave = -1;
     this.units.clear();
     this.pendingSpawns = [];
+    this.loadEncounters();
   }
 
+  /** The waves and the banner of the encounter being fought (the HUD and music follow it). */
+  activeEncounter(): { title: string; wave: number } | null {
+    const e = this.encs.find((x) => x.state === "active");
+    return e && e.wave >= 0 ? { title: e.def.waves[e.wave].title, wave: e.wave } : null;
+  }
+
+  /**
+   * The area's fights: each waits for its trigger, then sends its waves with a breather between,
+   * and once won sets its flag (and may play a scene). The courtyard's gate assault is one of these.
+   */
   private tickEncounter(dt: number) {
-    if (!this.encounter || this.players.size === 0) return;
-    this.phaseT -= dt;
-    if (this.phase === "waiting") {
-      this.phase = "break";
-      this.phaseT = C.waveDelay;
-      return;
-    }
-    if (this.phase === "break" && this.phaseT <= 0) {
-      this.wave++;
-      if (this.wave >= GATE_ASSAULT.length) this.wave = 0;
-      const w = GATE_ASSAULT[this.wave];
-      if (this.wave === 0) this.fx.push({ t: "gate" });
-      this.fx.push({ t: "wave", n: this.wave + 1, title: w.title });
-      let at = this.time + 0.8;
-      for (const s of w.spawns) for (let i = 0; i < s.count; i++) this.pendingSpawns.push({ kind: s.kind, at: (at += 0.45) });
-      this.phase = "fight";
-      return;
-    }
-    if (this.phase === "fight") {
-      for (let i = this.pendingSpawns.length - 1; i >= 0; i--) {
-        const s = this.pendingSpawns[i];
-        if (this.time < s.at) continue;
-        this.pendingSpawns.splice(i, 1);
-        // Through the vermilion gate, fanning out a little.
-        const u = makeUnit(GREYED[s.kind], 14.5 + (this.random() - 0.5) * 0.8, 0.9 + this.random() * 0.4);
-        this.units.set(u.id, u);
+    if (!this.encounter || !this.waves || this.players.size === 0) return;
+    const standing = [...this.players.values()].filter((p) => !p.downed);
+    for (const e of this.encs) {
+      if (e.state === "cleared") continue;
+      if (e.state === "idle") {
+        if (e.def.needs && !this.flags.has(e.def.needs)) continue;
+        if (this.encs.some((x) => x.state === "active")) continue;
+        const triggered = !e.def.trigger || standing.some((p) => inRegion(e.def.trigger!, p.body.x, p.body.y));
+        if (!triggered) continue;
+        e.state = "active";
+        e.wave = -1;
+        e.phase = "break";
+        e.t = C.waveDelay;
       }
-      const greyed = [...this.units.values()].filter((u) => u.faction === "greyed" && !u.dead);
-      if (!greyed.length && !this.pendingSpawns.length) {
-        if (this.wave === GATE_ASSAULT.length - 1) {
-          this.phase = "victory";
-          this.phaseT = C.victoryHold;
-          this.fx.push({ t: "victory" });
-        } else {
-          this.phase = "break";
-          this.phaseT = C.waveDelay;
+      e.t -= dt;
+      if (e.phase === "break" && e.t <= 0) {
+        e.wave++;
+        const w = e.def.waves[e.wave];
+        if (e.wave === 0 && e.def.gate) this.fx.push({ t: "gate" });
+        this.fx.push({ t: "wave", n: e.wave + 1, title: w.title });
+        let at = this.time + 0.8;
+        for (const s of w.spawns) for (let i = 0; i < s.count; i++) this.pendingSpawns.push({ kind: s.kind, at: (at += 0.45) });
+        e.phase = "fight";
+      }
+      if (e.phase === "fight") {
+        for (let i = this.pendingSpawns.length - 1; i >= 0; i--) {
+          const s = this.pendingSpawns[i];
+          if (this.time < s.at) continue;
+          this.pendingSpawns.splice(i, 1);
+          const from = e.def.spawnAt[Math.floor(this.random() * e.def.spawnAt.length)];
+          const u = makeUnit(GREYED[s.kind], from.x + (this.random() - 0.5) * 0.8, from.y + (this.random() - 0.5) * 0.8);
+          this.units.set(u.id, u);
+        }
+        const foes = [...this.units.values()].filter((u) => u.faction === "greyed" && !u.dead);
+        if (!foes.length && !this.pendingSpawns.length) {
+          if (e.wave === e.def.waves.length - 1) {
+            this.fx.push({ t: "victory" });
+            if (e.def.clearFlag) this.setFlag(e.def.clearFlag);
+            if (e.def.repeat) {
+              e.state = "idle";
+              e.wave = -1;
+            } else e.state = "cleared";
+            if (e.def.clearCinematic && !this.cinematic) this.startCinematic(e.def.clearCinematic);
+          } else {
+            e.phase = "break";
+            e.t = C.waveDelay;
+          }
         }
       }
     }
-    if (this.phase === "victory" && this.phaseT <= 0) {
-      this.phase = "break";
-      this.wave = -1;
-      this.phaseT = C.waveDelay;
-    }
+    // Mirrored for the schema (the HUD's wave banner, the fight music).
+    const act = this.encs.find((x) => x.state === "active");
+    this.phase = act ? (act.phase === "fight" ? "fight" : "break") : "waiting";
+    this.wave = act ? act.wave : -1;
   }
 
   // ------------------------------------------------------------------------- Arena callbacks

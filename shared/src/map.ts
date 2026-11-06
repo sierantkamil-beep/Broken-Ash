@@ -1,4 +1,65 @@
 import { PROPS, type PropKind } from "./data/props.js";
+import type { Wave } from "./data/greyed.js";
+import type { PathId } from "./combat/types.js";
+
+/** A rectangle of cells (continuous: x ∈ [x, x + w), y ∈ [y, y + h)). */
+export interface Region {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+export function inRegion(r: Region, x: number, y: number): boolean {
+  return x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h;
+}
+
+/** A way out: both players standing in it travel to `to`, arriving at its spawn number `spawn`. */
+export interface Exit {
+  region: Region;
+  to: string;
+  spawn: number;
+  /** Where it leads (Polish), shown at the exit. */
+  label: string;
+  /** Closed until this story flag is set. */
+  needs?: string;
+}
+
+/**
+ * A fight in an area: it starts when someone enters `trigger` (or on arrival without one), sends its
+ * waves from the spawn points, and can lock the exits until it's won (an ambush). Winning sets
+ * `clearFlag` (so it doesn't come back unless it `repeat`s) and can play a cinematic.
+ */
+export interface Encounter {
+  id: string;
+  trigger?: Region;
+  waves: Wave[];
+  spawnAt: { x: number; y: number }[];
+  lock?: boolean;
+  repeat?: boolean;
+  clearFlag?: string;
+  clearCinematic?: string;
+  /** Only once this flag is set. */
+  needs?: string;
+  /** The first wave bangs the gate (the courtyard's assault). */
+  gate?: boolean;
+}
+
+/** Someone to talk to: drawn as a character; F nearby plays their scene. */
+export interface Npc {
+  id: string;
+  name: string;
+  x: number;
+  y: number;
+  facing: number;
+  /** Dressed like this path (its look), on this body. */
+  path: PathId;
+  body: "male" | "female";
+  scene?: string;
+  /** Present only once this flag is set / until this flag is set. */
+  needs?: string;
+  unless?: string;
+}
 
 /**
  * An area of the world. Ground is a grid of cells; props stand on cells and may block some of them.
@@ -8,6 +69,8 @@ export interface AreaMap {
   id: string;
   /** Player-facing name (Polish). */
   name: string;
+  /** Shown under the name when you arrive (e.g. the act). */
+  subtitle?: string;
   width: number;
   height: number;
   /** Ground type ids, indexed by `ground`. */
@@ -22,6 +85,11 @@ export interface AreaMap {
   ambience?: string;
   /** Cinematic played the first time the area is entered. */
   introCinematic?: string;
+  exits?: Exit[];
+  encounters?: Encounter[];
+  /** Where you get up after you both fall (a campfire, *Ognisko*); the first spawn otherwise. */
+  bonfire?: { x: number; y: number };
+  npcs?: Npc[];
 }
 
 export type GroundType = "paving" | "moss" | "gravel" | "dirt" | "water" | "void";

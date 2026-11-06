@@ -79,6 +79,13 @@ label { display: block; margin: 10px 0; color: var(--ash-dim); font-size: 16px; 
 }
 #cin-subtitle .speaker { display: block; font-size: 0.72em; letter-spacing: 0.18em; text-transform: uppercase; color: var(--vermilion-hi); margin-bottom: 4px; }
 #cin-subtitle .speaker:empty { display: none; }
+/* A decision both players make: the options, each marked with who picked it. */
+#cin-choice { position: absolute; left: 50%; bottom: 22vh; transform: translateX(-50%); width: min(720px, 90vw); text-align: center; pointer-events: auto; }
+#cin-choice .prompt { font-family: var(--title); font-size: clamp(20px, 1.8vw, 30px); color: var(--text-title); text-shadow: 0 2px 6px #000; margin-bottom: 14px; letter-spacing: 0.06em; }
+#cin-choice .options { display: flex; flex-direction: column; gap: 8px; }
+#cin-choice button { font-size: 20px; text-align: left; display: flex; justify-content: space-between; gap: 12px; background: rgba(10, 8, 9, 0.88); }
+#cin-choice button .who { color: var(--gold); font-size: 15px; font-style: italic; }
+#cin-choice button.mine { border-color: var(--vermilion); }
 #cin-skip { position: absolute; right: 22px; bottom: 3.5vh; font-size: 15px; color: #8c847a; letter-spacing: 0.06em; }
 
 /* HUD. */

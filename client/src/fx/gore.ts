@@ -53,6 +53,14 @@ export class Gore {
     layer.add(this.rt);
   }
 
+  /** Leaving the area: the blood layer and anything still flying go with it. */
+  destroy() {
+    for (const g of this.gibs) g.img.destroy();
+    this.gibs = [];
+    this.pumps = [];
+    this.rt.destroy();
+  }
+
   /** A stain on the ground: one or a few art pixels of blood (or another colour). */
   private stain(x: number, y: number, size: number, color: number, alpha = 0.95) {
     this.rt.stamp("px", undefined, Math.round(x / ART), Math.round(y / ART), { scale: size, tint: color, alpha, originX: 0.5, originY: 0.5 });

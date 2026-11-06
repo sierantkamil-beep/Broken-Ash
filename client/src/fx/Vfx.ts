@@ -65,6 +65,7 @@ export class Vfx {
 
   /** The blood layer covers the map (called once the map is known). */
   initGore(mapW: number, mapH: number) {
+    this.gore?.destroy();
     this.gore = new Gore(this.scene, this.layer, this.kit, mapW, mapH);
     this.gore.reduced = settings.gore === "reduced";
   }

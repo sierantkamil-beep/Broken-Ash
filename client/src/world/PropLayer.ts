@@ -17,6 +17,8 @@ export class PropLayer {
   readonly lights: LightSource[] = [];
   private readonly occluders: Occluder[] = [];
   private readonly glows: { img: Phaser.GameObjects.Image; seed: number; base: number }[] = [];
+  /** Everything this layer placed, so a new area can clear it. */
+  private readonly objects: Phaser.GameObjects.GameObject[] = [];
 
   constructor(scene: Phaser.Scene, map: AreaMap, layer: Phaser.GameObjects.Layer) {
     map.props.forEach((p, i) => {
@@ -30,6 +32,7 @@ export class PropLayer {
       const depth = def.flat ? DEPTH_FLAT + depthOf(cx, cy) : depthOf(cx, cy);
       const img = scene.add.image(s.x, s.y, "props", frame).setDepth(depth).setFlipX(!!p.flip);
       layer.add(img);
+      this.objects.push(img);
       if (OCCLUDERS.has(p.kind)) this.occluders.push({ img, depth });
       if (def.light) {
         const l = worldToScreen(cx, cy, def.light.z);
@@ -38,9 +41,14 @@ export class PropLayer {
         // A soft additive halo at the flame itself.
         const glow = scene.add.image(l.x, l.y, "fx", "glow").setBlendMode(Phaser.BlendModes.ADD).setTint(def.light.color).setDepth(9.6e6).setScale(0.55).setAlpha(0.55);
         layer.add(glow);
+        this.objects.push(glow);
         this.glows.push({ img: glow, seed: i * 7.3, base: 0.55 });
       }
     });
+  }
+
+  destroy() {
+    for (const o of this.objects) o.destroy();
   }
 
   /** Fades tall props that stand in front of any of the given (screen-space) points. */

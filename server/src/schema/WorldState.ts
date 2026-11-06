@@ -86,6 +86,11 @@ export class WorldState extends Schema {
   @type("uint8") wave = 0;
   @type("string") waveTitle = "";
   @type("number") wipeT = 0;
+  /** Story flags, comma-separated (the client shows exits, NPCs and choices by them). */
+  @type("string") flags = "";
+  /** The running scene's choice: each player's pick ("id:option,…") and the decided option (-1 none). */
+  @type("string") choicePicks = "";
+  @type("int8") chosen = -1;
   @type({ map: PlayerState }) players = new MapSchema<PlayerState>();
   @type({ map: UnitState }) units = new MapSchema<UnitState>();
 }

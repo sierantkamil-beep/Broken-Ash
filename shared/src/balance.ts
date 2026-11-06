@@ -50,6 +50,10 @@ export const BALANCE = {
     passiveUnlock: [4, 6, 7, 9, 10],
   },
   combat: {
+    /** Seconds both players stand in an exit before travelling (no accidental trips). */
+    exitDwell: 0.8,
+    /** How close (cells) you must stand to talk to someone (F). */
+    talkRange: 1.6,
     /** Seconds a boss spends drinking a phase heal (long enough to punish with a stagger). */
     bossChannel: 3,
     /** Corpse-eaters: ignore bodies when a foe is this close; smell them this far; eat for this long; heal and grow by this much per body. */

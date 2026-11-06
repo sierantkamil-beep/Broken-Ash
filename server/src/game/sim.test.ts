@@ -114,6 +114,7 @@ function dps(path: PathId, seconds = 40, weapon?: WeaponId): number {
     dummies.push(u);
   }
   w.encounter = true;
+  w.waves = false;
   w.phase = "fight";
   for (let i = 0; i < Math.round(seconds / SIM_DT); i++) {
     bot(w, p);
@@ -142,6 +143,7 @@ function weaponDps(weapon: WeaponId, host: PathId, seconds = 40): number {
     dummies.push(u);
   }
   w.encounter = true;
+  w.waves = false;
   w.phase = "fight";
   for (let i = 0; i < Math.round(seconds / SIM_DT); i++) {
     bot(w, p);
