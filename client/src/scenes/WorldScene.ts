@@ -106,7 +106,7 @@ export class WorldScene extends Phaser.Scene {
   private userZoom = 1;
   private paused = false;
   private titleT = 0;
-  private aim = { angle: Math.PI / 4, dist: 3 };
+  private aim = { angle: Math.PI / 2, dist: 3 };
   private groanAt = 0;
 
   constructor() {

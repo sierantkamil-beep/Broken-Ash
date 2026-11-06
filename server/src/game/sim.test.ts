@@ -11,6 +11,7 @@ import { World } from "./World.js";
  */
 
 let seq = 1;
+const lastPos = new WeakMap<PlayerSim, { x: number; y: number }>();
 
 /** How far a skill reaches (where the bot should stand to use it). */
 function reachOf(s: PlayerSim["skills"][number]): number {
@@ -48,16 +49,21 @@ function bot(w: World, p: PlayerSim) {
     f.aimDist = best;
     const want = partner?.downed ? 0.6 : WEAPONS[p.weapon].range === "melee" ? 1.2 : Math.min(4.5, reachOf(p.skills[0]) - 0.8);
     const d = Math.hypot(goal.x - p.body.x, goal.y - p.body.y);
-    // Move along the aim (converted to the nearest screen direction).
+    // Move along the aim (converted to the nearest screen direction). Backing off into a wall turns
+    // into a sidestep along it, as a player would, instead of standing pinned.
     const sign = d > want + 0.3 ? 1 : d < want - 0.8 ? -1 : 0;
+    const last = lastPos.get(p);
+    const stuck = sign < 0 && !!last && Math.hypot(p.body.x - last.x, p.body.y - last.y) < 0.02;
+    lastPos.set(p, { x: p.body.x, y: p.body.y });
     if (sign) {
+      const move = sign > 0 ? aim : stuck ? aim + Math.PI / 2 : aim + Math.PI;
       let bestDir = [0, 0];
       let bestDot = -2;
       for (const mx of [-1, 0, 1])
         for (const my of [-1, 0, 1]) {
           if (!mx && !my) continue;
           const v = screenDirToWorld(mx, my);
-          const dot = (v.x * Math.cos(aim) + v.y * Math.sin(aim)) * sign;
+          const dot = v.x * Math.cos(move) + v.y * Math.sin(move);
           if (dot > bestDot) {
             bestDot = dot;
             bestDir = [mx, my];

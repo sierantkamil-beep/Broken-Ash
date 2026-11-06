@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { depthOf, PROPS, worldToScreen, Z_PX, type AreaMap, type PropDef } from "@broken-ash/shared";
+import { CELL, depthOf, PROPS, worldToScreen, Z_PX, type AreaMap, type PropDef } from "@broken-ash/shared";
 import { settings } from "../settings";
 import type { LightSource } from "./Lighting";
 import { hasFrame } from "./frames";
@@ -33,9 +33,9 @@ export class PropLayer {
       if (OCCLUDERS.has(p.kind)) this.occluders.push({ img, depth });
       if (def.light) {
         const l = worldToScreen(cx, cy, def.light.z);
-        this.lights.push({ x: l.x, y: s.y - def.light.z * Z_PX * 0.2, radius: def.light.radius * 90, color: def.light.color, intensity: def.light.intensity ?? 1, flicker: def.light.flicker, seed: i * 7.3 });
+        this.lights.push({ x: l.x, y: s.y - def.light.z * Z_PX * 0.2, radius: def.light.radius * CELL, color: def.light.color, intensity: def.light.intensity ?? 1, flicker: def.light.flicker, seed: i * 7.3 });
         // A soft additive halo at the flame itself.
-        const glow = scene.add.image(l.x, l.y, "fx", "glow").setBlendMode(Phaser.BlendModes.ADD).setTint(def.light.color).setDepth(9.6e6).setScale(0.55, 0.5).setAlpha(0.55);
+        const glow = scene.add.image(l.x, l.y, "fx", "glow").setBlendMode(Phaser.BlendModes.ADD).setTint(def.light.color).setDepth(9.6e6).setScale(0.55).setAlpha(0.55);
         layer.add(glow);
         this.glows.push({ img: glow, seed: i * 7.3, base: 0.55 });
       }

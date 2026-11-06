@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { TILE_H, TILE_W, worldToScreen, type AreaMap, type GroundType } from "@broken-ash/shared";
+import { CELL, worldToScreen, type AreaMap, type GroundType } from "@broken-ash/shared";
 import { framePivot } from "./frames";
 
 /**
@@ -9,16 +9,16 @@ import { framePivot } from "./frames";
 const PRIORITY: Record<GroundType, number> = { void: -1, water: 0, paving: 1, gravel: 2, dirt: 3, moss: 4 };
 const SUPER = 4;
 
-/** Bakes the whole ground into one render texture once: hard diamonds first, then soft rims by priority. */
+/** Bakes the whole ground into one render texture once: hard squares first, then soft rims by priority. */
 export class GroundLayer {
   readonly rt: Phaser.GameObjects.RenderTexture;
 
   constructor(scene: Phaser.Scene, map: AreaMap) {
-    const margin = TILE_W;
-    const left = -map.height * (TILE_W / 2) - margin;
+    const margin = CELL;
+    const left = -margin;
     const top = -margin;
-    const width = (map.width + map.height) * (TILE_W / 2) + margin * 2;
-    const height = (map.width + map.height) * (TILE_H / 2) + margin * 2;
+    const width = map.width * CELL + margin * 2;
+    const height = map.height * CELL + margin * 2;
     this.rt = scene.add.renderTexture(left, top, width, height).setOrigin(0, 0).setDepth(-1e9);
 
     const typeAt = (x: number, y: number): GroundType | null =>
@@ -32,10 +32,9 @@ export class GroundLayer {
     };
 
     this.rt.beginDraw();
-    // Back to front so the soft rims of nearer cells overlap correctly.
+    // Row by row (top to bottom) so the soft rims of nearer cells overlap correctly.
     const cells: [number, number][] = [];
     for (let y = 0; y < map.height; y++) for (let x = 0; x < map.width; x++) cells.push([x, y]);
-    cells.sort((a, b) => a[0] + a[1] - (b[0] + b[1]));
     for (const [x, y] of cells) {
       const t = typeAt(x, y);
       if (t && t !== "void") draw(`${t}_${x % SUPER}_${y % SUPER}`, x, y);

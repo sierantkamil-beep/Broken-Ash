@@ -16,7 +16,7 @@ export const DEPTH_LIGHT = 9.5e6;
 
 /**
  * Night: a render texture filled with the ambient colour, with every light stamped in additively,
- * then multiplied over the scene. Lights are 2:1 ellipses so they lie on the iso ground.
+ * then multiplied over the scene. Lights are slightly flattened circles, pools of light on the ground.
  */
 export class Lighting {
   private rt: Phaser.GameObjects.RenderTexture;
@@ -62,7 +62,7 @@ export class Lighting {
       if (l.x + r < ox || l.y + r < oy || l.x - r > ox + w || l.y - r > oy + h) continue;
       this.rt.stamp("fx", "light", l.x - ox, l.y - oy, {
         scaleX: (r * 2) / 256,
-        scaleY: (r * 2 * 0.62) / 256,
+        scaleY: (r * 2 * 0.8) / 256, // a light pool seen at 3/4: a little lower than wide
         tint: l.color,
         alpha: l.intensity * f,
         blendMode: Phaser.BlendModes.ADD,

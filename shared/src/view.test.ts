@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { directionIndex, screenDirToWorld, screenToWorld, worldToScreen } from "./iso.js";
+import { directionIndex, screenDirToWorld, screenToWorld, worldToScreen } from "./view.js";
 
-describe("iso projection", () => {
+describe("top-down view", () => {
   it("round-trips world → screen → world", () => {
     for (const [x, y] of [[0, 0], [3.25, 7.5], [-2, 11], [29.9, 0.1]]) {
       const s = worldToScreen(x, y);

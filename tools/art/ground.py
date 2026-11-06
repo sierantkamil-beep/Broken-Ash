@@ -1,9 +1,9 @@
 """
 Ground textures and small effect sprites, painted with numpy (no Blender needed).
 
-Each ground type is a seamless 4×4-cell "super-tile" painted top-down, then cut into 16 cell
-diamonds in the iso view. A cell at (x, y) uses diamond (x % 4, y % 4), so neighbouring cells of
-one type always join without seams. Every type also gets "soft" diamonds with a ragged, feathered
+Each ground type is a seamless 4×4-cell "super-tile" painted top-down, then cut into 16 square
+cells for the top-down view. A cell at (x, y) uses square (x % 4, y % 4), so neighbouring cells of
+one type always join without seams. Every type also gets "soft" squares with a ragged, feathered
 rim reaching a quarter cell outwards: drawn over lower-priority neighbours, they make borders
 organic (moss creeping over flagstones) instead of a hard grid.
 
@@ -17,12 +17,13 @@ import numpy as np
 from PIL import Image
 
 sys.path.insert(0, os.path.dirname(__file__))
-from common import pack_atlas  # noqa: E402
+from atlas import pack_atlas  # noqa: E402
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 OUT = os.path.join(ROOT, "client", "public", "assets", "sprites")
 CELLS = 4
 S = 128  # top-down texture pixels per cell
+CELL = 64  # screen pixels per cell (shared/src/view.ts CELL)
 N = CELLS * S
 LIGHT = np.array([-0.55, -0.25, 0.8])  # from world -x (screen upper left), raised
 LIGHT = LIGHT / np.linalg.norm(LIGHT)
@@ -181,15 +182,13 @@ def sample(tex, u, v):
     return top * (1 - fv) + bot * fv
 
 
-def diamond(tex, cx, cy, margin, edge_noise):
-    """Cuts cell (cx, cy) of the super-tile as an iso diamond; margin > 0 gives a feathered soft rim."""
+def square(tex, cx, cy, margin, edge_noise):
+    """Cuts cell (cx, cy) of the super-tile as a top-down square (CELL px); margin > 0 gives a feathered soft rim."""
     scale = 1 + 2 * margin
-    w, h = int(128 * scale), int(64 * scale)
+    w = h = int(round(CELL * scale))
     ys, xs = np.mgrid[0:h, 0:w].astype(np.float32) + 0.5
-    a = (xs - w / 2) / 64
-    b = (ys - h / 2) / 32
-    wx = (a + b) / 2 + 0.5
-    wy = (b - a) / 2 + 0.5
+    wx = (xs - w / 2) / CELL + 0.5
+    wy = (ys - h / 2) / CELL + 0.5
     col = sample(tex, (cx + wx) * S, (cy + wy) * S)
     # Distance outside the cell (0 inside), in cells.
     out = np.maximum(np.maximum(-wx, wx - 1), np.maximum(-wy, wy - 1))
@@ -198,8 +197,7 @@ def diamond(tex, cx, cy, margin, edge_noise):
         alpha = np.clip(1 - (out - (jitter - 0.5) * margin * 1.6) / (margin * 0.45), 0, 1)
         alpha = np.where(out <= 0, 1, alpha) ** 1.3
     else:
-        # Exact diamond with a one-pixel anti-aliased edge.
-        alpha = np.clip(0.5 - out * 64, 0, 1)
+        alpha = np.ones_like(out)
     img = np.dstack([np.clip(col, 0, 1), alpha])
     return Image.fromarray((img * 255).round().astype(np.uint8), "RGBA"), (w / 2, h / 2)
 
@@ -216,8 +214,8 @@ def fx_frames():
     # Glow: additive halo around flames and lanterns.
     glow = np.clip(1 - d, 0, 1) ** 2.2
     frames.append(("glow", Image.fromarray((np.dstack([np.ones((n, n, 3)), glow]) * 255).astype(np.uint8), "RGBA"), (n / 2, n / 2)))
-    # Soft blob shadow under characters (2:1 ellipse).
-    sw, sh = 96, 48
+    # Soft blob shadow under characters (a low ellipse: the 3/4 view sees the ground nearly flat).
+    sw, sh = 64, 40
     ys2, xs2 = np.mgrid[0:sh, 0:sw].astype(np.float32) + 0.5
     e = np.sqrt(((xs2 - sw / 2) / (sw / 2)) ** 2 + ((ys2 - sh / 2) / (sh / 2)) ** 2)
     sa = np.clip(1 - e, 0, 1) ** 1.4 * 0.75
@@ -254,10 +252,10 @@ def main():
         tex = painter(10 + gi * 7)
         for cy in range(CELLS):
             for cx in range(CELLS):
-                im, pivot = diamond(tex, cx, cy, 0, edge)
+                im, pivot = square(tex, cx, cy, 0, edge)
                 frames.append((f"{name}_{cx}_{cy}", im, pivot))
                 if name != "water":
-                    im, pivot = diamond(tex, cx, cy, 0.25, edge)
+                    im, pivot = square(tex, cx, cy, 0.25, edge)
                     frames.append((f"{name}_{cx}_{cy}_soft", im, pivot))
         print("ground", name, flush=True)
     print("ground atlas", pack_atlas(frames, os.path.join(OUT, "ground.png"), os.path.join(OUT, "ground.json")))

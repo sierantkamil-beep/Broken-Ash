@@ -32,17 +32,17 @@ Pure game logic and data used by server and client. No Phaser, Colyseus or Node 
 | `shared/src/data/props.ts` | Prop catalogue: gameplay facts only (footprint, what blocks, lights). | `PropDef`, `PROPS`, `PropKind`, `PROP_KINDS` | — |
 | `shared/src/data/weapons.ts` | The nine weapon types (design.md §4 "Weapons and mastery"). | `SkillSlot`, `Mod`, `PassiveDef`, `WeaponDef`, `WEAPONS`, `WEAPON_IDS`, `WEAPON_SKILLS` | `shared/src/combat/build`, `shared/src/combat/types` |
 | `shared/src/i18n.ts` | Polish plural forms: 1 → one, 2–4 (but not 12–14) → few, everything else → many. | `plural`, `count` | — |
-| `shared/src/index.ts` | — | * from "./constants.js", * from "./balance.js", * from "./iso.js", * from "./i18n.js", * from "./map.js", * from "./movement.js", * from "./cinematic.js", * from "./data/props.js", * from "./data/cinematics.js", * from "./maps/index.js", * from "./types.js", * from "./combat/types.js", * from "./combat/geometry.js", * from "./data/paths.js", * from "./data/greyed.js", * from "./data/looks.js", * from "./data/weapons.js", * from "./combat/build.js", * from "./loadout.js" | `shared/src/balance`, `shared/src/cinematic`, `shared/src/combat/build`, `shared/src/combat/geometry`, `shared/src/combat/types`, `shared/src/constants`, `shared/src/data/cinematics`, `shared/src/data/greyed`, `shared/src/data/looks`, `shared/src/data/paths`, `shared/src/data/props`, `shared/src/data/weapons`, `shared/src/i18n`, `shared/src/iso`, `shared/src/loadout`, `shared/src/map`, `shared/src/maps/index`, `shared/src/movement`, `shared/src/types` |
-| `shared/src/iso.ts` | Isometric (2:1 dimetric) projection. | `TILE_W`, `TILE_H`, `Z_PX`, `worldToScreen`, `screenToWorld`, `screenDirToWorld`, `DIRECTIONS`, `directionIndex`, `depthOf` | — |
+| `shared/src/index.ts` | — | * from "./constants.js", * from "./balance.js", * from "./view.js", * from "./i18n.js", * from "./map.js", * from "./movement.js", * from "./cinematic.js", * from "./data/props.js", * from "./data/cinematics.js", * from "./maps/index.js", * from "./types.js", * from "./combat/types.js", * from "./combat/geometry.js", * from "./data/paths.js", * from "./data/greyed.js", * from "./data/looks.js", * from "./data/weapons.js", * from "./combat/build.js", * from "./loadout.js" | `shared/src/balance`, `shared/src/cinematic`, `shared/src/combat/build`, `shared/src/combat/geometry`, `shared/src/combat/types`, `shared/src/constants`, `shared/src/data/cinematics`, `shared/src/data/greyed`, `shared/src/data/looks`, `shared/src/data/paths`, `shared/src/data/props`, `shared/src/data/weapons`, `shared/src/i18n`, `shared/src/loadout`, `shared/src/map`, `shared/src/maps/index`, `shared/src/movement`, `shared/src/types`, `shared/src/view` |
 | `shared/src/loadout.ts` | A character's skill bar: the weapon's basic, RMB and key-1 skills (from its mastery tree), then the path's three signature skills (design.md §4). | `Picks`, `DEFAULT_PICKS`, `masteryLevel`, `masteryProgress`, `isWeapon`, `validPicks`, `Loadout`, `resolveLoadout`, `allSkills` | `shared/src/balance`, `shared/src/combat/types`, `shared/src/data/weapons` |
 | `shared/src/map.ts` | An area of the world. | `AreaMap`, `GroundType`, `BLOCKING_GROUND`, `PropPlacement`, `CollisionGrid` | `shared/src/data/props` |
 | `shared/src/maps/builder.ts` | Small helper for writing maps as code: readable, deterministic, diffable. | `MapBuilder` | `shared/src/data/props`, `shared/src/map` |
 | `shared/src/maps/index.ts` | — | `MAPS`, `START_MAP` | `shared/src/map`, `shared/src/maps/soramei` |
 | `shared/src/maps/soramei.ts` | Dziedziniec Soramei — the courtyard of the ruined Soramei Keep, the night of the escape (Act 1). | `SORAMEI_COURTYARD` | `shared/src/maps/builder` |
-| `shared/src/movement.ts` | One player's movement state. | `Body`, `InputFrame`, `newBody`, `sanitizeInput`, `isInvulnerable`, `stepBody`, `moveWithCollision`, `overlaps`, `copyBody` | `shared/src/balance`, `shared/src/iso`, `shared/src/map` |
+| `shared/src/movement.ts` | One player's movement state. | `Body`, `InputFrame`, `newBody`, `sanitizeInput`, `isInvulnerable`, `stepBody`, `moveWithCollision`, `overlaps`, `copyBody` | `shared/src/balance`, `shared/src/map`, `shared/src/view` |
 | `shared/src/types.ts` | Options a client sends when joining the room. | `JoinOptions`, `FxEvent` | — |
+| `shared/src/view.ts` | Top-down 3/4 view (like Dinusie): square cells, the ground drawn flat, characters and props drawn upright as seen slightly from the front. | `CELL`, `Z_PX`, `worldToScreen`, `screenToWorld`, `screenDirToWorld`, `DIRECTIONS`, `directionIndex`, `depthOf` | — |
 
-Tests: `shared/src/cinematic.test.ts`, `shared/src/i18n.test.ts`, `shared/src/iso.test.ts`, `shared/src/maps/maps.test.ts`, `shared/src/movement.test.ts`
+Tests: `shared/src/cinematic.test.ts`, `shared/src/i18n.test.ts`, `shared/src/maps/maps.test.ts`, `shared/src/movement.test.ts`, `shared/src/view.test.ts`
 
 <details><summary>Exported symbols</summary>
 
@@ -75,12 +75,6 @@ Tests: `shared/src/cinematic.test.ts`, `shared/src/i18n.test.ts`, `shared/src/is
 - `WEAPON_SKILLS` (const, `shared/src/data/weapons.ts`) — Every weapon skill by id (for clients resolving a fx event to its skill).
 - `plural` (function, `shared/src/i18n.ts`) — Polish plural forms: 1 → one, 2–4 (but not 12–14) → few, everything else → many.
 - `count` (function, `shared/src/i18n.ts`) — "3 sekundy", "5 sekund".
-- `TILE_W` (const, `shared/src/iso.ts`) — Isometric (2:1 dimetric) projection.
-- `Z_PX` (const, `shared/src/iso.ts`) — Pixels per world unit of height (z).
-- `screenDirToWorld` (function, `shared/src/iso.ts`) — Turns a screen-space direction (WASD: dx right, dy down) into a unit world direction, so "up" moves straight up the screen and diagonals follow the screen, not the grid.
-- `DIRECTIONS` (const, `shared/src/iso.ts`) — Eight sprite directions, index 0 = facing screen-south (towards the viewer), clockwise.
-- `directionIndex` (function, `shared/src/iso.ts`) — Sprite direction index (0 = screen south, then clockwise: SW, W, NW, N, NE, E, SE) for a world-space facing angle.
-- `depthOf` (function, `shared/src/iso.ts`) — Depth for sorting things standing on the ground: further down the screen is drawn later.
 - `Picks` (interface, `shared/src/loadout.ts`) — Which skill of each choice is picked.
 - `masteryLevel` (function, `shared/src/loadout.ts`) — Mastery level for an amount of weapon-skill damage dealt.
 - `masteryProgress` (function, `shared/src/loadout.ts`) — Progress towards the next level, 0–1 (1 at max).
@@ -99,6 +93,12 @@ Tests: `shared/src/cinematic.test.ts`, `shared/src/i18n.test.ts`, `shared/src/is
 - `copyBody` (function, `shared/src/movement.ts`) — Copies the fields the client needs to rewind its prediction to a server snapshot.
 - `JoinOptions` (interface, `shared/src/types.ts`) — Options a client sends when joining the room.
 - `FxEvent` (type, `shared/src/types.ts`) — A transient combat event the server broadcasts for visuals and sound (MSG.fx).
+- `CELL` (const, `shared/src/view.ts`) — Screen pixels per cell (32 art pixels at 2×, the size of a PixelLab top-down tile).
+- `Z_PX` (const, `shared/src/view.ts`) — Screen pixels per unit of height: upright things keep their full height in a 3/4 view.
+- `screenDirToWorld` (function, `shared/src/view.ts`) — Turns a screen-space direction (WASD: dx right, dy down) into a unit world direction.
+- `DIRECTIONS` (const, `shared/src/view.ts`) — Eight sprite directions, index 0 = facing screen-south (towards the viewer), clockwise.
+- `directionIndex` (function, `shared/src/view.ts`) — Sprite direction index (0 = screen south, then clockwise: SW, W, NW, N, NE, E, SE) for a world-space facing angle.
+- `depthOf` (function, `shared/src/view.ts`) — Depth for sorting things standing on the ground: further down the screen is drawn later.
 
 </details>
 
@@ -160,7 +160,7 @@ Phaser 3 + Vite client: rendering, prediction, cinematics, audio, DOM UI.
 | `client/src/desktop.ts` | What the desktop app found out when it started hosting (mirrors desktop/src/network.ts). | `HostReport`, `DesktopBridge`, `desktop` | — |
 | `client/src/entities/Character.ts` | The texture key of a body dressed in a look. | `CharacterState`, `Character` | `client/src/assets/atlases`, `client/src/assets/recolor`, `client/src/audio/AudioDirector`, `client/src/net/loadout`, @broken-ash/shared, phaser |
 | `client/src/entities/UnitSprite.ts` | The synced unit fields (server/src/schema/WorldState.ts UnitState). | `UnitView`, `UnitSprite` | `client/src/assets/atlases`, `client/src/net/Interpolation`, @broken-ash/shared, phaser |
-| `client/src/fx/Vfx.ts` | Projects a world-space ring onto the iso ground. | `VfxHooks`, `Vfx`, `Telegraphs` | `client/src/fx/ink/compose`, `client/src/fx/ink/ink`, `client/src/net/loadout`, `client/src/settings`, @broken-ash/shared, phaser |
+| `client/src/fx/Vfx.ts` | A world-space ring on the ground (the top-down ground is drawn flat, so it stays round). | `VfxHooks`, `Vfx`, `Telegraphs` | `client/src/fx/ink/compose`, `client/src/fx/ink/ink`, `client/src/net/loadout`, `client/src/settings`, @broken-ash/shared, phaser |
 | `client/src/fx/ink/compose.ts` | Ink compositions for skills: each turns a skill's real geometry (the cone, line or circle the server hits with, projected onto the iso ground) into brush dabs, then plays the painted strip. | `DEPTH_INK`, `DEPTH_INK_GROUND`, `Played`, `InkPlayer` | `client/src/fx/ink/ink`, @broken-ash/shared, phaser |
 | `client/src/fx/ink/ink.ts` | Shadow-ink: every skill visual in Broken Ash is sumi-e brush ink (CLAUDE.md "Skill VFX"). | `ART`, `ACCENTS`, `Dab`, `InkOpts`, `paint`, `inkCanvas`, `rng`, `stroke`, `splatter`, `blot`, `enso` | @broken-ash/shared, phaser |
 | `client/src/main.ts` | The settings panel from the title screen (the same panel as the in-game pause menu). | — | `client/src/desktop`, `client/src/net`, `client/src/net/loadout`, `client/src/scenes/BootScene`, `client/src/scenes/WorldScene`, `client/src/settings`, `client/src/style.css`, `client/src/ui/Mastery`, `client/src/ui/dom`, `client/src/ui/hostReport`, `client/src/ui/menu/Menu`, @broken-ash/shared, @fontsource/cormorant-garamond, @fontsource/shippori-mincho, phaser |
@@ -232,7 +232,7 @@ Tests: `client/src/net/Prediction.test.ts`, `client/src/net.test.ts`, `client/sr
 - `PreviewSpec` (interface, `client/src/ui/menu/Preview.ts`) — The character screen's live preview: a small Phaser game of its own showing the real paper doll — the same body atlas, recolour, armour and gear as in play — idling, running, attacking or rolling, turnable through all ei
 - `SavedCharacter` (interface, `client/src/ui/menu/characters.ts`) — Characters made on this computer: name, path, body, people, weapon and look.
 - `newCharacter` (function, `client/src/ui/menu/characters.ts`) — A fresh character on a path, dressed in its people's colours with its first home weapon.
-- `GroundLayer` (class, `client/src/world/GroundLayer.ts`) — Bakes the whole ground into one render texture once: hard diamonds first, then soft rims by priority.
+- `GroundLayer` (class, `client/src/world/GroundLayer.ts`) — Bakes the whole ground into one render texture once: hard squares first, then soft rims by priority.
 - `Lighting` (class, `client/src/world/Lighting.ts`) — Night: a render texture filled with the ambient colour, with every light stamped in additively, then multiplied over the scene.
 - `Petals` (class, `client/src/world/Petals.ts`) — Red blossom petals drifting down across the view.
 - `framePivot` (function, `client/src/world/frames.ts`) — The pivot of an atlas frame in pixels (tools/art writes it into the atlas JSON).
@@ -277,10 +277,11 @@ Tests: `tools/catalogue/catalogue.test.ts`
 | File | Purpose | Functions |
 |---|---|---|
 | `tools/art/anims.py` | Animation library for MakeHuman-rigged characters: poses as bone rotations, sampled per frame. | `ease`, `beats`, `stance`, `guard_pose`, `pose`, `attack` |
+| `tools/art/atlas.py` | Atlas packing shared by every art tool; no Blender import, so numpy-only painters can use it. | `pack_atlas` |
 | `tools/art/characters.py` | Renders the playable characters: 8 paths × 2 bodies × every animation × 8 directions. | `facing_z`, `render_set`, `pack`, `write_index` |
-| `tools/art/common.py` | Shared Blender helpers for the sprite pipeline. | `reset_scene`, `add_shadow_catcher`, `render_with_shadow`, `composite_shadow`, `add_lights`, `setup_camera`, `render_to`, `load_downsampled`, `trim`, `pack_atlas` |
+| `tools/art/common.py` | Shared Blender helpers for the sprite pipeline. | `reset_scene`, `add_shadow_catcher`, `render_with_shadow`, `composite_shadow`, `add_lights`, `setup_camera`, `render_to`, `load_downsampled`, `trim` |
 | `tools/art/decals.py` | Painted decals: blood (flat, projected to the iso view) and the Soramei crest for banners. | `to_iso`, `blood_pool`, `blood_plane`, `crest_path` |
-| `tools/art/ground.py` | Ground textures and small effect sprites, painted with numpy (no Blender needed). | `periodic_noise`, `shade`, `mix`, `rgb`, `petals`, `flagstones`, `moss_ground`, `gravel`, `dirt`, `water`, `sample`, `diamond`, `fx_frames`, `main` |
+| `tools/art/ground.py` | Ground textures and small effect sprites, painted with numpy (no Blender needed). | `periodic_noise`, `shade`, `mix`, `rgb`, `petals`, `flagstones`, `moss_ground`, `gravel`, `dirt`, `water`, `sample`, `square`, `fx_frames`, `main` |
 | `tools/art/materials.py` | Procedural materials (Cycles). | `srgb`, `material`, `image_material` |
 | `tools/art/mh.py` | Builds skinned elf bodies in Blender from the MakeHuman CC0 base mesh (tools/art/mh_fetch.py). | `morph`, `to_blender`, `build`, `reset_pose`, `rotate`, `shift` |
 | `tools/art/mh_fetch.py` | Fetches the MakeHuman assets the character pipeline uses into tools/art/.mh (gitignored). | `main` |

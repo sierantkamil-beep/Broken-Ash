@@ -2,7 +2,7 @@ import { ALL_SKILLS } from "../net/loadout";
 import Phaser from "phaser";
 import { DEPTH_INK, DEPTH_INK_GROUND, InkPlayer } from "./ink/compose";
 import { blot, paint, splatter } from "./ink/ink";
-import { PATHS, worldToScreen, type FxEvent, type SkillDef } from "@broken-ash/shared";
+import { CELL, PATHS, worldToScreen, type FxEvent, type SkillDef } from "@broken-ash/shared";
 import { settings } from "../settings";
 
 const SKILLS: Map<string, SkillDef> = ALL_SKILLS;
@@ -13,16 +13,16 @@ interface Live {
   destroy(): void;
 }
 
-/** Projects a world-space ring onto the iso ground. */
+/** A world-space ring on the ground (the top-down ground is drawn flat, so it stays round). */
 function groundEllipse(g: Phaser.GameObjects.Graphics, x: number, y: number, r: number) {
   const c = worldToScreen(x, y);
-  g.fillEllipse(c.x, c.y, r * 2 * 90.5, r * 2 * 45.25);
+  g.fillEllipse(c.x, c.y, r * 2 * CELL, r * 2 * CELL);
   return c;
 }
 
 function strokeGroundEllipse(g: Phaser.GameObjects.Graphics, x: number, y: number, r: number) {
   const c = worldToScreen(x, y);
-  g.strokeEllipse(c.x, c.y, r * 2 * 90.5, r * 2 * 45.25);
+  g.strokeEllipse(c.x, c.y, r * 2 * CELL, r * 2 * CELL);
 }
 
 /** A world-space wedge as screen points. */
@@ -294,7 +294,7 @@ export class Vfx {
       this.scene.tweens.add({
         targets: img,
         x: s.x + Math.cos(a) * v,
-        y: { from: s.y - 70, to: s.y + Math.sin(a) * v * 0.5 },
+        y: { from: s.y - 70, to: s.y + Math.sin(a) * v },
         alpha: { from: 1, to: 0.2 },
         duration: Phaser.Math.Between(300, 600),
         ease: "Quad.easeIn",
@@ -325,7 +325,7 @@ export class Vfx {
         this.layer.add(img);
         const a = Math.random() * Math.PI * 2;
         const d = Phaser.Math.FloatBetween(60, 170);
-        this.scene.tweens.add({ targets: img, x: s.x + Math.cos(a) * d, y: s.y + Math.sin(a) * d * 0.5, angle: Phaser.Math.Between(-360, 360), duration: 500, ease: "Quad.easeOut" });
+        this.scene.tweens.add({ targets: img, x: s.x + Math.cos(a) * d, y: s.y + Math.sin(a) * d, angle: Phaser.Math.Between(-360, 360), duration: 500, ease: "Quad.easeOut" });
       }
     }
   }

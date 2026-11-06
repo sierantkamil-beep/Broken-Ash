@@ -1,6 +1,6 @@
 export * from "./constants.js";
 export * from "./balance.js";
-export * from "./iso.js";
+export * from "./view.js";
 export * from "./i18n.js";
 export * from "./map.js";
 export * from "./movement.js";

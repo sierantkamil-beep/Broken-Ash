@@ -1,5 +1,5 @@
 import { BALANCE } from "./balance.js";
-import { screenDirToWorld } from "./iso.js";
+import { screenDirToWorld } from "./view.js";
 import type { CollisionGrid } from "./map.js";
 
 /**
@@ -39,7 +39,7 @@ export interface InputFrame {
 }
 
 export function newBody(x: number, y: number): Body {
-  return { x, y, vx: 0, vy: 0, facing: Math.PI / 4, stamina: BALANCE.player.staminaMax, sinceSpend: 99, dodgeT: 0, dodgeCd: 0, dodgeDx: 0, dodgeDy: 0 };
+  return { x, y, vx: 0, vy: 0, facing: Math.PI / 2, stamina: BALANCE.player.staminaMax, sinceSpend: 99, dodgeT: 0, dodgeCd: 0, dodgeDx: 0, dodgeDy: 0 };
 }
 
 /** Clamps untrusted input to the allowed shape. */

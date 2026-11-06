@@ -5,8 +5,9 @@ import { MapBuilder } from "./builder.js";
  * Blossom trees still bloom red here; a stone path runs from the vermilion gate to the ancestor
  * shrine; the dead from the last Greyed attack haven't been cleared away.
  *
- * Screen orientation: (0, 0) is the top corner. Walls run along the two back edges (y = 0, x = 0);
- * the front edges are closed by bamboo and rocks so nothing tall stands between camera and players.
+ * Top-down: (0, 0) is the top-left corner, the gate is in the north wall. The west wall and the
+ * eastern bamboo close the sides; the south edge is closed by low rocks only, so nothing tall stands
+ * between the camera and the players.
  */
 const W = 30;
 const H = 30;
@@ -21,13 +22,13 @@ b.rect("gravel", 19, 3, 26, 9);
 b.blob("water", 22.5, 21.5, 3.6, 2.8);
 b.blob("dirt", 8, 22, 2.5, 2);
 
-// The back walls with the gate in the middle of the north-east wall.
+// The north wall with the gate in the middle, the west wall down the left side.
 for (let x = 1; x < W; x++) if (x < 13 || x > 15) b.prop("wall_x", x, 0);
 for (let y = 1; y < H; y++) b.prop("wall_y", 0, y);
 b.prop("wall_post", 0, 0);
 b.prop("gate_vermilion", 13, 0);
 
-// The ancestor shrine against the north-west wall, banners of House Soramei either side.
+// The ancestor shrine against the west wall, banners of House Soramei either side.
 b.prop("shrine", 1, 12);
 b.prop("banner", 2, 11);
 b.prop("banner", 2, 17);
@@ -58,11 +59,10 @@ b.prop("rock", 23, 4, 2);
 b.prop("rock", 19, 20, 1);
 b.prop("rock", 26, 23, 0);
 
-// Bamboo closes the front edges.
-for (let x = 2; x < W; x += 1) if (x % 3 !== 0 || x > 26) b.prop("bamboo", x, H - 1, x % 2);
-for (let y = 2; y < H - 1; y += 1) if (y % 3 !== 1 || y > 26) b.prop("bamboo", W - 1, y, y % 2);
+// Bamboo closes the east side; low rocks close the south edge (tall props there would hide the players).
+for (let y = 1; y < H - 1; y += 1) b.prop("bamboo", W - 1, y, y % 2);
+for (let x = 1; x < W; x += 1) b.prop("rock", x, H - 1, x % 3);
 b.prop("rock", 0, H - 1, 2);
-b.prop("rock", W - 1, 1, 0);
 
 // The dead of the last attack: Greyed cut down by the gate, one on the plaza.
 b.prop("corpse_greyed", 14, 5, 0);

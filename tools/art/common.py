@@ -10,6 +10,7 @@ Conventions (must match shared/src/iso.ts):
 import math
 import os
 
+from atlas import pack_atlas  # noqa: F401  (re-exported: painters without Blender import it directly)
 import bpy
 import numpy as np
 from PIL import Image
@@ -170,40 +171,3 @@ def trim(im, pivot, pad=1):
     return im.crop((x0, y0, x1, y1)), (pivot[0] - x0, pivot[1] - y0)
 
 
-def pack_atlas(frames, out_png, out_json, max_width=4096):
-    """
-    Shelf-packs (name, image, pivot_px) frames into one PNG and a Phaser JSON-hash atlas.
-    Pivots are stored normalised, which Phaser uses as each frame's origin.
-    """
-    frames = sorted(frames, key=lambda f: -f[1].height)
-    x = y = shelf = 0
-    placed = []
-    width = 0
-    for name, im, pivot in frames:
-        if x + im.width + 2 > max_width:
-            x = 0
-            y += shelf + 2
-            shelf = 0
-        placed.append((name, im, pivot, x, y))
-        x += im.width + 2
-        shelf = max(shelf, im.height)
-        width = max(width, x)
-    height = y + shelf
-    sheet = Image.new("RGBA", (width, height), (0, 0, 0, 0))
-    out = {"frames": {}, "meta": {"image": os.path.basename(out_png), "format": "RGBA8888", "size": {"w": width, "h": height}, "scale": "1"}}
-    for name, im, pivot, px, py in placed:
-        sheet.paste(im, (px, py))
-        out["frames"][name] = {
-            "frame": {"x": px, "y": py, "w": im.width, "h": im.height},
-            "rotated": False,
-            "trimmed": False,
-            "spriteSourceSize": {"x": 0, "y": 0, "w": im.width, "h": im.height},
-            "sourceSize": {"w": im.width, "h": im.height},
-            "pivot": {"x": round(pivot[0] / im.width, 5), "y": round(pivot[1] / im.height, 5)},
-        }
-    sheet.save(out_png, optimize=True)
-    import json
-
-    with open(out_json, "w") as f:
-        json.dump(out, f, separators=(",", ":"))
-    return width, height

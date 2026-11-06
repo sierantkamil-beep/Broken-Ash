@@ -34,10 +34,10 @@ describe("movement", () => {
     const grid = open();
     for (let y = 0; y < 40; y++) grid.set(22, y, true);
     const b = newBody(20.5, 20.5);
-    // Screen-right moves +x −y: the x part hits the wall, the y part keeps sliding.
-    run(b, grid, frame(1, 0), 2);
+    // Screen down-right moves +x +y: the x part hits the wall, the y part keeps sliding.
+    run(b, grid, frame(1, 1), 2);
     expect(b.x).toBeLessThanOrEqual(22 - BALANCE.player.radius + 1e-9);
-    expect(b.y).toBeLessThan(18);
+    expect(b.y).toBeGreaterThan(23);
     expect(overlaps(b.x, b.y, BALANCE.player.radius, grid)).toBe(false);
   });
 
