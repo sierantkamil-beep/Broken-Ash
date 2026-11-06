@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BALANCE, GREYED, PATH_IDS, PATHS, SIM_DT, type InputFrame, type PathId } from "@broken-ash/shared";
+import { BALANCE, GREYED, PATH_IDS, PATHS, SIM_DT, WEAPON_IDS, WEAPONS, type InputFrame, type PathId } from "@broken-ash/shared";
 import { addStatus, canCast, dealDamage } from "./Combat.js";
 import type { PlayerSim, UnitSim } from "./fighters.js";
 import { makeUnit } from "./Units.js";
@@ -46,7 +46,7 @@ describe("skills", () => {
       expect(canCast(p, slot), `${path} slot ${slot}`).toBe(true);
       send(w, p, { cast: slot, aim, aimDist: 1.8 });
       run(w, 0.05);
-      const skill = p.path.skills[slot];
+      const skill = p.skills[slot];
       expect(p.cds[slot], `${skill.id} went on cooldown`).toBeGreaterThan(0);
       run(w, 1.5);
       const damaging = skill.effects.some((e) => e.kind === "damage") || skill.effects.some((e) => e.kind === "zone" && e.dps > 0);
@@ -54,16 +54,48 @@ describe("skills", () => {
     }
   });
 
-  it("has six skills per path, unique ids, readable Polish names", () => {
-    const ids = new Set<string>();
-    for (const path of Object.values(PATHS)) {
-      expect(path.skills).toHaveLength(6);
-      for (const s of path.skills) {
-        expect(ids.has(s.id)).toBe(false);
-        ids.add(s.id);
-        expect(s.name.length).toBeGreaterThan(2);
-        expect(s.description.length).toBeGreaterThan(10);
+  it.each(WEAPON_IDS)("every %s skill in the tree can be cast and lands", (weapon) => {
+    const wd = WEAPONS[weapon];
+    for (const [rmb, key] of [[0, 0], [1, 1], [0, 2]]) {
+      const { w, ps } = arena(["bark", "thorn"]);
+      const p = ps[0];
+      p.mastery[weapon] = 1e6;
+      expect(w.setLoadout(p.id, { weapon, picks: { rmb, key } })).toBe(true);
+      expect(p.skills[1].id).toBe(wd.rmb[rmb].id);
+      expect(p.skills[2].id).toBe(wd.key[key].id);
+      for (const slot of [0, 1, 2]) {
+        p.cds.fill(0);
+        p.body.x = 10.5;
+        p.body.y = 14.5;
+        for (const u of [...w.units.keys()]) w.units.delete(u);
+        const d = dummy(w, 12.3, 14.5);
+        const aim = Math.atan2(d.y - p.body.y, d.x - p.body.x);
+        expect(canCast(p, slot), `${weapon} slot ${slot}`).toBe(true);
+        send(w, p, { cast: slot, aim, aimDist: 1.8 });
+        run(w, 1.6);
+        const skill = p.skills[slot];
+        const damaging = skill.effects.some((e) => e.kind === "damage") || skill.effects.some((e) => e.kind === "zone" && e.dps > 0);
+        if (damaging) expect(d.hp, `${skill.id} hit the dummy`).toBeLessThan(d.hpMax);
       }
+    }
+  });
+
+  it("has 3 signature skills per path, 6 per weapon, unique ids, readable Polish names", () => {
+    const ids = new Set<string>();
+    const check = (s: { id: string; name: string; description: string }) => {
+      expect(ids.has(s.id), s.id).toBe(false);
+      ids.add(s.id);
+      expect(s.name.length).toBeGreaterThan(2);
+      expect(s.description.length).toBeGreaterThan(10);
+    };
+    for (const path of Object.values(PATHS)) {
+      expect(path.signature).toHaveLength(3);
+      expect(path.homeWeapons.length).toBeGreaterThanOrEqual(2);
+      path.signature.forEach(check);
+    }
+    for (const wd of Object.values(WEAPONS)) {
+      [wd.basic, ...wd.rmb, ...wd.key].forEach(check);
+      expect(wd.passives).toHaveLength(5);
     }
   });
 
@@ -71,8 +103,9 @@ describe("skills", () => {
     const { ps } = arena(["thorn"]);
     const p = ps[0];
     p.res = 10;
-    expect(canCast(p, 1)).toBe(false); // costs Fury
-    expect(canCast(p, 0)).toBe(true); // the basic attack is free
+    expect(canCast(p, 3)).toBe(false); // Żniwo costs Fury
+    expect(canCast(p, 0)).toBe(true); // weapon skills are free
+    expect(canCast(p, 1)).toBe(true);
   });
 });
 
@@ -122,7 +155,7 @@ describe("statuses and combos", () => {
     const { w, ps } = arena(["ash"]);
     const p = ps[0];
     p.res = 95;
-    send(w, p, { cast: 1, aim: 0 });
+    send(w, p, { cast: 3, aim: 0 }); // Stos adds heat
     run(w, 0.5);
     expect(p.silenceT).toBeGreaterThan(0);
     expect(canCast(p, 0)).toBe(false);

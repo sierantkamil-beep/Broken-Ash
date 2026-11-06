@@ -1,4 +1,4 @@
-import { PATHS, STATUS_INFO, type PathId, type StatusId } from "@broken-ash/shared";
+import { PATHS, STATUS_INFO, type PathId, type SkillDef, type StatusId } from "@broken-ash/shared";
 import { $, el } from "./dom";
 
 const KEYS = ["LPM", "PPM", "1", "2", "3", "4"];
@@ -22,14 +22,19 @@ export interface MeView {
 export class Hud {
   private slots: HTMLElement[] = [];
   private path: PathId | null = null;
+  private skills: SkillDef[] = [];
+  private barKey = "";
 
-  setPath(path: PathId) {
-    if (this.path === path) return;
+  /** Rebuilds the skill bar when the path, weapon, picks or mastery level change. */
+  setBar(path: PathId, skills: SkillDef[], key: string) {
+    if (this.barKey === key) return;
+    this.barKey = key;
     this.path = path;
+    this.skills = skills;
     const p = PATHS[path];
     const box = $("skills");
     box.replaceChildren();
-    this.slots = p.skills.map((s, i) => {
+    this.slots = skills.map((s, i) => {
       const d = el("div", "skill");
       d.title = `${s.name}\n${s.description}${s.cost > 0 ? `\nKoszt: ${s.cost} (${p.resource.name})` : ""}${s.hpCost ? `\nKoszt: ${s.hpCost} życia` : ""}\nOdnowienie: ${s.cooldown} s`;
       d.append(el("span", "key", KEYS[i]), el("span", "name", s.name), el("div", "cd"), el("div", "cdt"));
@@ -53,7 +58,7 @@ export class Hud {
       (res.querySelector(".val") as HTMLElement).textContent = `${p.resource.name}: ${Math.floor(v.res)}`;
     }
     if (p) {
-      p.skills.forEach((s, i) => {
+      this.skills.forEach((s, i) => {
         const d = this.slots[i];
         if (!d) return;
         const cd = v.cd[i] ?? 0;

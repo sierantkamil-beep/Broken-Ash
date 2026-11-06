@@ -17,6 +17,14 @@ import {
   type FxEvent,
   type PathId,
   type PeopleId,
+  type Picks,
+  type WeaponId,
+  DEFAULT_PICKS,
+  isWeapon,
+  masteryLevel,
+  resolveLoadout,
+  validLook,
+  validPicks,
 } from "@broken-ash/shared";
 import {
   addStatus,
@@ -49,6 +57,14 @@ export interface JoinRequest {
   path?: unknown;
   body?: unknown;
   people?: unknown;
+  weapon?: unknown;
+  look?: unknown;
+}
+
+/** What the host remembers about a character between sessions (server/src/game/Profiles.ts). */
+export interface SavedProgress {
+  mastery?: Partial<Record<WeaponId, number>>;
+  picks?: Partial<Record<WeaponId, Partial<Picks>>>;
 }
 
 /** Burst allowance after a lag spike, in steps. */
@@ -96,7 +112,7 @@ export class World implements Arena {
 
   // ------------------------------------------------------------------------- players
 
-  addPlayer(id: string, req: JoinRequest | string): PlayerSim {
+  addPlayer(id: string, req: JoinRequest | string, saved: SavedProgress = {}): PlayerSim {
     const r: JoinRequest = typeof req === "string" ? { name: req } : req;
     const taken = new Set([...this.players.values()].map((p) => `${p.body.x},${p.body.y}`));
     const spawn = this.map.spawns.find((s) => !taken.has(`${s.x},${s.y}`)) ?? this.map.spawns[0];
@@ -104,11 +120,22 @@ export class World implements Arena {
     const pathId: PathId = typeof r.path === "string" && r.path in PATHS ? (r.path as PathId) : "thorn";
     const path = PATHS[pathId];
     const body = newBody(spawn.x, spawn.y);
+    // The path's first home weapon unless the player brought another one.
+    const weapon: WeaponId = isWeapon(r.weapon) ? r.weapon : path.homeWeapons[0];
+    const mastery: Partial<Record<WeaponId, number>> = {};
+    for (const [w, xp] of Object.entries(saved.mastery ?? {})) if (isWeapon(w) && typeof xp === "number" && xp >= 0) mastery[w] = Math.min(xp, 1e7);
+    const picks: Partial<Record<WeaponId, Picks>> = {};
+    for (const [w, pk] of Object.entries(saved.picks ?? {})) if (isWeapon(w)) picks[w] = validPicks(pk, masteryLevel(mastery[w] ?? 0));
     const p: PlayerSim = {
       id,
       name: sanitizeName(r.name),
       look,
       path,
+      weapon,
+      mastery,
+      picks,
+      skills: [],
+      appearance: validLook(r.look, pathId),
       bodyType: r.body === "female" ? "female" : ("male" as BodyType),
       people: (PEOPLES.some((x) => x.id === r.people) ? r.people : path.people) as PeopleId,
       body,
@@ -127,7 +154,7 @@ export class World implements Arena {
       sinceHit: 99,
       dotClock: 0,
       res: path.resource.start,
-      cds: path.skills.map(() => 0),
+      cds: [],
       cast: null,
       silenceT: 0,
       downed: false,
@@ -140,6 +167,7 @@ export class World implements Arena {
         return { x: body.x, y: body.y };
       },
     };
+    this.rebuildSkills(p);
     this.players.set(id, p);
 
     // Joining mid-scene needs nothing special: the cinematic is synced state, so the newcomer
@@ -149,6 +177,30 @@ export class World implements Arena {
       this.startCinematic(this.map.introCinematic);
     }
     return p;
+  }
+
+  /** Rebuilds a player's bar from their path, weapon, tree picks and mastery. */
+  rebuildSkills(p: PlayerSim) {
+    const level = masteryLevel(p.mastery[p.weapon] ?? 0);
+    const picks = validPicks(p.picks[p.weapon] ?? DEFAULT_PICKS, level);
+    p.picks[p.weapon] = picks;
+    p.skills = resolveLoadout(p.path, p.weapon, picks, level).skills;
+    p.cds = p.skills.map(() => 0);
+    p.cast = null;
+  }
+
+  /**
+   * A player changes weapon or tree picks (MSG.loadout). Untrusted input; only allowed outside a
+   * wave so nobody swaps mid-fight. Returns whether anything changed.
+   */
+  setLoadout(id: string, raw: unknown): boolean {
+    const p = this.players.get(id);
+    if (!p || this.phase === "fight" || !raw || typeof raw !== "object") return false;
+    const r = raw as { weapon?: unknown; picks?: unknown };
+    if (isWeapon(r.weapon)) p.weapon = r.weapon;
+    if (r.picks && typeof r.picks === "object") p.picks[p.weapon] = validPicks(r.picks as Partial<Picks>, masteryLevel(p.mastery[p.weapon] ?? 0));
+    this.rebuildSkills(p);
+    return true;
   }
 
   removePlayer(id: string) {

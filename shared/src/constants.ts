@@ -16,6 +16,8 @@ export const MSG = {
   input: "input",
   /** client → server: vote to skip the running cinematic. */
   skip: "skip",
+  /** client → server: change weapon / tree picks ({ weapon, picks }); only outside a wave. */
+  loadout: "loadout",
   /** server → client: a batch of FxEvents (hits, casts, deaths...) for visuals and sound. */
   fx: "fx",
 } as const;

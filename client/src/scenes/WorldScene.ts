@@ -26,6 +26,7 @@ import { Interpolation } from "../net/Interpolation";
 import { Prediction } from "../net/Prediction";
 import { $ } from "../ui/dom";
 import { Hud } from "../ui/Hud";
+import { barOf, pathOf } from "../net/loadout";
 import { GroundLayer } from "../world/GroundLayer";
 import { Lighting, type LightSource } from "../world/Lighting";
 import { Petals } from "../world/Petals";
@@ -51,6 +52,10 @@ interface PlayerView extends Body {
   downed: boolean;
   downT: number;
   revive: number;
+  weapon: string;
+  picks: string;
+  mastery: string;
+  appearance: string;
 }
 
 interface StateView {
@@ -224,7 +229,8 @@ export class WorldScene extends Phaser.Scene {
       const char = new Character(this, this.worldLayer, path, p.body, p.name, !mine, this.audio, (x, y) => this.groundAt(x, y));
       if (mine) {
         this.me = { char, pred: new Prediction(this.grid, p.x, p.y), view: p, lastCast: "", wasHp: p.hp };
-        this.hud.setPath(path);
+        const bar = barOf(p);
+        this.hud.setBar(path, bar.skills, bar.key);
         $s(p).onChange(() => this.me?.pred.reconcile(p, p.lastSeq));
       } else {
         const interp = new Interpolation();
@@ -372,6 +378,9 @@ export class WorldScene extends Phaser.Scene {
       const s = this.me.char.screen;
       // A faint cold light that follows each player, so you never lose your elf in the dark.
       lights.push({ x: s.x, y: s.y - 30, radius: 260, color: 0xa8b0d8, intensity: 0.5, seed: 1 });
+      const bar = barOf(v);
+      this.hud.setBar(pathOf(v), bar.skills, bar.key);
+      this.me.char.setBar(bar.skills);
       this.hud.updateMe({ ...v, stamina: (100 * b.stamina) / BALANCE.player.staminaMax });
     }
     let partner: Remote | null = null;
@@ -379,6 +388,7 @@ export class WorldScene extends Phaser.Scene {
       partner = r;
       const s = r.interp.sample(time);
       if (!s) continue;
+      r.char.setBar(barOf(r.view).skills);
       if (r.view.cast && r.view.cast !== r.lastCast) r.char.playCast(r.view.cast);
       r.lastCast = r.view.cast;
       r.char.update({ ...s, downed: r.view.downed }, delta);

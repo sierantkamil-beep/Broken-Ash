@@ -29,8 +29,8 @@ ipcMain.handle("host:start", async () => {
   const port = Number(process.env.ASH_PORT) || DEFAULT_PORT;
   // In `pnpm dev` a separate hot-reloading server is already running; don't start a second one.
   if (!server && process.env.ASH_EXTERNAL_SERVER !== "1") {
-    // Saves arrive with persistence (B2); they will live in %APPDATA%/Broken Ash on the host.
-    server = await startServer({ port });
+    // Characters (weapon mastery, tree picks, looks) are saved in %APPDATA%/Broken Ash on the host.
+    server = await startServer({ port, dataDir: app.getPath("userData") });
     console.log(`[broken-ash] hosting on port ${port}`);
   }
   // Ask the router to forward the port (UPnP) and work out which addresses the partner can use.

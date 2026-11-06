@@ -1,3 +1,4 @@
+import { ALL_SKILLS } from "../net/loadout";
 import Phaser from "phaser";
 import { PATHS, worldToScreen, type FxEvent, type SkillDef } from "@broken-ash/shared";
 import { settings } from "../settings";
@@ -50,7 +51,7 @@ const STYLE: Record<string, { color: number; kind: "arc" | "ring" | "bolt" | "li
   antidote: { color: 0x80d080, kind: "aura" },
 };
 
-const SKILLS = new Map<string, SkillDef>(Object.values(PATHS).flatMap((p) => p.skills.map((s) => [s.id, s] as const)));
+const SKILLS: Map<string, SkillDef> = ALL_SKILLS;
 
 interface Live {
   until: number;

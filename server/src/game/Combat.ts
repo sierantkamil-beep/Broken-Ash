@@ -10,6 +10,8 @@ import {
   type Shape,
   type SkillDef,
   type StatusId,
+  type WeaponId,
+  masteryLevel,
 } from "@broken-ash/shared";
 import type { Fighter, PlayerSim, Status, UnitSim } from "./fighters.js";
 
@@ -223,7 +225,7 @@ export function gainResource(p: PlayerSim, amount: number) {
 
 /** Can this skill be cast now? (Cooldown, resource, health, state.) */
 export function canCast(p: PlayerSim, slot: number): boolean {
-  const skill = p.path.skills[slot];
+  const skill = p.skills[slot];
   if (!skill || p.dead || p.downed || p.cast || p.silenceT > 0 || p.staggerT > 0) return false;
   if (p.body.dodgeT > 0) return false;
   if (p.cds[slot] > 0) return false;
@@ -236,7 +238,7 @@ export function canCast(p: PlayerSim, slot: number): boolean {
 
 export function startCast(a: Arena, p: PlayerSim, slot: number, aim: number, aimDist: number) {
   if (!canCast(p, slot)) return false;
-  const skill = p.path.skills[slot];
+  const skill = p.skills[slot];
   p.cds[slot] = skill.cooldown;
   const r = p.path.resource;
   if (r.heat) {
@@ -254,7 +256,7 @@ export function startCast(a: Arena, p: PlayerSim, slot: number, aim: number, aim
   p.statuses.delete("stealth");
   p.body.facing = aim;
   p.cast = { slot, t: skill.windup, aim, aimDist };
-  a.fx.push({ t: "cast", id: p.id, skill: skill.id, aim, x: p.body.x, y: p.body.y });
+  a.fx.push({ t: "cast", id: p.id, skill: skill.id, vfx: skill.vfx, aim, x: p.body.x, y: p.body.y });
   if (skill.windup <= 0) releaseCast(a, p);
   return true;
 }
@@ -276,7 +278,7 @@ export function tickCasts(a: Arena, dt: number) {
 function releaseCast(a: Arena, p: PlayerSim) {
   const c = p.cast!;
   p.cast = null;
-  const skill = p.path.skills[c.slot];
+  const skill = p.skills[c.slot];
   const once = skill.effects.filter(isOnce);
   const each = skill.effects.filter((e) => !isOnce(e));
   // A forward dash with a line shape cuts through everything along its path; any other dash
@@ -288,7 +290,7 @@ function releaseCast(a: Arena, p: PlayerSim) {
   const landing = skill.shape.kind === "circle" && skill.shape.at === "aim" ? aimLanding(p.body, c.aim, { x: p.body.x + Math.cos(c.aim) * c.aimDist, y: p.body.y + Math.sin(c.aim) * c.aimDist }, skill.shape.reach ?? 6) : origin;
   for (const e of once) if (e.kind !== "dash") applyOnce(a, p, skill, e, landing);
 
-  if (skill.shape.kind === "circle") a.fx.push({ t: "area", skill: skill.id, x: landing.x, y: landing.y, radius: skill.shape.radius });
+  if (skill.shape.kind === "circle") a.fx.push({ t: "area", skill: skill.id, vfx: skill.vfx, x: landing.x, y: landing.y, radius: skill.shape.radius, owner: p.id });
   if (skill.shape.kind === "projectile") {
     spawnBolts(a, p, skill, c.aim);
   } else if (skill.shape.kind !== "self") {
@@ -317,7 +319,7 @@ function spawnBolts(a: Arena, p: PlayerSim, skill: SkillDef, aim: number) {
     const sx = p.body.x + Math.cos(ang) * 0.4;
     const sy = p.body.y + Math.sin(ang) * 0.4;
     a.projectiles.push({ x: sx, y: sy, dx: Math.cos(ang), dy: Math.sin(ang), speed: s.speed, left: s.range, radius: s.radius, pierce: !!s.pierce, hit: new Set(), src: p.id, faction: p.faction, skill });
-    a.fx.push({ t: "bolt", skill: skill.id, x: sx, y: sy, aim: ang, speed: s.speed, range: s.range, owner: p.id });
+    a.fx.push({ t: "bolt", skill: skill.id, vfx: skill.vfx, x: sx, y: sy, aim: ang, speed: s.speed, range: s.range, owner: p.id });
   }
 }
 
@@ -350,7 +352,7 @@ export function tickProjectiles(a: Arena, dt: number) {
 
 function applyToTarget(a: Arena, p: PlayerSim, f: Fighter, effects: Effect[], skill: SkillDef, aim: number) {
   let dealt = 0;
-  const fire = skill.vfx.includes("fire") || skill.vfx === "pyre" || skill.vfx === "phoenix" || skill.vfx === "nova_fire";
+  const fire = !!skill.fire;
   for (const e of effects) {
     if (f.dead) break;
     switch (e.kind) {
@@ -383,6 +385,16 @@ function applyToTarget(a: Arena, p: PlayerSim, f: Fighter, effects: Effect[], sk
   }
   const kb = effects.find((e) => e.kind === "knockback");
   if (kb && kb.kind === "knockback" && !f.dead) push(a, f, Math.cos(aim), Math.sin(aim), kb.distance);
+  if (skill.weapon && dealt > 0) gainMastery(a, p, skill.weapon, dealt);
+}
+
+/** Weapon-skill damage is mastery XP for that weapon type; a new level is announced. */
+export function gainMastery(a: Arena, p: PlayerSim, weapon: WeaponId, xp: number) {
+  const before = p.mastery[weapon] ?? 0;
+  const after = before + xp;
+  p.mastery[weapon] = after;
+  const lvl = masteryLevel(after);
+  if (lvl > masteryLevel(before)) a.fx.push({ t: "mastery", id: p.id, weapon, level: lvl });
 }
 
 function defaultValue(id: StatusId): number {
@@ -412,7 +424,7 @@ function applyOnce(a: Arena, p: PlayerSim, skill: SkillDef, e: Effect, at: { x: 
       break;
     case "zone":
       a.zones.push({ x: at.x, y: at.y, radius: e.radius, until: a.time + e.duration, dps: e.dps, status: e.status, statusDuration: e.statusDuration, src: p.id, faction: p.faction, clock: 0 });
-      a.fx.push({ t: "zone", skill: skill.id, x: at.x, y: at.y, radius: e.radius, duration: e.duration });
+      a.fx.push({ t: "zone", skill: skill.id, vfx: skill.vfx, x: at.x, y: at.y, radius: e.radius, duration: e.duration, owner: p.id });
       break;
     case "heal": {
       const partner = partnerOf(a, p);

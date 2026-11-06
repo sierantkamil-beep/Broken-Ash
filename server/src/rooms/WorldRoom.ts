@@ -1,6 +1,8 @@
 import { Room, type Client } from "@colyseus/core";
 import { GATE_ASSAULT, MAX_PLAYERS, MSG, PATCH_HZ, SIM_DT, type JoinOptions } from "@broken-ash/shared";
+import type { Profiles } from "../game/Profiles.js";
 import { World } from "../game/World.js";
+import type { PlayerSim } from "../game/fighters.js";
 import { PlayerState, UnitState, WorldState } from "../schema/WorldState.js";
 
 const round = (v: number, step: number) => Math.round(v / step) * step;
@@ -13,8 +15,10 @@ const round = (v: number, step: number) => Math.round(v / step) * step;
 export class WorldRoom extends Room<WorldState> {
   maxClients = MAX_PLAYERS;
   private world!: World;
+  private profiles: Profiles | null = null;
 
-  onCreate() {
+  onCreate(opts: { profiles?: Profiles } = {}) {
+    this.profiles = opts.profiles ?? null;
     this.world = new World();
     this.state = new WorldState();
     this.state.mapId = this.world.map.id;
@@ -27,12 +31,25 @@ export class WorldRoom extends Room<WorldState> {
       this.world.queueInputs(client.sessionId, frames);
     });
     this.onMessage(MSG.skip, (client) => this.world.voteSkip(client.sessionId));
+    this.onMessage(MSG.loadout, (client, msg: unknown) => {
+      if (!this.world.setLoadout(client.sessionId, msg)) return;
+      const p = this.world.players.get(client.sessionId);
+      const s = this.state.players.get(client.sessionId);
+      if (p && s) {
+        // The bar may have changed length: rebuild the cooldown mirror.
+        s.cd.clear();
+        for (let i = 0; i < p.cds.length; i++) s.cd.push(0);
+        this.mirrorLoadout(p);
+        this.save(p);
+      }
+    });
     // Unknown message types are ignored instead of crashing the room.
     this.onMessage("*", () => {});
   }
 
   onJoin(client: Client, options: Partial<JoinOptions>) {
-    const p = this.world.addPlayer(client.sessionId, options ?? {});
+    const saved = typeof options?.name === "string" ? this.profiles?.get(options.name) : undefined;
+    const p = this.world.addPlayer(client.sessionId, options ?? {}, saved ?? {});
     const s = new PlayerState();
     s.id = p.id;
     s.name = p.name;
@@ -42,10 +59,14 @@ export class WorldRoom extends Room<WorldState> {
     s.people = p.people;
     for (let i = 0; i < p.cds.length; i++) s.cd.push(0);
     this.state.players.set(client.sessionId, s);
+    this.mirrorLoadout(p);
+    this.save(p);
     this.sync();
   }
 
   onLeave(client: Client) {
+    const p = this.world.players.get(client.sessionId);
+    if (p) this.save(p);
     this.world.removePlayer(client.sessionId);
     this.state.players.delete(client.sessionId);
     this.sync();
@@ -56,6 +77,26 @@ export class WorldRoom extends Room<WorldState> {
     this.sync();
     const fx = this.world.drainFx();
     if (fx.length) this.broadcast(MSG.fx, fx);
+    // A level-up is worth saving at once (a crash shouldn't eat an evening's progress).
+    for (const e of fx) {
+      if (e.t !== "mastery") continue;
+      const p = this.world.players.get(e.id);
+      if (p) this.save(p);
+    }
+  }
+
+  /** Weapon, picks, mastery and look into the schema (not every tick: they change rarely). */
+  private mirrorLoadout(p: PlayerSim) {
+    const s = this.state.players.get(p.id);
+    if (!s) return;
+    s.weapon = p.weapon;
+    s.picks = JSON.stringify(p.picks[p.weapon] ?? {});
+    s.mastery = JSON.stringify(p.mastery);
+    s.appearance = JSON.stringify(p.appearance);
+  }
+
+  private save(p: PlayerSim) {
+    this.profiles?.put({ name: p.name, path: p.path.id, weapon: p.weapon, look: p.appearance, mastery: p.mastery, picks: p.picks });
   }
 
   private sync() {
@@ -93,13 +134,16 @@ export class WorldRoom extends Room<WorldState> {
         const v = round(p.cds[i], 0.05);
         if (s.cd[i] !== v) s.cd[i] = v;
       }
-      s.cast = p.cast ? p.path.skills[p.cast.slot].id : "";
+      s.cast = p.cast ? p.skills[p.cast.slot].id : "";
       s.castT = p.cast ? round(p.cast.t, 0.05) : 0;
       s.st = [...p.statuses.keys()].sort().join(",");
       s.shield = Math.round(p.statuses.get("shield")?.value ?? 0);
       s.downed = p.downed;
       s.downT = round(p.downT, 0.1);
       s.revive = round(p.reviveHeld / 2, 0.05);
+      // Mastery XP grows with every hit: mirror it a few times a second, rounded, not every step.
+      const m = JSON.stringify(Object.fromEntries(Object.entries(p.mastery).map(([k, v]) => [k, Math.floor(v ?? 0)])));
+      if (s.mastery !== m && (w.time * 4) % 1 < SIM_DT * 4) s.mastery = m;
     }
 
     for (const id of [...this.state.units.keys()]) if (!w.units.has(id)) this.state.units.delete(id);

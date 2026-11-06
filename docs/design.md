@@ -310,7 +310,7 @@ longbow, throwing knives. Each path has 2–3 **home weapons** (more damage and 
 Thorn's home weapons add bleed), so off-path builds work but feel different.
 
 **Mastery** is per weapon type and levelled by fighting with it (1–10). The tree: RMB is one of two
-skills (mastery 1 and 3), key 1 one of three (mastery 2, 5, 8), and passive rows at 4, 6, 7, 9 and 10
+skills (mastery 1 and 3), key 1 one of three (mastery 1, 5, 8), and passive rows at 4, 6, 7, 9 and 10
 offer one of two modifiers (damage, cooldown, reach, extra projectile, a status rider, or a *form* that
 changes the skill's look). Mastery is saved on the host's PC with the character. The weapon you hold
 and your armour are **visible** on the character.

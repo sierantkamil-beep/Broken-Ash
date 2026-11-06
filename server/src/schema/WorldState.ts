@@ -13,6 +13,12 @@ export class PlayerState extends Schema {
   @type("string") path = "thorn";
   @type("string") body = "male";
   @type("string") people = "thorn";
+  /** Weapon in hand, tree picks for it (JSON), and mastery XP per weapon (JSON): the bar is resolved from these on both sides. */
+  @type("string") weapon = "blades";
+  @type("string") picks = "";
+  @type("string") mastery = "";
+  /** Appearance (CharacterLook as JSON), so the partner sees the same dye and gear. */
+  @type("string") appearance = "";
   @type("number") x = 0;
   @type("number") y = 0;
   @type("number") vx = 0;

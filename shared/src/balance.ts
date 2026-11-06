@@ -34,6 +34,21 @@ export const BALANCE = {
     /** Inputs processed per server step at most; lets a lagging client catch up without moving 10× faster. */
     maxInputsPerStep: 3,
   },
+  mastery: {
+    /**
+     * Weapon-skill damage dealt needed to reach each mastery level (index = level; level 1 is free).
+     * One gate assault deals roughly 4–6k per player, so the first run reaches about level 4 and the
+     * whole tree takes several evenings: long enough to mean something, short enough for two people.
+     */
+    xpFor: [0, 0, 600, 1500, 2800, 4500, 6800, 9600, 13000, 17000, 22000],
+    maxLevel: 10,
+    /** Weapon-skill damage a home weapon deals extra (the path's people know this weapon). */
+    affinityDamage: 0.15,
+    /** Unlock levels: RMB options, key-1 options, passive rows. Two key-1/RMB skills are free at 1 so a new character has a full bar. */
+    rmbUnlock: [1, 3],
+    keyUnlock: [1, 5, 8],
+    passiveUnlock: [4, 6, 7, 9, 10],
+  },
   combat: {
     /** A downed player bleeds out over this long, unless the partner revives them. */
     bleedOut: 20,

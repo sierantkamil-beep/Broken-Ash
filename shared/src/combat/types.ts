@@ -39,7 +39,13 @@ export type Effect =
   /** Leaves a lingering area (burning ground, poison cloud, roots). */
   | { kind: "zone"; radius: number; duration: number; dps: number; status?: StatusId; statusDuration?: number };
 
-export type SkillAnim = "attack" | "skill1" | "skill2";
+/**
+ * Which body move a skill plays. The shared PixelLab bodies have "strike" (a weapon cut) and "cast"
+ * (a thrust of power); "attack"/"skill1"/"skill2" are the older per-path clips, mapped by path type.
+ */
+export type SkillAnim = "attack" | "skill1" | "skill2" | "strike" | "cast";
+
+export type WeaponId = "blades" | "glaive" | "greatblade" | "brush" | "talismans" | "fan" | "lantern" | "bow" | "knives";
 
 export interface SkillDef {
   id: string;
@@ -57,9 +63,13 @@ export interface SkillDef {
   shape: Shape;
   effects: Effect[];
   anim: SkillAnim;
-  /** Visual effect and sound keys (client). */
+  /** Visual effect and sound keys (client). Every skill visual is shadow-ink (CLAUDE.md). */
   vfx: string;
   sfx: string;
+  /** Fire damage (Ash's sustain heals from it). */
+  fire?: boolean;
+  /** Set on weapon skills: which weapon tree it comes from (mastery XP goes there). */
+  weapon?: WeaponId;
 }
 
 export interface ResourceDef {
@@ -93,7 +103,16 @@ export interface PathDef {
   blurb: string;
   sustain: string;
   combo: string;
-  skills: SkillDef[];
+  /** How hard the path is to play well (1–3), for the character screen. */
+  difficulty: 1 | 2 | 3;
+  /** One line for the path card on the character screen. */
+  tagline: string;
+  /** The path's own three skills (keys 2–4); they work with any weapon. */
+  signature: SkillDef[];
+  /** Weapons this path's people fight with: they hit harder and carry the path's rider. */
+  homeWeapons: WeaponId[];
+  /** What a home weapon adds, in player-facing words and as effects added to its damaging skills. */
+  affinity: { text: string; rider: Effect[] };
 }
 
 export const STATUS_INFO: Record<StatusId, { name: string; harmful: boolean }> = {

@@ -1,4 +1,4 @@
-import type { Body, EnemyAttack, EnemyDef, Faction, InputFrame, PathDef, PeopleId, StatusId, BodyType } from "@broken-ash/shared";
+import type { Body, BodyType, CharacterLook, EnemyAttack, EnemyDef, Faction, InputFrame, PathDef, PeopleId, Picks, SkillDef, StatusId, WeaponId } from "@broken-ash/shared";
 
 /** A status on a fighter. `value` is dps for damage-over-time, the remaining shield, a % for slow/haste... */
 export interface Status {
@@ -40,6 +40,16 @@ export interface PlayerSim extends Fighter {
   name: string;
   look: "a" | "b";
   path: PathDef;
+  /** The weapon in hand; its mastery tree gives skills 0–2 (shared/src/loadout.ts). */
+  weapon: WeaponId;
+  /** Weapon-skill damage dealt with each weapon type (mastery XP), saved on the host. */
+  mastery: Partial<Record<WeaponId, number>>;
+  /** Tree choices per weapon. */
+  picks: Partial<Record<WeaponId, Picks>>;
+  /** The resolved skill bar: weapon basic, RMB, key 1, then the path's three signature skills. */
+  skills: SkillDef[];
+  /** Appearance (skin, dyes, armour and gear pieces). */
+  appearance: CharacterLook;
   bodyType: BodyType;
   people: PeopleId;
   body: Body;

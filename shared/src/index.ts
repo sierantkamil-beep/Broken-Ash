@@ -14,3 +14,6 @@ export * from "./combat/geometry.js";
 export * from "./data/paths.js";
 export * from "./data/greyed.js";
 export * from "./data/looks.js";
+export * from "./data/weapons.js";
+export * from "./combat/build.js";
+export * from "./loadout.js";

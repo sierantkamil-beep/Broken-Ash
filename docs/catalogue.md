@@ -5,9 +5,9 @@
 
 ## Contents
 
-- [shared](#shared) — 19 files, 5 test files
-- [server](#server) — 9 files, 3 test files
-- [client](#client) — 24 files, 3 test files
+- [shared](#shared) — 22 files, 5 test files
+- [server](#server) — 10 files, 4 test files
+- [client](#client) — 25 files, 3 test files
 - [desktop](#desktop) — 3 files, 1 test files
 - [tools/catalogue](#toolscatalogue) — 1 files, 1 test files
 - [Python tools](#python-tools)
@@ -21,17 +21,20 @@ Pure game logic and data used by server and client. No Phaser, Colyseus or Node 
 |---|---|---|---|
 | `shared/src/balance.ts` | Every tunable number lives here, with the reason it has its value. | `BALANCE` | — |
 | `shared/src/cinematic.ts` | Cinematics are timelines, not scripts: every track is keyframed in milliseconds, and `evaluateCinematic(c, t)` gives the full picture at any moment. | `Ease`, `CameraKey`, `ActorKey`, `CinematicActor`, `Subtitle`, `Fade`, `TitleCard`, `CinematicEvent`, `Cinematic`, `CinematicFrame`, `ease`, `evaluateCinematic`, `eventsBetween`, `validateCinematic` | — |
+| `shared/src/combat/build.ts` | Small builders for writing skills as data (paths.ts, weapons.ts). | `dmg`, `st`, `SkillOpts`, `skill`, `cone`, `circle`, `line`, `bolt`, `self` | `shared/src/combat/types` |
 | `shared/src/combat/geometry.ts` | Smallest difference between two angles, in radians (0..π). | `angleDiff`, `pointSegmentDistance`, `Caster`, `shapeHits`, `aimLanding` | `shared/src/combat/types` |
-| `shared/src/combat/types.ts` | Combat data model: skills are data (shape + effects), interpreted by server/src/game/Combat.ts. | `PathId`, `BodyType`, `PeopleId`, `Faction`, `StatusId`, `Shape`, `Effect`, `SkillAnim`, `SkillDef`, `ResourceDef`, `PathDef`, `STATUS_INFO` | — |
+| `shared/src/combat/types.ts` | Combat data model: skills are data (shape + effects), interpreted by server/src/game/Combat.ts. | `PathId`, `BodyType`, `PeopleId`, `Faction`, `StatusId`, `Shape`, `Effect`, `SkillAnim`, `WeaponId`, `SkillDef`, `ResourceDef`, `PathDef`, `STATUS_INFO` | — |
 | `shared/src/constants.ts` | Network and simulation constants shared by server and client. | `DEFAULT_PORT`, `ROOM_NAME`, `MAX_PLAYERS`, `SIM_HZ`, `SIM_DT`, `PATCH_HZ`, `INTERP_DELAY_MS`, `MAX_NAME_LENGTH`, `MSG` | — |
 | `shared/src/data/cinematics.ts` | Prolog — plays the first time the two of you enter the Soramei courtyard. | `CINEMATICS` | `shared/src/cinematic` |
 | `shared/src/data/greyed.ts` | Telegraph time: the shape glows on the ground this long before it lands. | `GreyedKind`, `EnemyAttack`, `EnemyDef`, `GREYED`, `Wave`, `GATE_ASSAULT` | `shared/src/combat/types` |
-| `shared/src/data/looks.ts` | How a path dresses the shared male/female body (a "look"): colour ramps, dark to light, that replace the body's cloth and leather-trim colours. | `Look`, `PATH_LOOKS` | `shared/src/combat/types` |
-| `shared/src/data/paths.ts` | The eight paths (design.md §4): 2 melee, 4 magic, 2 ranged. | `PATHS`, `PATH_IDS`, `PEOPLES` | `shared/src/combat/types` |
+| `shared/src/data/looks.ts` | How a path dresses the shared male/female body (a "look"): colour ramps, dark to light, that replace the body's cloth and leather-trim colours. | `Look`, `PATH_LOOKS`, `DYES`, `SKIN_TONES`, `ArmourId`, `HeadId`, `ShoulderId`, `ARMOURS`, `HEADS`, `SHOULDERS`, `CharacterLook`, `DEFAULT_LOOKS`, `validLook` | `shared/src/combat/types` |
+| `shared/src/data/paths.ts` | The eight paths (design.md §4): 2 melee, 4 magic, 2 ranged. | `PATHS`, `PATH_IDS`, `PEOPLES` | `shared/src/combat/build`, `shared/src/combat/types` |
 | `shared/src/data/props.ts` | Prop catalogue: gameplay facts only (footprint, what blocks, lights). | `PropDef`, `PROPS`, `PropKind`, `PROP_KINDS` | — |
+| `shared/src/data/weapons.ts` | The nine weapon types (design.md §4 "Weapons and mastery"). | `SkillSlot`, `Mod`, `PassiveDef`, `WeaponDef`, `WEAPONS`, `WEAPON_IDS`, `WEAPON_SKILLS` | `shared/src/combat/build`, `shared/src/combat/types` |
 | `shared/src/i18n.ts` | Polish plural forms: 1 → one, 2–4 (but not 12–14) → few, everything else → many. | `plural`, `count` | — |
-| `shared/src/index.ts` | — | * from "./constants.js", * from "./balance.js", * from "./iso.js", * from "./i18n.js", * from "./map.js", * from "./movement.js", * from "./cinematic.js", * from "./data/props.js", * from "./data/cinematics.js", * from "./maps/index.js", * from "./types.js", * from "./combat/types.js", * from "./combat/geometry.js", * from "./data/paths.js", * from "./data/greyed.js", * from "./data/looks.js" | `shared/src/balance`, `shared/src/cinematic`, `shared/src/combat/geometry`, `shared/src/combat/types`, `shared/src/constants`, `shared/src/data/cinematics`, `shared/src/data/greyed`, `shared/src/data/looks`, `shared/src/data/paths`, `shared/src/data/props`, `shared/src/i18n`, `shared/src/iso`, `shared/src/map`, `shared/src/maps/index`, `shared/src/movement`, `shared/src/types` |
+| `shared/src/index.ts` | — | * from "./constants.js", * from "./balance.js", * from "./iso.js", * from "./i18n.js", * from "./map.js", * from "./movement.js", * from "./cinematic.js", * from "./data/props.js", * from "./data/cinematics.js", * from "./maps/index.js", * from "./types.js", * from "./combat/types.js", * from "./combat/geometry.js", * from "./data/paths.js", * from "./data/greyed.js", * from "./data/looks.js", * from "./data/weapons.js", * from "./combat/build.js", * from "./loadout.js" | `shared/src/balance`, `shared/src/cinematic`, `shared/src/combat/build`, `shared/src/combat/geometry`, `shared/src/combat/types`, `shared/src/constants`, `shared/src/data/cinematics`, `shared/src/data/greyed`, `shared/src/data/looks`, `shared/src/data/paths`, `shared/src/data/props`, `shared/src/data/weapons`, `shared/src/i18n`, `shared/src/iso`, `shared/src/loadout`, `shared/src/map`, `shared/src/maps/index`, `shared/src/movement`, `shared/src/types` |
 | `shared/src/iso.ts` | Isometric (2:1 dimetric) projection. | `TILE_W`, `TILE_H`, `Z_PX`, `worldToScreen`, `screenToWorld`, `screenDirToWorld`, `DIRECTIONS`, `directionIndex`, `depthOf` | — |
+| `shared/src/loadout.ts` | A character's skill bar: the weapon's basic, RMB and key-1 skills (from its mastery tree), then the path's three signature skills (design.md §4). | `Picks`, `DEFAULT_PICKS`, `masteryLevel`, `masteryProgress`, `isWeapon`, `validPicks`, `Loadout`, `resolveLoadout`, `allSkills` | `shared/src/balance`, `shared/src/combat/types`, `shared/src/data/weapons` |
 | `shared/src/map.ts` | An area of the world. | `AreaMap`, `GroundType`, `BLOCKING_GROUND`, `PropPlacement`, `CollisionGrid` | `shared/src/data/props` |
 | `shared/src/maps/builder.ts` | Small helper for writing maps as code: readable, deterministic, diffable. | `MapBuilder` | `shared/src/data/props`, `shared/src/map` |
 | `shared/src/maps/index.ts` | — | `MAPS`, `START_MAP` | `shared/src/map`, `shared/src/maps/soramei` |
@@ -47,11 +50,13 @@ Tests: `shared/src/cinematic.test.ts`, `shared/src/i18n.test.ts`, `shared/src/is
 - `Ease` (type, `shared/src/cinematic.ts`) — Cinematics are timelines, not scripts: every track is keyframed in milliseconds, and `evaluateCinematic(c, t)` gives the full picture at any moment.
 - `eventsBetween` (function, `shared/src/cinematic.ts`) — Events with from < t ≤ to, in order.
 - `validateCinematic` (function, `shared/src/cinematic.ts`) — Problems with a cinematic's data, for tests.
+- `dmg` (const, `shared/src/combat/build.ts`) — Small builders for writing skills as data (paths.ts, weapons.ts).
 - `angleDiff` (function, `shared/src/combat/geometry.ts`) — Smallest difference between two angles, in radians (0..π).
 - `pointSegmentDistance` (function, `shared/src/combat/geometry.ts`) — Distance from a point to the segment a→b.
 - `shapeHits` (function, `shared/src/combat/geometry.ts`) — Does a shape cast from `c` along `aim` (radians) reach a target circle at (tx, ty) with radius tr?
 - `aimLanding` (function, `shared/src/combat/geometry.ts`) — Where an aimed circle lands: the aimed point, pulled back to the skill's reach.
 - `PathId` (type, `shared/src/combat/types.ts`) — Combat data model: skills are data (shape + effects), interpreted by server/src/game/Combat.ts.
+- `SkillAnim` (type, `shared/src/combat/types.ts`) — Which body move a skill plays.
 - `DEFAULT_PORT` (const, `shared/src/constants.ts`) — Network and simulation constants shared by server and client.
 - `MAX_PLAYERS` (const, `shared/src/constants.ts`) — The game is built for exactly two players.
 - `SIM_HZ` (const, `shared/src/constants.ts`) — Fixed simulation step.
@@ -59,7 +64,15 @@ Tests: `shared/src/cinematic.test.ts`, `shared/src/i18n.test.ts`, `shared/src/is
 - `GREYED` (const, `shared/src/data/greyed.ts`) — The Greyed (design.md §1): the dead who rise near the roots.
 - `GATE_ASSAULT` (const, `shared/src/data/greyed.ts`) — The night of the escape: the Greyed break through Soramei's vermilion gate in waves, then the Tapper himself comes for his runaway stock.
 - `Look` (interface, `shared/src/data/looks.ts`) — How a path dresses the shared male/female body (a "look"): colour ramps, dark to light, that replace the body's cloth and leather-trim colours.
+- `DYES` (const, `shared/src/data/looks.ts`) — Dyes a player can choose for cloth, trim and cape (character screen).
+- `SKIN_TONES` (const, `shared/src/data/looks.ts`) — Skin tones (light to dark), replacing the bodies' skin ramp.
+- `CharacterLook` (interface, `shared/src/data/looks.ts`) — What a player looks like: indices into the tables above (`cape` -1 = no cape).
+- `DEFAULT_LOOKS` (const, `shared/src/data/looks.ts`) — Each path's default dress: its people's colours and gear.
+- `validLook` (function, `shared/src/data/looks.ts`) — A look from untrusted input (a client, a save file): every field clamped to what exists.
+- `PATHS` (const, `shared/src/data/paths.ts`) — The eight paths (design.md §4): 2 melee, 4 magic, 2 ranged.
 - `PropDef` (interface, `shared/src/data/props.ts`) — Prop catalogue: gameplay facts only (footprint, what blocks, lights).
+- `SkillSlot` (type, `shared/src/data/weapons.ts`) — Which weapon-skill a passive touches.
+- `WEAPON_SKILLS` (const, `shared/src/data/weapons.ts`) — Every weapon skill by id (for clients resolving a fx event to its skill).
 - `plural` (function, `shared/src/i18n.ts`) — Polish plural forms: 1 → one, 2–4 (but not 12–14) → few, everything else → many.
 - `count` (function, `shared/src/i18n.ts`) — "3 sekundy", "5 sekund".
 - `TILE_W` (const, `shared/src/iso.ts`) — Isometric (2:1 dimetric) projection.
@@ -68,6 +81,11 @@ Tests: `shared/src/cinematic.test.ts`, `shared/src/i18n.test.ts`, `shared/src/is
 - `DIRECTIONS` (const, `shared/src/iso.ts`) — Eight sprite directions, index 0 = facing screen-south (towards the viewer), clockwise.
 - `directionIndex` (function, `shared/src/iso.ts`) — Sprite direction index (0 = screen south, then clockwise: SW, W, NW, N, NE, E, SE) for a world-space facing angle.
 - `depthOf` (function, `shared/src/iso.ts`) — Depth for sorting things standing on the ground: further down the screen is drawn later.
+- `Picks` (interface, `shared/src/loadout.ts`) — Which skill of each choice is picked.
+- `masteryLevel` (function, `shared/src/loadout.ts`) — Mastery level for an amount of weapon-skill damage dealt.
+- `masteryProgress` (function, `shared/src/loadout.ts`) — Progress towards the next level, 0–1 (1 at max).
+- `validPicks` (function, `shared/src/loadout.ts`) — Keeps only choices the level has unlocked; anything else falls back to the first option.
+- `allSkills` (function, `shared/src/loadout.ts`) — Every skill that can appear on a bar, by id (paths' signatures + every weapon skill).
 - `AreaMap` (interface, `shared/src/map.ts`) — An area of the world.
 - `BLOCKING_GROUND` (const, `shared/src/map.ts`) — Ground you can't stand on.
 - `CollisionGrid` (class, `shared/src/map.ts`) — Which cells block movement.
@@ -90,17 +108,18 @@ Colyseus server. `game/` is the network-free simulation; `rooms/` forwards messa
 
 | File | Purpose | Exports | Depends on |
 |---|---|---|---|
-| `server/src/game/Combat.ts` | Damage-over-time caps (dps), so stacking stays strong but bounded. | `Projectile`, `Zone`, `Arena`, `fighters`, `fighterById`, `partnerOf`, `targetable`, `foesOf`, `addStatus`, `speedOf`, `tickStatuses`, `DamageOpts`, `dealDamage`, `heal`, `gainResource`, `canCast`, `startCast`, `tickCasts`, `tickProjectiles`, `push`, `tickZones`, `unitAttackHits` | `server/src/game/fighters`, @broken-ash/shared |
+| `server/src/game/Combat.ts` | Damage-over-time caps (dps), so stacking stays strong but bounded. | `Projectile`, `Zone`, `Arena`, `fighters`, `fighterById`, `partnerOf`, `targetable`, `foesOf`, `addStatus`, `speedOf`, `tickStatuses`, `DamageOpts`, `dealDamage`, `heal`, `gainResource`, `canCast`, `startCast`, `tickCasts`, `tickProjectiles`, `gainMastery`, `push`, `tickZones`, `unitAttackHits` | `server/src/game/fighters`, @broken-ash/shared |
 | `server/src/game/Pathing.ts` | Flow fields: for a goal cell, every reachable cell's walking distance to it (8-connected, no corner cutting). | `FlowField` | @broken-ash/shared |
+| `server/src/game/Profiles.ts` | What the host remembers about each character between sessions: weapon mastery, tree picks and the last weapon, path and look. | `Profile`, `Profiles` | @broken-ash/shared, node:fs, node:path |
 | `server/src/game/Units.ts` | A thrall raised by the Path of Graves: a Shambler's body fighting on the players' side. | `thrallDef`, `makeUnit`, `tickUnits` | `server/src/game/Combat`, `server/src/game/Pathing`, `server/src/game/fighters`, @broken-ash/shared |
-| `server/src/game/World.ts` | Burst allowance after a lag spike, in steps. | `RunningCinematic`, `JoinRequest`, `Phase`, `World`, `sanitizeName` | `server/src/game/Combat`, `server/src/game/Pathing`, `server/src/game/Units`, `server/src/game/fighters`, @broken-ash/shared |
+| `server/src/game/World.ts` | What the host remembers about a character between sessions (server/src/game/Profiles.ts). | `RunningCinematic`, `JoinRequest`, `SavedProgress`, `Phase`, `World`, `sanitizeName` | `server/src/game/Combat`, `server/src/game/Pathing`, `server/src/game/Units`, `server/src/game/fighters`, @broken-ash/shared |
 | `server/src/game/fighters.ts` | A status on a fighter. | `Status`, `Fighter`, `CastState`, `PlayerSim`, `UnitSim`, `fighterPos` | @broken-ash/shared |
 | `server/src/index.ts` | — | — | `server/src/startServer`, @broken-ash/shared |
-| `server/src/rooms/WorldRoom.ts` | Thin network layer: forwards validated messages to the World and mirrors its state into the schema. | `WorldRoom` | `server/src/game/World`, `server/src/schema/WorldState`, @broken-ash/shared, @colyseus/core |
+| `server/src/rooms/WorldRoom.ts` | Thin network layer: forwards validated messages to the World and mirrors its state into the schema. | `WorldRoom` | `server/src/game/Profiles`, `server/src/game/World`, `server/src/game/fighters`, `server/src/schema/WorldState`, @broken-ash/shared, @colyseus/core |
 | `server/src/schema/WorldState.ts` | Synced player state. | `PlayerState`, `UnitState`, `WorldState` | @colyseus/schema |
-| `server/src/startServer.ts` | Starts the authoritative game server. | `RunningServer`, `ServerOptions`, `startServer` | `server/src/rooms/WorldRoom`, @broken-ash/shared, @colyseus/core, @colyseus/ws-transport, node:http, node:os |
+| `server/src/startServer.ts` | Where the host keeps saved characters (the desktop app passes its userData folder). | `RunningServer`, `ServerOptions`, `startServer` | `server/src/game/Profiles`, `server/src/rooms/WorldRoom`, @broken-ash/shared, @colyseus/core, @colyseus/ws-transport, node:http, node:os, node:path |
 
-Tests: `server/src/game/Combat.test.ts`, `server/src/game/World.test.ts`, `server/src/game/sim.test.ts`
+Tests: `server/src/game/Combat.test.ts`, `server/src/game/Mastery.test.ts`, `server/src/game/World.test.ts`, `server/src/game/sim.test.ts`
 
 <details><summary>Exported symbols</summary>
 
@@ -110,11 +129,14 @@ Tests: `server/src/game/Combat.test.ts`, `server/src/game/World.test.ts`, `serve
 - `speedOf` (function, `server/src/game/Combat.ts`) — Movement multiplier from statuses (and the path's own speed for players).
 - `dealDamage` (function, `server/src/game/Combat.ts`) — Applies damage after modifiers, shields and invulnerability.
 - `canCast` (function, `server/src/game/Combat.ts`) — Can this skill be cast now?
+- `gainMastery` (function, `server/src/game/Combat.ts`) — Weapon-skill damage is mastery XP for that weapon type; a new level is announced.
 - `push` (function, `server/src/game/Combat.ts`) — Shoves a fighter (knockback), stopping at walls.
 - `unitAttackHits` (function, `server/src/game/Combat.ts`) — Shapes of the Greyed's attacks use the same hit test; the landing point is locked at wind-up.
 - `FlowField` (class, `server/src/game/Pathing.ts`) — Flow fields: for a goal cell, every reachable cell's walking distance to it (8-connected, no corner cutting).
+- `Profile` (interface, `server/src/game/Profiles.ts`) — What the host remembers about each character between sessions: weapon mastery, tree picks and the last weapon, path and look.
 - `thrallDef` (function, `server/src/game/Units.ts`) — A thrall raised by the Path of Graves: a Shambler's body fighting on the players' side.
 - `tickUnits` (function, `server/src/game/Units.ts`) — The Greyed's (and thralls') behaviour: pick the nearest foe, walk the flow field to them, and when an attack is in range, lock its aim and telegraph it for its wind-up before it lands.
+- `SavedProgress` (interface, `server/src/game/World.ts`) — What the host remembers about a character between sessions (server/src/game/Profiles.ts).
 - `World` (class, `server/src/game/World.ts`) — The authoritative simulation for one area.
 - `Status` (interface, `server/src/game/fighters.ts`) — A status on a fighter.
 - `Fighter` (interface, `server/src/game/fighters.ts`) — Anything that can be hit: players, the Greyed, thralls.
@@ -136,15 +158,16 @@ Phaser 3 + Vite client: rendering, prediction, cinematics, audio, DOM UI.
 | `client/src/audio/AudioDirector.ts` | Every sound file the game loads (client/public/assets/audio, generated by tools/audio/build.py). | `AUDIO_KEYS`, `AudioDirector` | `client/src/settings`, phaser |
 | `client/src/cinematic/CinematicPlayer.ts` | Camera zoom that 1.0 in the data corresponds to (scales with the window height). | `CinematicHooks`, `CinematicPlayer` | `client/src/audio/AudioDirector`, `client/src/ui/dom`, @broken-ash/shared, phaser |
 | `client/src/desktop.ts` | What the desktop app found out when it started hosting (mirrors desktop/src/network.ts). | `HostReport`, `DesktopBridge`, `desktop` | — |
-| `client/src/entities/Character.ts` | The texture key of a body dressed in a path's look. | `CharacterState`, `Character` | `client/src/assets/atlases`, `client/src/assets/recolor`, `client/src/audio/AudioDirector`, @broken-ash/shared, phaser |
+| `client/src/entities/Character.ts` | The texture key of a body dressed in a path's look. | `CharacterState`, `Character` | `client/src/assets/atlases`, `client/src/assets/recolor`, `client/src/audio/AudioDirector`, `client/src/net/loadout`, @broken-ash/shared, phaser |
 | `client/src/entities/UnitSprite.ts` | The synced unit fields (server/src/schema/WorldState.ts UnitState). | `UnitView`, `UnitSprite` | `client/src/assets/atlases`, `client/src/net/Interpolation`, @broken-ash/shared, phaser |
-| `client/src/fx/Vfx.ts` | Look of each skill's visual (SkillDef.vfx). | `VfxHooks`, `Vfx`, `Telegraphs` | `client/src/settings`, @broken-ash/shared, phaser |
+| `client/src/fx/Vfx.ts` | Look of each skill's visual (SkillDef.vfx). | `VfxHooks`, `Vfx`, `Telegraphs` | `client/src/net/loadout`, `client/src/settings`, @broken-ash/shared, phaser |
 | `client/src/main.ts` | — | — | `client/src/desktop`, `client/src/net`, `client/src/scenes/BootScene`, `client/src/scenes/WorldScene`, `client/src/settings`, `client/src/style.css`, `client/src/ui/Creator`, `client/src/ui/dom`, `client/src/ui/hostReport`, @fontsource/cormorant-garamond, @fontsource/shippori-mincho, phaser |
 | `client/src/net/Interpolation.ts` | Renders a remote player slightly in the past, between the two snapshots around that moment. | `Snapshot`, `Interpolation` | @broken-ash/shared |
 | `client/src/net/Prediction.ts` | Movement multiplier the server will apply (path speed, slows, rooted, downed). | `Intent`, `Prediction` | @broken-ash/shared |
+| `client/src/net/loadout.ts` | The synced fields a player's bar and look are resolved from (server/src/schema/WorldState.ts). | `LoadoutView`, `pathOf`, `weaponOf`, `masteryOf`, `barOf`, `lookOf`, `ALL_SKILLS` | @broken-ash/shared |
 | `client/src/net.ts` | Accepts "host", "host:port", IPv6 (bare or "[addr]:port") or a full ws:// / http:// URL, so players can paste whatever they were given. | `toServerUrl`, `joinWorld` | @broken-ash/shared, colyseus.js |
 | `client/src/scenes/BootScene.ts` | Loads the atlases (rendered by tools/art) and the sounds (tools/audio), with a thin progress line. | `BootScene` | `client/src/audio/AudioDirector`, phaser |
-| `client/src/scenes/WorldScene.ts` | The synced player fields (mirror of server/src/schema/WorldState.ts). | `WorldScene` | `client/src/assets/atlases`, `client/src/audio/AudioDirector`, `client/src/cinematic/CinematicPlayer`, `client/src/entities/Character`, `client/src/entities/UnitSprite`, `client/src/fx/Vfx`, `client/src/net`, `client/src/net/Interpolation`, `client/src/net/Prediction`, `client/src/ui/Hud`, `client/src/ui/dom`, `client/src/world/GroundLayer`, `client/src/world/Lighting`, `client/src/world/Petals`, `client/src/world/PropLayer`, @broken-ash/shared, phaser |
+| `client/src/scenes/WorldScene.ts` | The synced player fields (mirror of server/src/schema/WorldState.ts). | `WorldScene` | `client/src/assets/atlases`, `client/src/audio/AudioDirector`, `client/src/cinematic/CinematicPlayer`, `client/src/entities/Character`, `client/src/entities/UnitSprite`, `client/src/fx/Vfx`, `client/src/net`, `client/src/net/Interpolation`, `client/src/net/Prediction`, `client/src/net/loadout`, `client/src/ui/Hud`, `client/src/ui/dom`, `client/src/world/GroundLayer`, `client/src/world/Lighting`, `client/src/world/Petals`, `client/src/world/PropLayer`, @broken-ash/shared, phaser |
 | `client/src/settings.ts` | Per-player preferences, kept in localStorage (wrapped: storage can be unavailable). | `Settings`, `settings`, `saveSettings`, `onSettingsChange` | — |
 | `client/src/ui/Creator.ts` | Character creation on the title screen: body, people of origin, path. | `setupCreator` | `client/src/settings`, `client/src/ui/dom`, @broken-ash/shared |
 | `client/src/ui/Hud.ts` | The DOM HUD: your bars and skill bar, your partner, the boss, being downed. | `MeView`, `Hud` | `client/src/ui/dom`, @broken-ash/shared |
@@ -176,6 +199,9 @@ Tests: `client/src/net/Prediction.test.ts`, `client/src/net.test.ts`, `client/sr
 - `Telegraphs` (class, `client/src/fx/Vfx.ts`) — Red telegraphs on the ground for the Greyed's coming attacks: they fill as the blow nears.
 - `Interpolation` (class, `client/src/net/Interpolation.ts`) — Renders a remote player slightly in the past, between the two snapshots around that moment.
 - `Prediction` (class, `client/src/net/Prediction.ts`) — Client-side prediction for your own character.
+- `LoadoutView` (interface, `client/src/net/loadout.ts`) — The synced fields a player's bar and look are resolved from (server/src/schema/WorldState.ts).
+- `barOf` (function, `client/src/net/loadout.ts`) — The bar the server built, resolved the same way from the same synced inputs.
+- `ALL_SKILLS` (const, `client/src/net/loadout.ts`) — Every skill that can be on any bar (fx events name a skill id).
 - `toServerUrl` (function, `client/src/net.ts`) — Accepts "host", "host:port", IPv6 (bare or "[addr]:port") or a full ws:// / http:// URL, so players can paste whatever they were given.
 - `BootScene` (class, `client/src/scenes/BootScene.ts`) — Loads the atlases (rendered by tools/art) and the sounds (tools/audio), with a thin progress line.
 - `Settings` (interface, `client/src/settings.ts`) — Per-player preferences, kept in localStorage (wrapped: storage can be unavailable).

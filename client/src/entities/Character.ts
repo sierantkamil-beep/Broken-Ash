@@ -1,5 +1,6 @@
 import Phaser from "phaser";
-import { BALANCE, depthOf, directionIndex, PATH_LOOKS, PATHS, worldToScreen, type PathId } from "@broken-ash/shared";
+import { BALANCE, depthOf, directionIndex, PATH_LOOKS, PATHS, worldToScreen, type PathId, type SkillDef } from "@broken-ash/shared";
+import { ALL_SKILLS } from "../net/loadout";
 import type { AudioDirector } from "../audio/AudioDirector";
 import { recolorAtlas } from "../assets/recolor";
 import { atlasMeta, atlasOr, charKey, ensureAtlas, resolveAnim, type AtlasMeta } from "../assets/atlases";
@@ -32,6 +33,7 @@ export class Character {
   private readonly label: Phaser.GameObjects.Text;
   private atlas: string | null;
   private meta!: AtlasMeta;
+  private bar: SkillDef[] = [];
   private anim = "idle";
   private frameF = 0;
   private lastX = 0;
@@ -93,8 +95,13 @@ export class Character {
   }
 
   /** Plays a skill's animation: its wind-up spread over the cast time, the strike on release. */
+  /** The player's current bar (resolved skills: their wind-ups and moves). */
+  setBar(skills: SkillDef[]) {
+    this.bar = skills;
+  }
+
   playCast(skillId: string) {
-    const skill = PATHS[this.path].skills.find((s) => s.id === skillId);
+    const skill = this.bar.find((s) => s.id === skillId) ?? ALL_SKILLS.get(skillId);
     if (!skill) return;
     const now = this.scene.time.now;
     const windup = skill.windup * 1000;
@@ -107,6 +114,7 @@ export class Character {
    * (the older renders) keep them.
    */
   private skillAnim(anim: string): string {
+    if (anim === "strike" || anim === "cast") return anim;
     if (this.atlas && this.scene.textures.get(this.atlas).has(`${anim}/0/0`)) return anim;
     return PATHS[this.path].type === "melee" ? "strike" : "cast";
   }
