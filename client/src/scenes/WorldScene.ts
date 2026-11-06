@@ -28,7 +28,7 @@ import { Prediction } from "../net/Prediction";
 import { $ } from "../ui/dom";
 import { Hud } from "../ui/Hud";
 import { barOf, lookOf, pathOf, weaponOf } from "../net/loadout";
-import { ACCENTS } from "../fx/ink/ink";
+import { ACCENTS } from "../fx/accents";
 import { GroundLayer } from "../world/GroundLayer";
 import { Lighting, type LightSource } from "../world/Lighting";
 import { Petals } from "../world/Petals";

@@ -1,9 +1,9 @@
 import { BALANCE, DEFAULT_PICKS, MSG, PATHS, WEAPONS, WEAPON_IDS, masteryLevel, masteryProgress, validPicks, type Picks, type WeaponId } from "@broken-ash/shared";
 import type { Room } from "colyseus.js";
-import { ACCENTS } from "../fx/ink/ink";
+import { ACCENTS } from "../fx/accents";
 import { barOf, masteryOf, pathOf, weaponOf, type LoadoutView } from "../net/loadout";
 import { $, el, escapeHtml } from "./dom";
-import { skillIcon } from "./icons";
+import { skillIcon } from "./pixelIcons";
 
 /**
  * The weapon mastery panel (K): your weapon's level and progress, its tree — RMB and key-1 choices,
@@ -34,6 +34,8 @@ export class Mastery {
       this.open = true;
       this.weapon = null;
       $("mastery").hidden = false;
+      // The HUD and key hints would show through the panel; they step back while it's open.
+      document.body.classList.add("mastery-open");
       this.render();
     }
   }
@@ -41,6 +43,7 @@ export class Mastery {
   close() {
     this.open = false;
     $("mastery").hidden = true;
+    document.body.classList.remove("mastery-open");
   }
 
   private me(): (LoadoutView & { picks: string }) | null {
@@ -87,7 +90,8 @@ export class Mastery {
     const fill = el("i");
     fill.style.width = `${Math.round(prog * 100)}%`;
     bar.append(fill);
-    box.append(head, bar);
+    const home = PATHS[path].homeWeapons.includes(shown);
+    box.append(head, bar, el("p", "muted small m-help", `${home ? `Broń twojego ludu: ${PATHS[path].affinity.text} ` : ""}Mistrzostwo rośnie od obrażeń zadanych umiejętnościami tej broni. K albo Esc zamyka.`));
     if (locked) box.append(el("div", "note", "Podczas fali nie zmienisz broni ani drzewka — tylko między falami."));
 
     const wsel = el("div", "wsel");
@@ -118,7 +122,9 @@ export class Mastery {
       col.append(el("h3", undefined, title));
       list.forEach((s, i) => {
         const open = level >= unlocks[i];
-        const b = el("button", `pick${i === current ? " on" : ""}${open ? "" : " lock"}`);
+        // Locked by level (dim, with the level it opens at) is not the same as "not now" (a wave, or
+        // looking at a weapon you don't hold): those stay readable.
+        const b = el("button", `pick${i === current ? " on" : ""}${open ? "" : " lock"}${open && (locked || shown !== held) ? " frozen" : ""}`);
         b.disabled = !open || locked || shown !== held;
         const t = el("div");
         t.innerHTML = `<b>${escapeHtml(s.name)}</b> <span class="muted">${open ? "" : `· mistrzostwo ${unlocks[i]}`}</span><div class="muted">${escapeHtml(s.description)}</div>`;
@@ -138,7 +144,7 @@ export class Mastery {
       const open = level >= M.passiveUnlock[row];
       r.append(el("div", "lvl", `poz. ${M.passiveUnlock[row]}`));
       pair.forEach((pv, i) => {
-        const b = el("button", picks.passives[row] === i ? "on" : undefined);
+        const b = el("button", `${picks.passives[row] === i ? "on" : ""}${open ? "" : " lock"}${open && (locked || shown !== held) ? " frozen" : ""}`.trim() || undefined);
         b.innerHTML = `<b>${escapeHtml(pv.name)}</b>${escapeHtml(pv.description)}`;
         b.disabled = !open || locked || shown !== held;
         b.addEventListener("click", () => {
@@ -150,7 +156,5 @@ export class Mastery {
       });
       box.append(r);
     });
-    const home = PATHS[path].homeWeapons.includes(shown);
-    box.append(el("p", "muted small", `${home ? `Broń twojego ludu: ${PATHS[path].affinity.text} ` : ""}Mistrzostwo rośnie od obrażeń zadanych umiejętnościami tej broni. K albo Esc zamyka.`));
   }
 }

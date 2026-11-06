@@ -3,7 +3,12 @@ import "@fontsource/cormorant-garamond/400-italic.css";
 import "@fontsource/cormorant-garamond/600.css";
 import "@fontsource/shippori-mincho/latin-500.css";
 import "@fontsource/shippori-mincho/latin-600.css";
+// Polish letters (ł, ś, ż, ę, ą) live in latin-ext; without it headings fell back to another face.
+import "@fontsource/shippori-mincho/latin-ext-500.css";
+import "@fontsource/shippori-mincho/latin-ext-600.css";
 import "./style.css";
+import { skillIcon } from "./ui/pixelIcons";
+import { ACCENTS } from "./fx/accents";
 import Phaser from "phaser";
 import { ALL_SKILLS } from "./net/loadout";
 import { PATHS, type PathId } from "@broken-ash/shared";
@@ -35,7 +40,12 @@ game.events.on("world-ready", (scene: WorldScene) => {
   const q = new URLSearchParams(location.search);
   if (q.get("path") && q.get("path")! in PATHS) menu.quickCharacter(q.get("path") as PathId, q.get("body") === "male" ? "male" : "female", q.get("name") ?? "Tester");
   // The effects gallery (tools/e2e/gallery.cjs) needs every skill's shape.
-  if (q.toString()) (window as unknown as { __skills?: unknown }).__skills = [...ALL_SKILLS.values()];
+  if (q.toString()) {
+    (window as unknown as { __skills?: unknown }).__skills = [...ALL_SKILLS.values()];
+    // For the icon sheet check (tools/e2e/icons.cjs).
+    (window as unknown as { __skillIcon?: unknown }).__skillIcon = skillIcon;
+    (window as unknown as { __accents?: unknown }).__accents = ACCENTS;
+  }
   if (q.get("autohost")) $("host-btn").click();
   else if (q.get("autojoin")) void connect(q.get("address") ?? "localhost");
 });

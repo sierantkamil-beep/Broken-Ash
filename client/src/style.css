@@ -6,6 +6,15 @@
   --vermilion: #b8261a;
   --vermilion-hi: #e0412c;
   --gold: #b08a3e;
+  --text-hi: #efe6d8;
+  --text-title: #f1e7d9;
+  --muted: #6d655d;
+  --border: #2c2629;
+  --border-hi: #3a3236;
+  --sel: rgba(120, 20, 14, 0.35);
+  --gap-s: 6px;
+  --gap-m: 12px;
+  --gap-l: 20px;
   --serif: "Cormorant Garamond", Georgia, serif;
   --title: "Shippori Mincho", "Cormorant Garamond", serif;
 }
@@ -43,7 +52,7 @@ label { display: block; margin: 10px 0; color: var(--ash-dim); font-size: 16px; 
   padding: 22px 26px; width: min(420px, calc(100vw - 32px));
 }
 .panel h2 { font-family: var(--title); font-weight: 500; margin: 0 0 8px; color: #efe6d8; letter-spacing: 0.08em; }
-.panel button { width: 100%; margin-top: 10px; }
+.panel > button, .panel .buttons > button { width: 100%; margin-top: 10px; }
 .divider { display: flex; align-items: center; gap: 10px; color: var(--ash-dim); font-size: 14px; margin: 14px 0 0; }
 .divider::before, .divider::after { content: ""; flex: 1; border-top: 1px solid #2c2629; }
 
@@ -85,7 +94,11 @@ label { display: block; margin: 10px 0; color: var(--ash-dim); font-size: 16px; 
 #stamina.low .fill { background: #5a4a40; }
 #hud.cinematic #stamina, #hud.cinematic #hint { opacity: 0; }
 #stamina, #hint { transition: opacity 0.6s; }
-#hint { position: absolute; left: 0; right: 0; bottom: 8px; text-align: center; font-size: 14px; color: #6d655d; letter-spacing: 0.05em; }
+#hint { position: absolute; left: 0; right: 0; bottom: 8px; text-align: center; font-size: 14px; color: var(--muted); letter-spacing: 0.05em; text-shadow: 0 1px 2px #000; }
+/* The key hints step back once you've played a while, and whenever a panel is open. */
+#hint.faded, body.mastery-open #hint { opacity: 0; }
+body.mastery-open #me { opacity: 0.15; }
+#me { transition: opacity 0.2s; }
 
 #pause { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); }
 #pause .buttons { margin-top: 14px; }
@@ -97,10 +110,12 @@ label { display: block; margin: 10px 0; color: var(--ash-dim); font-size: 16px; 
 .bar { position: relative; height: 10px; background: rgba(0, 0, 0, 0.6); border: 1px solid #2a2326; overflow: hidden; }
 .bar .fill { height: 100%; width: 100%; transition: width 0.1s linear; }
 .bar .val { position: absolute; inset: 0; font-size: 11px; line-height: 10px; text-align: center; color: #f0e8e0; text-shadow: 0 1px 2px #000; }
-#me { position: absolute; left: 50%; bottom: 30px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 6px; }
+#me .bar.res { height: 13px; }
+#me .bar.res .val { line-height: 12px; font-size: 12px; }
+#me { position: absolute; left: 50%; bottom: 32px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 6px; }
 #me .bars { width: 380px; display: flex; flex-direction: column; gap: 3px; }
-#me .bar.hp { height: 14px; }
-#me .bar.hp .val { line-height: 14px; }
+#me .bar.hp { height: 17px; }
+#me .bar.hp .val { line-height: 16px; font-size: 13px; }
 #me .bar.hp .fill { background: linear-gradient(#a8231a, #6a120c); }
 #me .bar.hp .shield { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(140, 180, 240, 0.55); }
 #me .bar.res .fill { background: linear-gradient(#c8a050, #8a6a2a); }
@@ -111,13 +126,17 @@ label { display: block; margin: 10px 0; color: var(--ash-dim); font-size: 16px; 
 #me .bar.res.focus .fill { background: linear-gradient(#e0c880, #9a7a3a); }
 #me .bar.res.doses .fill { background: linear-gradient(#9ad050, #4a7a20); }
 #me .bar.res.stamina .fill { background: linear-gradient(#a8b060, #6a7a30); }
-#me #stamina { position: static; transform: none; width: 240px; height: 4px; }
+/* The roll stamina: a thin bar under the slots, its two ticks marking each roll's cost. */
+#me #stamina { position: relative; left: auto; bottom: auto; transform: none; width: 240px; height: 5px; }
 #skills { display: flex; gap: 6px; }
-.skill { position: relative; width: 58px; height: 58px; background: rgba(12, 10, 11, 0.88); border: 1px solid #3a3236; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 11px; line-height: 1.05; color: #d8cfc2; padding: 3px; pointer-events: auto; }
-.skill .key { position: absolute; left: 3px; top: 1px; font-size: 11px; color: var(--gold); }
-.skill .cd { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.72); }
-.skill .cdt { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #fff; }
-.skill.cant { color: #6a625a; }
+.skill { position: relative; width: 56px; height: 56px; background: rgba(8, 6, 8, 0.9); border: 1px solid var(--border-hi); display: flex; align-items: center; justify-content: center; padding: 0; pointer-events: auto; }
+/* The key sits in its own little badge on the slot's corner, off the icon. */
+.skill .key { position: absolute; left: -1px; top: -1px; z-index: 2; min-width: 16px; height: 15px; padding: 0 3px; font-size: 11px; line-height: 15px; text-align: center; color: var(--gold); background: #0b090a; border: 1px solid var(--border-hi); }
+/* Names live in the tooltip: drawn over a 48 px icon they hid it and still didn't fit. */
+.skill .name { display: none; }
+.skill .cd { position: absolute; left: 4px; right: 4px; top: 4px; max-height: 48px; background: rgba(0, 0, 0, 0.7); z-index: 1; }
+.skill .cdt { position: absolute; inset: 0; z-index: 2; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 600; color: #fff; text-shadow: 0 1px 2px #000, 0 0 4px #000; }
+.skill.cant .px-icon { filter: grayscale(0.85) brightness(0.6); }
 .skill.casting { border-color: var(--vermilion); }
 #me .statuses { font-size: 13px; color: var(--ash); min-height: 16px; }
 #partner { position: absolute; left: 20px; top: 20px; width: 220px; }
@@ -145,9 +164,11 @@ label { display: block; margin: 10px 0; color: var(--ash-dim); font-size: 16px; 
 @keyframes screen-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
 #screen-title { align-items: flex-start; justify-content: center; padding-left: 9vw; gap: 4vh; }
-#screen-title .brand { position: relative; }
-#logo-ink { position: absolute; left: -46px; top: -40px; width: 520px; height: 200px; pointer-events: none; opacity: 0.9; }
-#logo-ink canvas { width: 100%; height: 100%; image-rendering: pixelated; }
+/* The mark sits beside the name (never under it), at a whole-pixel scale of its 32 px drawing. */
+#screen-title .brand { position: relative; display: grid; grid-template-columns: auto auto; column-gap: 26px; align-items: center; }
+#screen-title .brand .tagline { grid-column: 2; }
+#logo-ink { grid-row: span 2; width: 128px; height: 128px; pointer-events: none; }
+#logo-ink canvas { width: 128px; height: 128px; image-rendering: pixelated; }
 #screen-title h1 {
   position: relative; font-family: var(--title); font-weight: 600; font-size: clamp(56px, 8vw, 112px); margin: 0; letter-spacing: 0.12em;
   color: #f1e7d9; text-shadow: 0 0 36px rgba(184, 38, 26, 0.45), 0 4px 0 #000;
@@ -179,12 +200,12 @@ label { display: block; margin: 10px 0; color: var(--ash-dim); font-size: 16px; 
 .row-buttons { display: flex; gap: 10px; margin-top: 16px; }
 .row-buttons button { flex: 1; }
 #char-list { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; max-height: 50vh; overflow: auto; }
-.char-row { display: grid; grid-template-columns: 52px 1fr auto auto; gap: 12px; align-items: center; padding: 8px 10px; border: 1px solid #2c2629; background: rgba(0, 0, 0, 0.3); }
+.char-row { display: grid; grid-template-columns: 48px 1fr auto auto; gap: 12px; align-items: center; padding: 8px 10px; border: 1px solid #2c2629; background: rgba(0, 0, 0, 0.3); }
 .char-row.cur { border-color: var(--vermilion); }
 .char-row .who b { font-family: var(--title); color: #efe6d8; font-weight: 500; }
 .char-row .who div { font-size: 14px; color: var(--ash-dim); }
 .char-row button { padding: 6px 12px; font-size: 15px; }
-.char-row .ink-icon { width: 52px; height: 52px; }
+.char-row .px-icon { width: 48px; height: 48px; }
 
 /* Character creation: path list · live preview · explanations. */
 .create {
@@ -198,10 +219,10 @@ label { display: block; margin: 10px 0; color: var(--ash-dim); font-size: 16px; 
 .steps span.on { color: var(--vermilion-hi); }
 .path-list { overflow: auto; display: flex; flex-direction: column; gap: 6px; padding-right: 4px; }
 .path-card {
-  display: grid; grid-template-columns: 46px 1fr; gap: 4px 10px; align-items: center; text-align: left; padding: 8px 10px;
+  display: grid; grid-template-columns: 48px 1fr; gap: 4px 10px; align-items: center; text-align: left; padding: 8px 10px;
   background: rgba(0, 0, 0, 0.35); border: 1px solid #2a2427; font-size: 15px; line-height: 1.2;
 }
-.path-card .ink-icon { grid-row: span 2; width: 46px; height: 46px; }
+.path-card .px-icon { grid-row: span 2; width: 48px; height: 48px; }
 .path-card b { font-family: var(--title); font-weight: 500; color: #efe6d8; font-size: 17px; letter-spacing: 0.04em; }
 .path-card .meta { font-size: 13px; color: var(--ash-dim); }
 .path-card .diff { color: var(--gold); letter-spacing: 2px; }
@@ -224,16 +245,16 @@ label { display: block; margin: 10px 0; color: var(--ash-dim); font-size: 16px; 
 .facts { display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; font-size: 15px; margin: 8px 0; }
 .facts dt { color: var(--ash-dim); }
 .facts dd { margin: 0; color: #e4dbcd; }
-.skill-row { display: grid; grid-template-columns: 44px 1fr; gap: 10px; align-items: center; padding: 5px 0; border-top: 1px solid #221d20; }
-.skill-row .ink-icon { width: 44px; height: 44px; }
+.skill-row { display: grid; grid-template-columns: 48px 1fr; gap: 10px; align-items: center; padding: 5px 0; border-top: 1px solid #221d20; }
+.skill-row .px-icon { width: 48px; height: 48px; }
 .skill-row b { color: #efe6d8; font-weight: 600; }
 .skill-row .sd { font-size: 14px; color: var(--ash); }
 .skill-row .sm { font-size: 13px; color: var(--ash-dim); }
 .skill-row.locked { opacity: 0.55; }
 .weapon-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 8px; }
-.weapon-card { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px; font-size: 14px; line-height: 1.15; }
+.weapon-card { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 2px; padding: 8px 4px; min-height: 96px; font-size: 14px; line-height: 1.15; }
 .weapon-card { min-width: 0; overflow: hidden; }
-.weapon-card canvas { max-width: 92%; max-height: 40px; image-rendering: pixelated; }
+.weapon-card canvas { image-rendering: pixelated; margin: 2px 0; }
 .weapon-card .home { font-size: 11px; color: var(--gold); letter-spacing: 0.06em; }
 .weapon-card.on { border-color: var(--vermilion); background: rgba(120, 20, 14, 0.35); color: #fff; }
 .look-row { margin: 10px 0; }
@@ -246,33 +267,44 @@ label { display: block; margin: 10px 0; color: var(--ash-dim); font-size: 16px; 
 .create-foot { grid-column: 1 / -1; display: flex; align-items: flex-end; gap: 12px; border-top: 1px solid #2c2629; padding-top: 10px; }
 .create-foot .name-field { flex: 1; margin: 0; }
 .create-foot button { min-width: 150px; }
-.lobby-card { display: grid; grid-template-columns: 64px 1fr; gap: 12px; align-items: center; padding: 10px; border: 1px solid #2c2629; margin: 10px 0 6px; }
-.lobby-card .ink-icon { width: 64px; height: 64px; }
+.lobby-card { display: grid; grid-template-columns: 72px 1fr; gap: 12px; align-items: center; padding: 10px; border: 1px solid #2c2629; margin: 10px 0 6px; }
+.lobby-card .px-icon { width: 72px; height: 72px; }
 .lobby-card b { font-family: var(--title); font-weight: 500; font-size: 20px; color: #efe6d8; }
 .lobby button { width: 100%; margin-top: 10px; }
 #lobby-back { background: transparent; }
 
-/* Skill bar icons. */
-.skill .ink-icon { position: absolute; inset: 4px; width: calc(100% - 8px); height: calc(100% - 8px); opacity: 0.95; image-rendering: pixelated; }
-.skill .name { position: relative; z-index: 1; text-shadow: 0 1px 2px #000, 0 0 3px #000; align-self: flex-end; }
-.ink-icon { image-rendering: pixelated; }
+/* Pixel icons: 24 px drawn at exactly 2× (3× in the lobby card), never blurred or stretched. */
+.px-icon { width: 48px; height: 48px; image-rendering: pixelated; flex: none; }
+.skill .px-icon { position: absolute; left: 3px; top: 3px; }
+.px-weapon { image-rendering: pixelated; }
 
 /* Mastery panel (K). */
-#mastery { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(820px, calc(100vw - 32px)); max-height: calc(100vh - 40px); overflow: auto; }
+#mastery { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(820px, calc(100vw - 32px)); max-height: calc(100vh - 40px); overflow: auto; z-index: 5;
+  background: linear-gradient(rgba(16, 13, 15, 0.98), rgba(10, 8, 9, 0.99));
+  /* A fade at the bottom edge says there's more to scroll. */
+  -webkit-mask-image: linear-gradient(#000 calc(100% - 28px), rgba(0, 0, 0, 0.35)); }
+#mastery .m-head { position: sticky; top: -22px; z-index: 1; background: rgb(15, 12, 14); padding-top: 4px; }
 #mastery .m-head { display: flex; justify-content: space-between; align-items: baseline; }
 #mastery .xp { height: 8px; background: rgba(0, 0, 0, 0.6); border: 1px solid #2a2326; margin: 6px 0 10px; }
 #mastery .xp i { display: block; height: 100%; background: linear-gradient(90deg, #8a6420, #d8b050); }
 #mastery .tree { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 18px; }
-#mastery .pick { display: grid; grid-template-columns: 40px 1fr; gap: 8px; align-items: center; text-align: left; padding: 6px 8px; margin: 0 0 6px; font-size: 14px; line-height: 1.2; width: 100%; }
-#mastery .pick .ink-icon { width: 40px; height: 40px; }
+#mastery .pick { display: grid; grid-template-columns: 48px 1fr; gap: 8px; align-items: center; text-align: left; padding: 6px 8px; margin: 0 0 6px; font-size: 14px; line-height: 1.2; width: 100%; }
+#mastery .pick .px-icon { width: 48px; height: 48px; }
 #mastery .pick.on { border-color: var(--vermilion); background: rgba(120, 20, 14, 0.35); }
 #mastery .pick.lock { opacity: 0.45; cursor: default; }
+#mastery .pick.frozen, #mastery .prow button.frozen { opacity: 0.8; cursor: default; }
+#mastery .pick.frozen.on, #mastery .prow button.frozen.on { opacity: 1; }
+#mastery h3 { font-family: var(--title); font-weight: 500; color: var(--text-hi); font-size: 19px; letter-spacing: 0.06em; margin: 16px 0 8px; }
+#mastery .m-help { margin: 0 0 8px; }
 #mastery .prow { display: grid; grid-template-columns: 54px 1fr 1fr; gap: 6px; align-items: stretch; margin-bottom: 6px; }
 #mastery .prow .lvl { color: var(--gold); font-size: 14px; align-self: center; }
 #mastery .prow button { margin: 0; text-align: left; font-size: 13px; padding: 6px 8px; line-height: 1.2; }
 #mastery .prow button b { display: block; font-size: 14px; color: #efe6d8; }
 #mastery .prow button.on { border-color: var(--vermilion); background: rgba(120, 20, 14, 0.35); }
-#mastery .prow button:disabled { opacity: 0.4; }
+#mastery .prow button:disabled { opacity: 1; }
+#mastery .prow button.lock { opacity: 0.4; }
+#mastery .prow button.lock::after { content: "zablokowane"; display: block; font-size: 11px; color: var(--gold); letter-spacing: 0.06em; margin-top: 2px; }
+#mastery .prow button { color: var(--ash); }
 #mastery .wsel { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0 12px; }
 #mastery .wsel button { padding: 5px 9px; font-size: 14px; margin: 0; width: auto; }
 #mastery .wsel button.on { border-color: var(--vermilion); color: #fff; }

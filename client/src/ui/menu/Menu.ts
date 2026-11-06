@@ -19,9 +19,9 @@ import {
   type WeaponDef,
   type WeaponId,
 } from "@broken-ash/shared";
-import { ACCENTS, enso, inkCanvas, stroke, splatter } from "../../fx/ink/ink";
+import { ACCENTS } from "../../fx/accents";
 import { $, el, escapeHtml, tooltip } from "../dom";
-import { skillIcon } from "../icons";
+import { logoMark, skillIcon } from "../pixelIcons";
 import { currentCharacter, deleteCharacter, listCharacters, newCharacter, saveCharacter, selectCharacter, type SavedCharacter } from "./characters";
 import { Preview, type PreviewMode } from "./Preview";
 
@@ -109,12 +109,8 @@ export class Menu {
   // ----------------------------------------------------------------------------- title
 
   private paintLogo() {
-    // One wide brush stroke and an open enso behind the name, in vermilion-hearted ink.
-    const pts = [];
-    for (let i = 0; i <= 20; i++) pts.push({ x: -110 + i * 11, y: Math.sin(i / 3) * 3 + i * 0.6 });
-    const dabs = [...stroke(pts, 9, { seed: 4, dry: 0.45, press: 0.06 }), ...enso(-80, -2, 34, 30, 4, 0.8, 7, Math.PI * 1.7), ...splatter(110, 10, 10, 12, 3)];
-    const c = inkCanvas(dabs, 0xc0301c);
-    $("logo-ink").replaceChildren(c);
+    // A crisp pixel mark (an open enso with a slash) beside the name, at a whole-pixel scale.
+    $("logo-ink").replaceChildren(logoMark());
   }
 
   private wireTitle() {
@@ -454,10 +450,14 @@ export class Menu {
     }
   }
 
-  /** A weapon's sprite (lying flat, in the trim dye) for its card. */
+  /**
+   * A weapon's icon for its card: the in-hand sprite turned to point up-right (as icons do), in the
+   * look's dyes, shown at a whole-pixel scale so its pixels stay square.
+   */
   private weaponCanvas(id: WeaponId): HTMLCanvasElement {
     const c = document.createElement("canvas");
-    const f = this.gear?.frames[`w/${WEAPON_SPRITE[id]}/${id === "bow" ? 8 : 0}`];
+    // Gear angles: 32 steps from +x, clockwise on screen; frame 28 points up-right (−45°).
+    const f = this.gear?.frames[`w/${WEAPON_SPRITE[id]}/${id === "bow" ? 0 : 28}`];
     if (!this.gear || !f) {
       c.width = c.height = 1;
       return c;
@@ -465,8 +465,11 @@ export class Menu {
     const r = f.frame;
     c.width = r.w;
     c.height = r.h;
-    // Shown at twice its pixel size (like everything else), shrunk only if the card is narrower.
-    c.style.width = `${r.w * 2}px`;
+    // The biggest whole-pixel scale that fits a 64 px box (tiny talismans and knives get 4×).
+    const scale = Math.max(1, Math.min(4, Math.floor(64 / Math.max(r.w, r.h))));
+    c.style.width = `${r.w * scale}px`;
+    c.style.height = `${r.h * scale}px`;
+    c.className = "px-weapon";
     const ctx = c.getContext("2d")!;
     ctx.drawImage(this.gear.img, r.x, r.y, r.w, r.h, 0, 0, r.w, r.h);
     const d = ctx.getImageData(0, 0, r.w, r.h);

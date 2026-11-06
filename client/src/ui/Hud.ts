@@ -1,7 +1,7 @@
 import { PATHS, STATUS_INFO, type PathId, type SkillDef, type StatusId } from "@broken-ash/shared";
 import { $, el } from "./dom";
-import { skillIcon } from "./icons";
-import { ACCENTS } from "../fx/ink/ink";
+import { skillIcon } from "./pixelIcons";
+import { ACCENTS } from "../fx/accents";
 
 const KEYS = ["LPM", "PPM", "1", "2", "3", "4"];
 
@@ -22,6 +22,7 @@ export interface MeView {
 
 /** The DOM HUD: your bars and skill bar, your partner, the boss, being downed. */
 export class Hud {
+  private firstSeen: number | undefined;
   private slots: HTMLElement[] = [];
   private path: PathId | null = null;
   private skills: SkillDef[] = [];
@@ -49,6 +50,9 @@ export class Hud {
   }
 
   updateMe(v: MeView) {
+    // The key hints are for the first minute; after that they only crowd the screen.
+    this.firstSeen ??= performance.now();
+    if (performance.now() - this.firstSeen > 60_000) $("hint").classList.add("faded");
     const p = this.path ? PATHS[this.path] : null;
     const hp = document.querySelector<HTMLElement>("#me .bar.hp")!;
     (hp.querySelector(".fill") as HTMLElement).style.width = `${(100 * v.hp) / Math.max(1, v.hpMax)}%`;
