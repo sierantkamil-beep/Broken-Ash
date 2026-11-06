@@ -25,7 +25,7 @@ OUT = os.path.join(ROOT, "client", "public", "assets", "chars")
 CACHE = os.path.join(os.path.dirname(__file__), ".cache", "chars")
 PATHS = ["thorn", "bark", "blood", "ash", "storm", "graves", "dusk", "sting"]
 BODIES = ["male", "female"]
-GREYED = ["shambler", "runner", "bloated", "tapper"]
+GREYED = ["shambler", "runner", "bloated", "tapper", "miner", "drowned", "eater", "crossbow", "manatarms"]
 # Render order: two sets to test with first, then the enemies, then everything else.
 ORDER = [("thorn", "male"), ("blood", "female")] + [(g, "greyed") for g in GREYED] + [(p, b) for p in PATHS for b in BODIES if (p, b) not in (("thorn", "male"), ("blood", "female"))]
 FRAME = (230, 250, 0.95)

@@ -38,6 +38,7 @@ import {
   tickProjectiles,
   tickStatuses,
   tickZones,
+  releaseGrab,
   type Arena,
   type Projectile,
   type Zone,
@@ -83,6 +84,8 @@ export class World implements Arena {
   readonly players = new Map<string, PlayerSim>();
   readonly units = new Map<string, UnitSim>();
   projectiles: Projectile[] = [];
+  /** Where the dead lie (corpse-eaters go for them), newest last. */
+  corpses: { id: string; x: number; y: number }[] = [];
   zones: Zone[] = [];
   fx: FxEvent[] = [];
   time = 0;
@@ -458,6 +461,11 @@ export class World implements Arena {
     const u = victim as UnitSim;
     u.dead = true;
     const pos = u.pos();
+    if (u.grabbed) releaseGrab(this, u);
+    if (u.kind !== "thrall") {
+      this.corpses.push({ id: u.id, x: pos.x, y: pos.y });
+      if (this.corpses.length > 80) this.corpses.shift();
+    }
     const lh = u.lastHit;
     this.fx.push({
       t: "death",

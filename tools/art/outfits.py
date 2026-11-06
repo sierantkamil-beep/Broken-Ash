@@ -704,11 +704,71 @@ GREYED_SHAPES = {
     "runner": dict(sex="female", shape={"muscle": {"minmuscle": 0.6, "averagemuscle": 0.4}, "weight": {"minweight": 1.0}, "height": 0.4}, scale=0.98),
     "bloated": dict(sex="male", shape={"muscle": {"minmuscle": 0.5, "averagemuscle": 0.5}, "weight": {"maxweight": 1.0}, "height": 0.1}, scale=1.05),
     "tapper": dict(sex="male", shape={"muscle": {"maxmuscle": 1.0}, "weight": {"maxweight": 0.6, "averageweight": 0.4}, "height": 1.0}, scale=1.32),
+    # Act 1's mine and road.
+    "miner": dict(sex="male", shape={"muscle": {"maxmuscle": 0.6, "averagemuscle": 0.4}, "weight": {"averageweight": 1.0}, "height": 0.2}, scale=1.0),
+    "drowned": dict(sex="female", shape={"muscle": {"minmuscle": 1.0}, "weight": {"minweight": 0.6, "averageweight": 0.4}, "height": 0.5}, scale=1.0),
+    "eater": dict(sex="male", shape={"muscle": {"minmuscle": 1.0}, "weight": {"minweight": 1.0}, "height": 1.0}, scale=1.08),
+    # Humans of the Iron March: alive, European, armoured.
+    "crossbow": dict(sex="male", shape={"muscle": {"averagemuscle": 1.0}, "weight": {"averageweight": 1.0}, "height": 0.6}, scale=1.0),
+    "manatarms": dict(sex="male", shape={"muscle": {"maxmuscle": 0.7, "averagemuscle": 0.3}, "weight": {"averageweight": 1.0}, "height": 0.7}, scale=1.04),
 }
+
+# Which kinds are living humans (pink skin, no stoop, no rot) rather than the Greyed.
+HUMANS = {"crossbow", "manatarms"}
+
+
+def build_human(r, kind):
+    """
+    An Iron March soldier: ruddy European skin, a padded gambeson, a steel kettle hat. The crossbowman
+    carries his crossbow; the man-at-arms wears plate over mail with a kite shield and an arming sword.
+    """
+    r["body"].data.materials.append(skin_material("#c8907a"))
+    for e in r["eyes"]:
+        e.data.materials.append(material("eye_human", srgb("#e8e4dc"), 0.2))
+    gambeson = cloth("gambeson", "#7a6a4e", "#4e4232", rough=0.9, scale=40.0, bump=0.5)
+    hose = cloth("hose", "#3a3028", "#241e18", rough=0.9)
+    steel = metal("march_steel", "#8a8e94", 0.3)
+    region_shell(r, THIGH + SHIN + ("pelvis", "root"), "hose", hose, offset=0.006, thickness=0.004, zmin=0.08)
+    region_shell(r, FOOT, "boots", leather("boots", "#2a1e14", "#1a120c"), offset=0.008, thickness=0.006)
+    region_shell(r, TORSO + UPPERARM, "gambeson", gambeson, offset=0.014, thickness=0.01)
+    hair(r, "crop", "#5a4030", count=160, seed=31)
+    # Kettle hat: a steel dome with a wide brim.
+    head_c = bone_head(r, "head") + Vector((0, 0, 0.11))
+    dome = sphere("kettle_dome", 0.105, head_c + Vector((0, 0, 0.02)), steel, scale=(1, 1, 0.8))
+    brim = cyl("kettle_brim", 0.155, 0.155, 0.015, head_c + Vector((0, 0, -0.03)), steel, segs=24)
+    for o in (dome, brim):
+        attach(r, o, "head")
+    if kind == "crossbow":
+        stock = box("xbow_stock", (0.05, 0.05, 0.62), (0, 0, 0.12), lacquer("xbow_wood", "#4a3220"))
+        limbs = box("xbow_limbs", (0.62, 0.035, 0.04), (0, 0, 0.36), steel)
+        hold(r, join([stock, limbs], "crossbow"), "R")
+        # A quiver of bolts at the hip.
+        hip = bone_head(r, "upperleg01.L")
+        q = cyl("quiver", 0.05, 0.05, 0.36, hip + Vector((0.1, 0.06, 0.1)), leather("quiver", "#3a2a1a"), segs=10)
+        attach(r, q, "upperleg01.L")
+    else:
+        plate_m = metal("march_plate", "#9a9ea4", 0.25)
+        region_shell(r, TORSO, "breastplate", plate_m, offset=0.03, thickness=0.01, thresh=0.5, zmin=0.9)
+        region_shell(r, UPPERARM + LOWERARM, "vambrace", plate_m, offset=0.02, thickness=0.008, thresh=0.5)
+        region_shell(r, THIGH + SHIN, "greaves", plate_m, offset=0.02, thickness=0.008, thresh=0.5)
+        sword = join([box("sword_blade", (0.012, 0.05, 0.75), (0, 0, 0.42), steel),
+                      box("sword_guard", (0.03, 0.22, 0.03), (0, 0, 0.04), steel),
+                      cyl("sword_grip", 0.02, 0.02, 0.16, (0, 0, -0.06), leather("sword_grip", "#2a1a10"), segs=8)], "arming_sword")
+        hold(r, sword, "R")
+        # A kite shield on the left forearm, painted in the Margrave's black and gold.
+        sh = box("kite_shield", (0.04, 0.42, 0.66), (0, 0, 0), material("shield_paint", srgb("#1a1a1e"), 0.5))
+        boss = sphere("shield_boss", 0.05, (0.03, 0, 0.08), metal("shield_gold", "#b08a3e", 0.3))
+        shield = join([sh, boss], "kite")
+        fa = bone_head(r, "lowerarm01.L")
+        shield.location = fa + Vector((0.12, -0.06, -0.12))
+        bpy.context.view_layer.update()
+        attach(r, shield, "lowerarm01.L")
 
 
 def build_greyed(r, kind):
     """Dresses a Greyed: ash skin, rotten rags, wounds; the Tapper gets his apron, sap tank and cleaver."""
+    if kind in HUMANS:
+        return build_human(r, kind)
     ash_skin = material("greyed_skin", srgb("#8c908a"), 0.6, srgb("#5e625c"), 18.0, sss=0.1, bump=0.4)
     rot = cloth("rags", "#3a3430", "#1e1a18", rough=0.95, scale=30.0, bump=0.5)
     blood = material("old_blood", srgb("#3a0606"), 0.3, srgb("#1a0202"), 12.0, coat=0.4)
@@ -722,6 +782,28 @@ def build_greyed(r, kind):
     region_shell(r, TORSO + UPPERARM, "wounds", blood, offset=0.012, thickness=0.0, thresh=0.5, keep=lambda co: (int(co.x * 53) * 7 + int(co.z * 41) * 3) % 11 == 0)
     if kind == "runner":
         hair(r, "loose", "#5a5a56", length=0.35, count=200, seed=21)
+        # Once a keep guard: broken red lamellar and a cracked helmet.
+        region_shell(r, TORSO, "guard_lamellar", lamellar("greyed_guard", "#5a1410", "#2a0a08", "#8a6a3a"), offset=0.02, thickness=0.008, thresh=0.5, keep=lambda co: (int(co.x * 31) + int(co.z * 17)) % 4 != 0)
+    elif kind == "miner":
+        hair(r, "crop", "#3a3a36", count=150, seed=23)
+        # A leather cap with a lamp still burning on it, a pickaxe in both hands.
+        cap = sphere("miner_cap", 0.12, bone_head(r, "head") + Vector((0, 0, 0.12)), leather("miner_cap", "#3a2a1a"), scale=(1, 1, 0.6))
+        lamp = sphere("miner_lamp", 0.04, bone_head(r, "head") + Vector((0, -0.11, 0.14)), material("lamp", srgb("#ffd890"), 0.3, emission=srgb("#ffb050"), emission_strength=8))
+        for o in (cap, lamp):
+            attach(r, o, "head")
+        pick = join([cyl("pick_handle", 0.022, 0.022, 0.8, (0, 0, 0.1), lacquer("pick_wood", "#5a4028"), segs=8),
+                     box("pick_head", (0.03, 0.46, 0.05), (0, 0.0, 0.48), metal("pick_iron", "#4a4440", 0.5))], "pickaxe")
+        hold(r, pick, "R")
+    elif kind == "drowned":
+        hair(r, "loose", "#2a3428", length=0.6, count=220, seed=24)
+        # Drowned in sap: amber dripping from the hair and down the body, glowing faintly.
+        sap = material("sap_amber", srgb("#c87818"), 0.15, srgb("#7a4008"), 8.0, coat=0.9, emission=srgb("#a85a08"), emission_strength=0.8)
+        region_shell(r, TORSO + UPPERARM + THIGH, "sap_coat", sap, offset=0.011, thickness=0.0, thresh=0.4, keep=lambda co: (int(co.x * 29) * 5 + int(co.z * 37)) % 3 == 0)
+    elif kind == "eater":
+        # Gaunt, shirtless, blood to the elbows and down the chin and chest.
+        fresh = material("fresh_blood", srgb("#6a0a0a"), 0.25, srgb("#3a0404"), 10.0, coat=0.7)
+        region_shell(r, LOWERARM + HAND, "gore_arms", fresh, offset=0.006, thickness=0.0, thresh=0.4)
+        region_shell(r, TORSO, "gore_chest", fresh, offset=0.012, thickness=0.0, thresh=0.5, zmin=1.15)
     elif kind == "shambler":
         hair(r, "crop", "#4a4a46", count=180, seed=22)
     if kind == "tapper":

@@ -31,8 +31,15 @@ PATH_MOTIONS = {
     "runner": ("lunge", "lunge", "lunge"),
     "bloated": ("slam_hands", "slam_hands", "slam_hands"),
     "tapper": ("heavy", "sweep", "slam"),
+    "miner": ("heavy", "heavy", "slam"),
+    "drowned": ("claw", "lunge", "claw"),
+    "eater": ("claw", "lunge", "slam_hands"),
+    # Iron March humans: a crossbow shot, a sword cut and a shield bash.
+    "crossbow": ("bow", "bow", "throw"),
+    "manatarms": ("slash", "heavy", "lunge"),
 }
-GREYED = {"shambler", "runner", "bloated", "tapper"}
+# The dead stoop and reach; the living stand straight (the Iron March humans).
+GREYED = {"shambler", "runner", "bloated", "tapper", "miner", "drowned", "eater"}
 
 
 def ease(t):

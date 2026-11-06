@@ -1,6 +1,10 @@
 import type { Shape, StatusId } from "../combat/types.js";
 
-export type GreyedKind = "shambler" | "runner" | "bloated" | "tapper";
+/**
+ * Every enemy kind. The Greyed are the risen dead (they wear what they wore in life: peasants, keep
+ * guards, miners, the drowned); the Iron March are living humans from the south.
+ */
+export type GreyedKind = "shambler" | "runner" | "bloated" | "tapper" | "miner" | "drowned" | "eater" | "crossbow" | "manatarms";
 
 export interface EnemyAttack {
   id: string;
@@ -14,6 +18,10 @@ export interface EnemyAttack {
   cooldown: number;
   /** Which animation (attack/skill1/skill2). */
   anim: "attack" | "skill1" | "skill2";
+  /** A shot: the telegraph is the line it will fly; on release a bolt flies it (dodgeable, blocked by walls). */
+  bolt?: { speed: number; range: number; radius: number };
+  /** A grab: the victim is held (rooted) until the grabber is struck by the partner or the hold ends. */
+  grab?: boolean;
 }
 
 export interface EnemyDef {
@@ -29,6 +37,19 @@ export interface EnemyDef {
   /** Bursts on death (the Bloated). */
   deathBurst?: { radius: number; damage: number; status: StatusId; duration: number; value: number };
   boss?: boolean;
+  /** Ranged: keeps at least this far from its target, backing off when you close in. */
+  keepAway?: number;
+  /** A shield: blows from within `arc` degrees of where it faces lose `cut` of their damage (not while staggered). */
+  shield?: { arc: number; cut: number };
+  /** Eats the dead to heal and grow, when no one is within reach. */
+  eatsCorpses?: boolean;
+  /** Living humans (blood, not ash; they don't rise). */
+  human?: boolean;
+  /**
+   * Boss phases, crossed as health falls: a banner, then a heal channelled over a few seconds
+   * and/or a rage that speeds every wind-up and cooldown.
+   */
+  phases?: { at: number; title: string; sub: string; heal?: number; rage?: number }[];
 }
 
 /**
@@ -81,6 +102,87 @@ export const GREYED: Record<GreyedKind, EnemyDef> = {
       { id: "chop", windup: 0.9, shape: { kind: "cone", range: 3, arc: 70 }, damage: 34, status: { id: "bleed", duration: 4, value: 4 }, range: 2.6, cooldown: 2.4, anim: "attack" },
       { id: "sweep", windup: 1.2, shape: { kind: "cone", range: 3.4, arc: 220 }, damage: 26, range: 3.0, cooldown: 6, anim: "skill1" },
       { id: "slam", windup: 1.4, shape: { kind: "circle", radius: 2.6, at: "aim", reach: 6 }, damage: 40, status: { id: "slow", duration: 2, value: 0.4 }, range: 6, cooldown: 7, anim: "skill2" },
+    ],
+    // At 60 % he stops to drink from his own pump (break it off: hit him hard); at 30 % he goes berserk.
+    phases: [
+      { at: 0.6, title: "Upuszczacz pije", sub: "Wysysa żywicę z własnej pompy — przerwijcie mu!", heal: 0.12 },
+      { at: 0.3, title: "Szał Upuszczacza", sub: "Pompa rzęzi, ciosy przyspieszają", rage: 0.65 },
+    ],
+  },
+  miner: {
+    kind: "miner",
+    name: "Szary górnik",
+    // Slow and heavy: a pickaxe that hits like a cart.
+    hp: 140,
+    speed: 1.25,
+    radius: 0.38,
+    poise: 80,
+    aggro: 12,
+    attacks: [
+      { id: "pick", windup: 1.0, shape: { kind: "line", length: 2.0, width: 1.1 }, damage: 26, status: { id: "bleed", duration: 3, value: 3 }, range: 1.7, cooldown: 2.0, anim: "attack" },
+      { id: "quake", windup: 1.3, shape: { kind: "circle", radius: 1.8, at: "self" }, damage: 16, status: { id: "slow", duration: 2, value: 0.35 }, range: 1.4, cooldown: 6, anim: "skill2" },
+    ],
+  },
+  drowned: {
+    kind: "drowned",
+    name: "Utopiec soków",
+    // The drowned grab and hold: alone you're stuck, together you free each other.
+    hp: 95,
+    speed: 1.7,
+    radius: 0.34,
+    poise: 40,
+    aggro: 13,
+    attacks: [
+      { id: "grab", windup: 0.8, shape: { kind: "line", length: 1.9, width: 0.8 }, damage: 8, status: { id: "rooted", duration: 3.5 }, range: 1.6, cooldown: 5, anim: "skill1", grab: true },
+      { id: "claw", windup: 0.65, shape: { kind: "cone", range: 1.5, arc: 90 }, damage: 12, status: { id: "poison", duration: 3, value: 2 }, range: 1.3, cooldown: 1.4, anim: "attack" },
+    ],
+  },
+  eater: {
+    kind: "eater",
+    name: "Pożeracz",
+    // Fast and frail; leave bodies lying about and it grows into a problem.
+    hp: 70,
+    speed: 2.6,
+    radius: 0.33,
+    poise: 30,
+    aggro: 14,
+    eatsCorpses: true,
+    attacks: [
+      { id: "bite", windup: 0.5, shape: { kind: "cone", range: 1.4, arc: 70 }, damage: 13, status: { id: "bleed", duration: 4, value: 3 }, range: 1.2, cooldown: 1.2, anim: "attack" },
+      { id: "leap", windup: 0.6, shape: { kind: "line", length: 3.0, width: 0.9 }, damage: 15, range: 2.8, cooldown: 4.5, anim: "skill1" },
+    ],
+  },
+  crossbow: {
+    kind: "crossbow",
+    name: "Kusznik Żelaznej Marchii",
+    // Shoots from range and backs away: close the gap, or dodge the bolt's line.
+    hp: 75,
+    speed: 1.9,
+    radius: 0.34,
+    poise: 35,
+    aggro: 15,
+    human: true,
+    keepAway: 4.5,
+    attacks: [
+      { id: "shot", windup: 1.1, shape: { kind: "line", length: 11, width: 0.6 }, damage: 24, range: 10, cooldown: 2.6, anim: "attack", bolt: { speed: 22, range: 11, radius: 0.25 } },
+      { id: "kick", windup: 0.5, shape: { kind: "cone", range: 1.3, arc: 80 }, damage: 9, status: { id: "slow", duration: 1.5, value: 0.3 }, range: 1.0, cooldown: 3, anim: "skill2" },
+    ],
+  },
+  manatarms: {
+    kind: "manatarms",
+    name: "Zbrojny Żelaznej Marchii",
+    // Plate and a kite shield: blows to the front glance off; flank him or break his poise.
+    hp: 170,
+    speed: 1.45,
+    radius: 0.4,
+    poise: 110,
+    aggro: 13,
+    human: true,
+    shield: { arc: 110, cut: 0.7 },
+    attacks: [
+      { id: "cut", windup: 0.7, shape: { kind: "cone", range: 1.8, arc: 90 }, damage: 18, range: 1.5, cooldown: 1.5, anim: "attack" },
+      { id: "thrust", windup: 0.9, shape: { kind: "line", length: 2.6, width: 0.7 }, damage: 24, status: { id: "bleed", duration: 3, value: 3 }, range: 2.2, cooldown: 4, anim: "skill2" },
+      { id: "bash", windup: 0.6, shape: { kind: "cone", range: 1.4, arc: 70 }, damage: 10, status: { id: "slow", duration: 1.5, value: 0.4 }, range: 1.1, cooldown: 5, anim: "skill1" },
     ],
   },
 };

@@ -20,6 +20,10 @@ export type FxEvent =
   | { t: "bolt"; id: number; skill: string; vfx: string; x: number; y: number; aim: number; speed: number; range: number; radius: number; owner: string }
   /** An enemy's blow landing: which attack, from where, which way (and the spot, for aimed slams). */
   | { t: "unitAtk"; id: string; kind: string; atk: string; aim: number; x: number; y: number; ax: number; ay: number }
+  /** A boss crossed into a new phase (a banner and a roar). */
+  | { t: "phase"; id: string; title: string; sub: string }
+  /** A corpse was eaten (it's gone; blood where it lay). */
+  | { t: "eaten"; id: string; by: string; x: number; y: number }
   /** A bolt stopped (hit, wall or end of range) at this point. */
   | { t: "boltEnd"; id: number; x: number; y: number }
   | { t: "zone"; skill: string; vfx: string; x: number; y: number; radius: number; duration: number; owner: string }
@@ -32,7 +36,7 @@ export type FxEvent =
    * (unit vector, so blood and sparks fly the right way), `cause` how it was dealt, `det` a status
    * the blow detonated.
    */
-  | { t: "hit"; id: string; amount: number; kind: "damage" | "dot" | "heal" | "shield"; status?: string; big?: boolean; src?: string; dx?: number; dy?: number; cause?: HitCause; det?: string }
+  | { t: "hit"; id: string; amount: number; kind: "damage" | "dot" | "heal" | "shield"; status?: string; big?: boolean; src?: string; dx?: number; dy?: number; cause?: HitCause; det?: string; blk?: boolean }
   /** `ok` is the overkill as a share of max health; with (dx, dy) and `cause` it picks the gore. */
   | { t: "death"; id: string; gore: boolean; x: number; y: number; dx?: number; dy?: number; cause?: HitCause; ok?: number; kind?: string }
   | { t: "burst"; x: number; y: number; radius: number }

@@ -54,6 +54,8 @@ export interface Zone {
 /** What the combat rules need from the world. */
 export interface Arena {
   time: number;
+  /** Where the dead lie (for corpse-eaters), newest last. */
+  corpses: { id: string; x: number; y: number }[];
   grid: CollisionGrid;
   players: Map<string, PlayerSim>;
   units: Map<string, UnitSim>;
@@ -181,18 +183,6 @@ export function dealDamage(a: Arena, src: Fighter | undefined, target: Fighter, 
   if (target.statuses.has("rooted")) dmg *= 1 + C.rootedBonus;
   const mark = target.statuses.get("mark");
   if (mark) dmg *= 1 + (mark.value || 0.25);
-  dmg = Math.round(dmg * 10) / 10;
-  const shield = target.statuses.get("shield");
-  if (shield && shield.value > 0) {
-    const absorbed = Math.min(shield.value, dmg);
-    shield.value -= absorbed;
-    dmg -= absorbed;
-    if (absorbed > 0) a.fx.push({ t: "hit", id: target.id, amount: Math.round(absorbed), kind: "shield" });
-  }
-  if (dmg <= 0) return 0;
-  const before = target.hp;
-  target.hp -= dmg;
-  target.sinceHit = 0;
   // Which way the blow travelled: the skill's aim, else from the attacker to the target.
   let dx = 0;
   let dy = 0;
@@ -206,6 +196,31 @@ export function dealDamage(a: Arena, src: Fighter | undefined, target: Fighter, 
     dx = (tp0.x - sp0.x) / len;
     dy = (tp0.y - sp0.y) / len;
   }
+  // A shield turns blows that come from the front (not damage over time, not while staggered).
+  const tu = target as UnitSim;
+  let blocked = false;
+  if (tu.def?.shield && !opts.dot && target.staggerT <= 0 && (dx || dy)) {
+    const towards = Math.atan2(-dy, -dx);
+    const off = Math.abs(Math.atan2(Math.sin(towards - tu.facing), Math.cos(towards - tu.facing)));
+    if (off <= (tu.def.shield.arc * Math.PI) / 360) {
+      dmg *= 1 - tu.def.shield.cut;
+      blocked = true;
+    }
+  }
+  // Striking a grabber frees whoever it holds (the partner's job: "together you free each other").
+  if (tu.grabbed && src && src.id !== tu.grabbed && !opts.dot) releaseGrab(a, tu);
+  dmg = Math.round(dmg * 10) / 10;
+  const shield = target.statuses.get("shield");
+  if (shield && shield.value > 0) {
+    const absorbed = Math.min(shield.value, dmg);
+    shield.value -= absorbed;
+    dmg -= absorbed;
+    if (absorbed > 0) a.fx.push({ t: "hit", id: target.id, amount: Math.round(absorbed), kind: "shield" });
+  }
+  if (dmg <= 0) return 0;
+  const before = target.hp;
+  target.hp -= dmg;
+  target.sinceHit = 0;
   const cause: HitCause = opts.cause ?? (opts.dot ? DOT_CAUSE[opts.dot] ?? "blood" : opts.fire ? "fire" : "cut");
   target.lastHit = { dx, dy, cause };
   a.fx.push({
@@ -220,6 +235,7 @@ export function dealDamage(a: Arena, src: Fighter | undefined, target: Fighter, 
     dy: Math.round(dy * 100) / 100,
     cause,
     det: opts.det,
+    blk: blocked || undefined,
   });
 
   // Poise: enough heavy hits stagger (and expose to an execution).
@@ -361,6 +377,26 @@ function isOnce(e: Effect): boolean {
 }
 
 let boltIds = 0;
+
+/** A grab ends: the held fighter is free to move again. */
+export function releaseGrab(a: Arena, u: UnitSim) {
+  const held = u.grabbed ? fighterById(a, u.grabbed) : undefined;
+  if (held) held.statuses.delete("rooted");
+  u.grabbed = undefined;
+}
+
+/** An enemy's shot: a bolt like a player's, flying the telegraphed line (dodge it, or hide behind a wall). */
+export function spawnUnitBolt(a: Arena, u: UnitSim, at: { id: string; damage: number; bolt?: { speed: number; range: number; radius: number }; status?: { id: StatusId; duration: number; value?: number } }) {
+  const b = at.bolt!;
+  const effects: Effect[] = [{ kind: "damage", amount: at.damage }];
+  if (at.status) effects.push({ kind: "status", status: at.status.id, duration: at.status.duration, value: at.status.value });
+  const skill = { id: `${u.kind}_${at.id}`, name: at.id, description: "", cooldown: 0, cost: 0, windup: 0, shape: { kind: "projectile", speed: b.speed, range: b.range, radius: b.radius }, effects, vfx: "ink_arrow_heavy", sfx: "bow_heavy" } as unknown as SkillDef;
+  const id = (boltIds = (boltIds + 1) % 1e9);
+  const sx = u.x + Math.cos(u.aim) * 0.5;
+  const sy = u.y + Math.sin(u.aim) * 0.5;
+  a.projectiles.push({ id, x: sx, y: sy, dx: Math.cos(u.aim), dy: Math.sin(u.aim), speed: b.speed, left: b.range, radius: b.radius, pierce: false, hit: new Set(), src: u.id, faction: u.faction, skill });
+  a.fx.push({ t: "bolt", id, skill: skill.id, vfx: skill.vfx, x: sx, y: sy, aim: u.aim, speed: b.speed, range: b.range, radius: b.radius, owner: u.id });
+}
 
 function spawnBolts(a: Arena, p: PlayerSim, skill: SkillDef, aim: number) {
   const s = skill.shape as Extract<Shape, { kind: "projectile" }>;

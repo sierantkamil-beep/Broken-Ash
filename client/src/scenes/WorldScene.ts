@@ -227,7 +227,7 @@ export class WorldScene extends Phaser.Scene {
     });
 
     // Preload the enemies' atlases in the background.
-    for (const k of ["shambler", "runner", "bloated", "tapper"]) void ensureAtlas(this, greyedKey(k));
+    for (const k of Object.keys(GREYED)) void ensureAtlas(this, greyedKey(k));
 
     // Title screen: the courtyard at night behind the menu.
     this.audio.playMusic("music_soramei_night", 4000);
@@ -482,6 +482,8 @@ export class WorldScene extends Phaser.Scene {
       u.update(time, delta);
       // A faint cold glow on each of the dead, so grey bodies on grey stone still read at night.
       lights.push({ x: u.screen.x, y: u.screen.y - 30, radius: u.view.kind === "tapper" ? 240 : 150, color: 0x9aa4b8, intensity: 0.28, seed: 3 });
+      // The Greyed miner still wears his burning head-lamp.
+      if (u.view.kind === "miner") lights.push({ x: u.screen.x, y: u.screen.y - 70, radius: 200, color: 0xffb050, intensity: 0.9, flicker: true, seed: 5 });
       if (u.view.kind === "tapper") boss = u.view;
       if (u.view.state === "windup" && u.view.atk) {
         const def = GREYED[(u.view.kind === "thrall" ? "shambler" : u.view.kind) as GreyedKind];

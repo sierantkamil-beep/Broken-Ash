@@ -97,6 +97,16 @@ export interface UnitSim extends Fighter {
   /** Thralls: seconds until they crumble; owner gets their drain. */
   life?: number;
   owner?: string;
+  /** A grab in progress: the id of the fighter held. */
+  grabbed?: string;
+  /** Boss phases crossed so far; a heal being channelled (seconds left, hp per second); rage (wind-up and cooldown factor). */
+  phase?: number;
+  channel?: number;
+  channelHeal?: number;
+  rage?: number;
+  /** Eating a corpse: which, and for how long so far. */
+  eating?: string;
+  eatT?: number;
 }
 
 export function fighterPos(this: { body?: Body; x?: number; y?: number }) {

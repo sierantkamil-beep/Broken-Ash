@@ -6,7 +6,7 @@
 ## Contents
 
 - [shared](#shared) — 22 files, 5 test files
-- [server](#server) — 10 files, 4 test files
+- [server](#server) — 10 files, 5 test files
 - [client](#client) — 35 files, 3 test files
 - [desktop](#desktop) — 3 files, 1 test files
 - [tools/catalogue](#toolscatalogue) — 1 files, 1 test files
@@ -26,7 +26,7 @@ Pure game logic and data used by server and client. No Phaser, Colyseus or Node 
 | `shared/src/combat/types.ts` | Combat data model: skills are data (shape + effects), interpreted by server/src/game/Combat.ts. | `PathId`, `BodyType`, `PeopleId`, `Faction`, `StatusId`, `Shape`, `Effect`, `SkillAnim`, `WeaponId`, `SkillDef`, `ResourceDef`, `PathDef`, `STATUS_INFO` | — |
 | `shared/src/constants.ts` | Network and simulation constants shared by server and client. | `DEFAULT_PORT`, `ROOM_NAME`, `MAX_PLAYERS`, `SIM_HZ`, `SIM_DT`, `PATCH_HZ`, `INTERP_DELAY_MS`, `MAX_NAME_LENGTH`, `MSG` | — |
 | `shared/src/data/cinematics.ts` | Prolog — plays the first time the two of you enter the Soramei courtyard. | `CINEMATICS` | `shared/src/cinematic` |
-| `shared/src/data/greyed.ts` | Telegraph time: the shape glows on the ground this long before it lands. | `GreyedKind`, `EnemyAttack`, `EnemyDef`, `GREYED`, `Wave`, `GATE_ASSAULT` | `shared/src/combat/types` |
+| `shared/src/data/greyed.ts` | Every enemy kind. | `GreyedKind`, `EnemyAttack`, `EnemyDef`, `GREYED`, `Wave`, `GATE_ASSAULT` | `shared/src/combat/types` |
 | `shared/src/data/looks.ts` | How a path dresses the shared male/female body (a "look"): colour ramps, dark to light, that replace the body's cloth and leather-trim colours. | `Look`, `PATH_LOOKS`, `DYES`, `SKIN_TONES`, `ArmourId`, `HeadId`, `ShoulderId`, `ARMOURS`, `HEADS`, `SHOULDERS`, `CharacterLook`, `DEFAULT_LOOKS`, `validLook` | `shared/src/combat/types` |
 | `shared/src/data/paths.ts` | The eight paths (design.md §4): 2 melee, 4 magic, 2 ranged. | `PATHS`, `PATH_IDS`, `PEOPLES` | `shared/src/combat/build`, `shared/src/combat/types` |
 | `shared/src/data/props.ts` | Prop catalogue: gameplay facts only (footprint, what blocks, lights). | `PropDef`, `PROPS`, `PropKind`, `PROP_KINDS` | — |
@@ -61,6 +61,7 @@ Tests: `shared/src/cinematic.test.ts`, `shared/src/i18n.test.ts`, `shared/src/ma
 - `MAX_PLAYERS` (const, `shared/src/constants.ts`) — The game is built for exactly two players.
 - `SIM_HZ` (const, `shared/src/constants.ts`) — Fixed simulation step.
 - `PATCH_HZ` (const, `shared/src/constants.ts`) — How often the server sends state patches.
+- `GreyedKind` (type, `shared/src/data/greyed.ts`) — Every enemy kind.
 - `GREYED` (const, `shared/src/data/greyed.ts`) — The Greyed (design.md §1): the dead who rise near the roots.
 - `GATE_ASSAULT` (const, `shared/src/data/greyed.ts`) — The night of the escape: the Greyed break through Soramei's vermilion gate in waves, then the Tapper himself comes for his runaway stock.
 - `Look` (interface, `shared/src/data/looks.ts`) — How a path dresses the shared male/female body (a "look"): colour ramps, dark to light, that replace the body's cloth and leather-trim colours.
@@ -109,7 +110,7 @@ Colyseus server. `game/` is the network-free simulation; `rooms/` forwards messa
 
 | File | Purpose | Exports | Depends on |
 |---|---|---|---|
-| `server/src/game/Combat.ts` | Damage-over-time caps (dps), so stacking stays strong but bounded. | `Projectile`, `Zone`, `Arena`, `fighters`, `fighterById`, `partnerOf`, `targetable`, `foesOf`, `addStatus`, `speedOf`, `tickStatuses`, `DamageOpts`, `causeOf`, `dealDamage`, `heal`, `gainResource`, `canCast`, `startCast`, `tickCasts`, `tickProjectiles`, `gainMastery`, `push`, `tickZones`, `unitAttackHits` | `server/src/game/fighters`, @broken-ash/shared |
+| `server/src/game/Combat.ts` | Damage-over-time caps (dps), so stacking stays strong but bounded. | `Projectile`, `Zone`, `Arena`, `fighters`, `fighterById`, `partnerOf`, `targetable`, `foesOf`, `addStatus`, `speedOf`, `tickStatuses`, `DamageOpts`, `causeOf`, `dealDamage`, `heal`, `gainResource`, `canCast`, `startCast`, `tickCasts`, `releaseGrab`, `spawnUnitBolt`, `tickProjectiles`, `gainMastery`, `push`, `tickZones`, `unitAttackHits` | `server/src/game/fighters`, @broken-ash/shared |
 | `server/src/game/Pathing.ts` | Flow fields: for a goal cell, every reachable cell's walking distance to it (8-connected, no corner cutting). | `FlowField` | @broken-ash/shared |
 | `server/src/game/Profiles.ts` | What the host remembers about each character between sessions: weapon mastery, tree picks and the last weapon, path and look. | `Profile`, `Profiles` | @broken-ash/shared, node:fs, node:path |
 | `server/src/game/Units.ts` | A thrall raised by the Path of Graves: a Shambler's body fighting on the players' side. | `thrallDef`, `makeUnit`, `tickUnits` | `server/src/game/Combat`, `server/src/game/Pathing`, `server/src/game/fighters`, @broken-ash/shared |
@@ -120,7 +121,7 @@ Colyseus server. `game/` is the network-free simulation; `rooms/` forwards messa
 | `server/src/schema/WorldState.ts` | Synced player state. | `PlayerState`, `UnitState`, `WorldState` | @colyseus/schema |
 | `server/src/startServer.ts` | Where the host keeps saved characters (the desktop app passes its userData folder). | `RunningServer`, `ServerOptions`, `startServer` | `server/src/game/Profiles`, `server/src/rooms/WorldRoom`, @broken-ash/shared, @colyseus/core, @colyseus/ws-transport, node:http, node:os, node:path |
 
-Tests: `server/src/game/Combat.test.ts`, `server/src/game/Mastery.test.ts`, `server/src/game/World.test.ts`, `server/src/game/sim.test.ts`
+Tests: `server/src/game/Combat.test.ts`, `server/src/game/Mastery.test.ts`, `server/src/game/Units.test.ts`, `server/src/game/World.test.ts`, `server/src/game/sim.test.ts`
 
 <details><summary>Exported symbols</summary>
 
@@ -131,6 +132,8 @@ Tests: `server/src/game/Combat.test.ts`, `server/src/game/Mastery.test.ts`, `ser
 - `causeOf` (function, `server/src/game/Combat.ts`) — How a skill's blows land, from its look and shape: it decides how a body breaks.
 - `dealDamage` (function, `server/src/game/Combat.ts`) — Applies damage after modifiers, shields and invulnerability.
 - `canCast` (function, `server/src/game/Combat.ts`) — Can this skill be cast now?
+- `releaseGrab` (function, `server/src/game/Combat.ts`) — A grab ends: the held fighter is free to move again.
+- `spawnUnitBolt` (function, `server/src/game/Combat.ts`) — An enemy's shot: a bolt like a player's, flying the telegraphed line (dodge it, or hide behind a wall).
 - `gainMastery` (function, `server/src/game/Combat.ts`) — Weapon-skill damage is mastery XP for that weapon type; a new level is announced.
 - `push` (function, `server/src/game/Combat.ts`) — Shoves a fighter (knockback), stopping at walls.
 - `unitAttackHits` (function, `server/src/game/Combat.ts`) — Shapes of the Greyed's attacks use the same hit test; the landing point is locked at wind-up.
@@ -299,7 +302,7 @@ Tests: `tools/catalogue/catalogue.test.ts`
 | `tools/art/mh.py` | Builds skinned elf bodies in Blender from the MakeHuman CC0 base mesh (tools/art/mh_fetch.py). | `morph`, `to_blender`, `build`, `reset_pose`, `rotate`, `shift` |
 | `tools/art/mh_fetch.py` | Fetches the MakeHuman assets the character pipeline uses into tools/art/.mh (gitignored). | `main` |
 | `tools/art/models.py` | Procedural models for props and characters. | `link`, `mesh_obj`, `box`, `cyl`, `sphere`, `empty`, `modifier`, `curved_roof`, `tiled_roof_material`, `rocky`, `stone_material`, `mossy_stone_material`, `build_stone_lantern`, `build_paper_lantern`, `build_gate`, `build_blossom_tree`, `build_shrine`, `build_wall`, `build_rock`, `build_bamboo`, `build_banner`, `build_humanoid`, `pose` |
-| `tools/art/outfits.py` | Outfits, hair and weapons for the eight paths, built on a MakeHuman body from mh.py. | `cloth`, `silk`, `leather`, `lacquer`, `lamellar`, `metal`, `skin_material`, `hair_material`, `region_shell`, `robe`, `attach`, `joint`, `bone_head`, `bone_tail`, `palm`, `grip_axes`, `oriented`, `curve_blade`, `join`, `hold`, `scalp_filter`, `hair`, `base_layers`, `sash`, `wide_sleeves`, `mask`, `plate`, `build_path`, `war_fan`, `spirit_lantern`, `longbow`, `palette`, `build_greyed` |
+| `tools/art/outfits.py` | Outfits, hair and weapons for the eight paths, built on a MakeHuman body from mh.py. | `cloth`, `silk`, `leather`, `lacquer`, `lamellar`, `metal`, `skin_material`, `hair_material`, `region_shell`, `robe`, `attach`, `joint`, `bone_head`, `bone_tail`, `palm`, `grip_axes`, `oriented`, `curve_blade`, `join`, `hold`, `scalp_filter`, `hair`, `base_layers`, `sash`, `wide_sleeves`, `mask`, `plate`, `build_path`, `war_fan`, `spirit_lantern`, `longbow`, `palette`, `build_human`, `build_greyed` |
 | `tools/art/pixelate.py` | The map's pixel-art pass: takes the Blender-rendered prop and ground atlases and turns every frame into pixel art that matches the PixelLab characters (one art pixel = 2×2 screen pixels), keeping the detail and the baked | `pixelate`, `run`, `run_chars` |
 | `tools/art/render.py` | Renders every sprite with Blender (bpy) and packs them into atlases for the client. | `render_frame`, `props` |
 | `tools/audio/build.py` | Synthesises the game's music, ambience and sound effects into .ogg files (numpy + ffmpeg). | `t_axis`, `midi`, `fft_filter`, `env`, `pluck`, `flute`, `drum`, `bell`, `reverb`, `pan`, `place`, `mixin`, `loop_seamless`, `master`, `write_ogg`, `scale_note`, `music_soramei_night`, `amb_night_wind`, `sfx_title_gong`, `sfx_cin_split`, `sfx_gate_bang`, `footstep`, `sfx_dodge`, `ui_click`, `ui_hover`, `ui_confirm`, `noise`, `sweep_band`, `blade`, `impact_flesh`, `splatter`, `fire`, `thunder`, `wind_gust`, `spirit`, `bow`, `throw`, `poison_hiss`, `roots_crack`, `groan`, `roar`, `horn`, `chime`, `heartbeat`, `music_gate_fight`, `combat_sfx`, `main` |

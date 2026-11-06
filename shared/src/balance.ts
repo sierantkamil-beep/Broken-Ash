@@ -50,6 +50,10 @@ export const BALANCE = {
     passiveUnlock: [4, 6, 7, 9, 10],
   },
   combat: {
+    /** Seconds a boss spends drinking a phase heal (long enough to punish with a stagger). */
+    bossChannel: 3,
+    /** Corpse-eaters: ignore bodies when a foe is this close; smell them this far; eat for this long; heal and grow by this much per body. */
+    eater: { ignoreWithin: 3, smell: 10, eatTime: 1.6, heal: 0.3, grow: 0.15, maxRadius: 0.5 },
     /** A downed player bleeds out over this long, unless the partner revives them. */
     bleedOut: 20,
     /** Holding F next to a downed partner this long brings them back... */

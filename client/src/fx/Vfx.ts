@@ -114,6 +114,20 @@ export class Vfx {
         if (sk) this.spells.area({ ...sk, vfx: e.vfx || sk.vfx }, e.x, e.y, e.radius);
         break;
       }
+      case "phase":
+        this.hooks.playSound("sfx_tapper_roar", 1);
+        this.hooks.banner(e.title, e.sub);
+        this.hooks.shake(0.012, 500);
+        break;
+      case "eaten": {
+        // The body is gone: torn and swallowed, blood where it lay.
+        this.hooks.corpse(e.id, "gone");
+        const p = worldToScreen(e.x, e.y);
+        this.gore?.spray(p.x, p.y, 10, 0, 0, 30, 0.8);
+        this.gore?.gib("gib_chunk/blood/0", p.x, p.y, 12, 0, 0, 0.6);
+        this.hooks.playSound("sfx_gore", 0.7, p);
+        break;
+      }
       case "unitAtk":
         this.spells.unitAttack(e.kind, e.atk, e.x, e.y, e.aim, e.ax, e.ay);
         break;
@@ -345,7 +359,12 @@ export class Vfx {
   private hit(e: Extract<FxEvent, { t: "hit" }>) {
     const loc = this.hooks.locate(e.id);
     if (!loc) return;
-    if (e.kind === "damage") {
+    if (e.kind === "damage" && e.blk) {
+      // Turned by a shield: sparks and a clang, no blood; the damage that got through still shows.
+      this.hooks.flash(e.id, (e.dx ?? 0) * 0.5, (e.dy ?? 0) * 0.5);
+      this.spells.hit(loc, "crush", -(e.dx ?? 0), -(e.dy ?? 0), true);
+      this.hooks.playSound("sfx_blade_heavy", 0.7, loc);
+    } else if (e.kind === "damage") {
       this.hooks.flash(e.id, e.dx ?? 0, e.dy ?? 0);
       this.spells.hit(loc, e.cause, e.dx ?? 0, e.dy ?? 0, !!e.big);
       if (e.det) this.spells.detonate(loc, e.det);
