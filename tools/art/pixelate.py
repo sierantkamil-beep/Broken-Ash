@@ -101,5 +101,8 @@ def run_chars(key, colours=40):
 
 
 if __name__ == "__main__":
-    for k in ("shambler_greyed", "runner_greyed"):
-        run_chars(k)
+    # Every Blender-rendered enemy (the Greyed and the Iron March), whatever has been rendered so far.
+    chars = os.path.join(ROOT, "client", "public", "assets", "chars")
+    for f in sorted(os.listdir(chars)):
+        if f.endswith("_greyed.json"):
+            run_chars(f[:-5])
