@@ -83,7 +83,8 @@ export function ensureAtlas(scene: Phaser.Scene, key: string): Promise<boolean> 
           scene.load.once(Phaser.Loader.Events.COMPLETE, () => {
             if (!scene.textures.exists(key)) return resolve(false);
             // PixelLab sets are pixel art: sample them crisp, never blurred.
-            if (atlasMeta(scene, key).pixel) scene.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST);
+            const raw = (scene.textures.get(key).customData as { meta?: { pixelated?: boolean } }).meta;
+            if (atlasMeta(scene, key).pixel || raw?.pixelated) scene.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST);
             resolve(true);
           });
           scene.load.start();
