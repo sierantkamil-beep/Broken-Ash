@@ -64,7 +64,8 @@ export function rect(x: number, y: number, aim: number, length: number, width: n
   });
 }
 
-const FILL = 0.28;
+// Light enough that several overlapping areas in a fight don't flood the screen; the edge carries the shape.
+const FILL = 0.16;
 const EDGE = 0.95;
 /** A dark under-stroke so a pale accent (Storm's indigo, Dusk's amber) still reads on lit stone. */
 const SHADOW = 0x08060a;
