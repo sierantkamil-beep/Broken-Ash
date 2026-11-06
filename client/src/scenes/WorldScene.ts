@@ -6,6 +6,7 @@ import {
   MAPS,
   MSG,
   PATHS,
+  CELL,
   screenToWorld,
   START_MAP,
   worldToScreen,
@@ -121,6 +122,8 @@ export class WorldScene extends Phaser.Scene {
     this.audio = new AudioDirector(this);
 
     this.worldLayer.add(new GroundLayer(this, this.map).rt);
+    // The camera never shows past the map's edge (no black void around the courtyard).
+    this.cameras.main.setBounds(0, 0, this.map.width * CELL, this.map.height * CELL);
     this.props = new PropLayer(this, this.map, this.worldLayer);
     this.lighting = new Lighting(this, this.map.ambient, this.worldLayer);
     this.petals = new Petals(this, this.worldLayer);
@@ -158,7 +161,7 @@ export class WorldScene extends Phaser.Scene {
     this.cinematic = new CinematicPlayer(this, {
       audio: this.audio,
       petals: (n) => this.petals.burst(n),
-      baseZoom: () => this.baseZoom(),
+      zoomFor: (z: number) => this.fitZoom(z * this.baseZoom()),
       setDesaturation: (a) => {
         this.colorFx?.reset();
         if (a > 0) this.colorFx?.saturate(-a);
@@ -191,7 +194,7 @@ export class WorldScene extends Phaser.Scene {
       else if (p.leftButtonDown()) this.cast(0);
     });
     this.input.on("wheel", (_p: unknown, _o: unknown, _dx: number, dy: number) => {
-      if (this.room && !this.cinematic.playing) this.userZoom = Phaser.Math.Clamp(this.userZoom * (dy > 0 ? 0.92 : 1.08), 0.55, 1.65);
+      if (this.room && !this.cinematic.playing) this.userZoom = Phaser.Math.Clamp(this.userZoom * (dy > 0 ? 0.92 : 1.08), 0.8, 2.2);
     });
     this.scale.on("resize", (size: Phaser.Structs.Size) => {
       this.overlayCam.setSize(size.width, size.height);
@@ -209,6 +212,28 @@ export class WorldScene extends Phaser.Scene {
 
   private baseZoom() {
     return Phaser.Math.Clamp(this.scale.height / 1080, 0.55, 1.6);
+  }
+
+  /** The smallest zoom at which the view still fits inside the map. */
+  private minZoom() {
+    const cam = this.cameras.main;
+    return Math.max(cam.width / (this.map.width * CELL), cam.height / (this.map.height * CELL));
+  }
+
+  /** A zoom raised, if needed, so the view never reaches past the map. */
+  private fitZoom(z: number) {
+    return Math.max(z, this.minZoom());
+  }
+
+  /**
+   * A crisp zoom for pixel art (each art pixel covers a whole number of screen pixels), never below
+   * 1:1 so characters stay their full 124 px, and never so wide the view leaves the map.
+   */
+  private crispZoom(z: number, px = 2) {
+    let zoom = Math.max(1, Math.round(z * px + 0.3) / px);
+    const min = this.minZoom();
+    while (zoom < min) zoom += 1 / px;
+    return zoom;
   }
 
   setPaused(p: boolean) {
@@ -438,11 +463,9 @@ export class WorldScene extends Phaser.Scene {
       this.cinematic.update();
     } else if (this.me) {
       const target = this.me.char.screen;
-      let zoom = PLAY_ZOOM * this.baseZoom() * this.userZoom;
       const px = this.me.char.pixelScale;
       // Pixel art stays crisp only when each art pixel covers a whole number of screen pixels.
-      // Rounded with a bias upward: a small window would otherwise drop to 1:1 and shrink everyone.
-      if (px) zoom = Math.max(1, Math.round(zoom * px + 0.3)) / px;
+      const zoom = this.crispZoom(PLAY_ZOOM * this.baseZoom() * this.userZoom, px ?? 2);
       const next = Phaser.Math.Linear(cam.zoom, zoom, Math.min(1, delta / 250));
       cam.setZoom(Math.abs(next - zoom) < 0.004 ? zoom : next);
       cam.roundPixels = !!px && cam.zoom === zoom;
@@ -453,9 +476,9 @@ export class WorldScene extends Phaser.Scene {
     } else {
       // Title screen: a slow drift over the courtyard.
       this.titleT += delta / 1000;
-      const p = worldToScreen(14 + Math.sin(this.titleT / 23) * 7, 12 + Math.cos(this.titleT / 31) * 6);
-      cam.setZoom(0.62 * this.baseZoom());
-      cam.roundPixels = false;
+      const p = worldToScreen(15 + Math.sin(this.titleT / 23) * 5, 15 + Math.cos(this.titleT / 31) * 5);
+      cam.setZoom(this.crispZoom(this.baseZoom()));
+      cam.roundPixels = true;
       cam.centerOn(p.x, p.y);
     }
 

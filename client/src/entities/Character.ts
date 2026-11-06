@@ -104,7 +104,7 @@ export class Character {
     this.weaponMain = part();
     this.weaponOff = part();
     layer.add([this.cape, this.head, this.shoulderL, this.shoulderR, this.weaponMain, this.weaponOff]);
-    this.shadow = scene.add.image(0, 0, "fx", "shadow").setScale(0.62, 0.62);
+    this.shadow = scene.add.image(0, 0, "fx", "shadow").setScale(0.9);
     this.sprite = scene.add.sprite(0, 0, this.atlas ?? "fx", this.atlas ? "idle/0/0" : "shadow");
     this.label = scene.add
       .text(0, 0, name, { fontFamily: "Cormorant Garamond", fontSize: "20px", color: "#d9cfc1", stroke: "#000000", strokeThickness: 4 })

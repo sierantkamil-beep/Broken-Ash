@@ -19,7 +19,7 @@ export interface ActorKey {
   t: number;
   x: number;
   y: number;
-  /** Sprite direction 0–7 (see iso.ts). */
+  /** Sprite direction 0–7 (see view.ts directionIndex). */
   dir?: number;
   anim?: string;
   ease?: Ease;

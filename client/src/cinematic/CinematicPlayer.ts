@@ -7,7 +7,8 @@ export interface CinematicHooks {
   audio: AudioDirector;
   petals: (amount: number) => void;
   /** Camera zoom that 1.0 in the data corresponds to (scales with the window height). */
-  baseZoom: () => number;
+  /** The camera zoom for a cinematic key's zoom (scaled to the window, kept inside the map). */
+  zoomFor: (zoom: number) => number;
   setDesaturation: (amount: number) => void;
   onEnd: () => void;
 }
@@ -91,7 +92,7 @@ export class CinematicPlayer {
 
     const cam = this.scene.cameras.main;
     const p = worldToScreen(f.camera.x, f.camera.y);
-    cam.setZoom(f.camera.zoom * this.hooks.baseZoom());
+    cam.setZoom(this.hooks.zoomFor(f.camera.zoom));
     cam.centerOn(p.x, p.y);
 
     for (const b of document.querySelectorAll<HTMLElement>("#cinema .bar")) b.style.transform = `scaleY(${f.letterbox})`;

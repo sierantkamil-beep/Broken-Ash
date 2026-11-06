@@ -62,7 +62,7 @@ export class UnitSprite {
       if (ok) this.useAtlas(key);
     });
     const big = view.kind === "tapper";
-    this.shadow = scene.add.image(0, 0, "fx", "shadow").setScale(big ? 1.1 : 0.65, big ? 1.0 : 0.6);
+    this.shadow = scene.add.image(0, 0, "fx", "shadow").setScale(big ? 1.5 : 0.9);
     this.sprite = scene.add.sprite(0, 0, this.atlas ?? "fx", this.atlas ? "idle/0/0" : "shadow");
     // Thralls are the same dead, bound by a Lantern-Keeper: a pale spirit-light tint.
     if (view.faction === "players") this.sprite.setTint(0xb8d8e8);
