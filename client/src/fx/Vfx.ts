@@ -1,9 +1,14 @@
 import { ALL_SKILLS } from "../net/loadout";
 import Phaser from "phaser";
 import { groundCircle, rect, ShapePainter, wedge } from "./shapes";
-import { worldToScreen, type FxEvent, type SkillDef } from "@broken-ash/shared";
+import { CELL, GREYED, worldToScreen, type FxEvent, type GreyedKind, type SkillDef } from "@broken-ash/shared";
 import { DEPTH_GLOW, FxKit, type Handle, type Ramp } from "./fxkit";
-import { SpellFx } from "./spells";
+import { rampOf, SpellFx } from "./spells";
+import { Scars } from "./scars";
+import { Tools } from "./recipes/tools";
+import { recipeFor } from "./recipes";
+import { ENEMY } from "./recipes/enemies";
+import type { Ctx, Recipe } from "./recipes/types";
 import { Gore, type CorpseMode } from "./gore";
 import type { LightSource } from "../world/Lighting";
 import { settings } from "../settings";
@@ -35,6 +40,8 @@ export interface VfxHooks {
   corpse(id: string, mode: CorpseMode): void;
   /** A short camera punch-in (executions). */
   punch(amount: number, ms: number): void;
+  /** Which beat of a basic-attack chain a fighter's last basic was (0, 1, 2). */
+  beatOf(id: string): number;
 }
 
 /**
@@ -48,6 +55,9 @@ export class Vfx {
   readonly kit: FxKit;
   private readonly spells: SpellFx;
   private gore: Gore | null = null;
+  private scars: Scars | null = null;
+  /** The beats skill recipes are made of (recipes/tools.ts). */
+  readonly tools: Tools;
   /** Looping status effects on each fighter (burning, poisoned, bleeding, rooted…), by id then status. */
   private readonly statusFx = new Map<string, Map<string, Handle>>();
   /** Bolts in flight by server id, so a `boltEnd` stops the right one where it really stopped. */
@@ -61,10 +71,53 @@ export class Vfx {
     this.shapes = new ShapePainter(scene, layer);
     this.kit = new FxKit(scene, layer);
     this.spells = new SpellFx(this.kit, { shake: hooks.shake, flashScreen: hooks.flashScreen, freeze: hooks.freeze });
+    this.tools = new Tools(this.kit, scene, layer, { shake: hooks.shake, flashScreen: hooks.flashScreen, freeze: hooks.freeze });
+  }
+
+  /**
+   * Where and how a skill is used, for its recipe: the caster's feet and weapon hand now, the aim,
+   * the hit shape's size, the far end (a cone's tip, a line's end, a thrown circle's centre).
+   */
+  private ctx(skill: SkillDef, caster: string, wx: number, wy: number, aim: number, o: { tx?: number; ty?: number; radius?: number; dashed?: boolean } = {}): Ctx {
+    const loc = this.hooks.locate(caster);
+    const feet = loc ? { x: loc.x, y: loc.y } : worldToScreen(wx, wy);
+    const height = loc?.height ?? 120;
+    const sh = skill.shape;
+    const range = sh.kind === "cone" ? sh.range : 0;
+    const length = sh.kind === "line" ? sh.length : sh.kind === "projectile" ? sh.range : 0;
+    const reach = range || length;
+    const sx = o.dashed ? worldToScreen(wx, wy) : feet;
+    return {
+      t: this.tools,
+      skill,
+      ramp: rampOf(skill),
+      caster,
+      x: sx.x,
+      y: sx.y,
+      hx: feet.x + Math.cos(aim) * 14,
+      hy: feet.y - height * 0.42 + Math.sin(aim) * 6,
+      aim,
+      range,
+      arc: sh.kind === "cone" ? sh.arc : 0,
+      length,
+      width: sh.kind === "line" ? sh.width : 0,
+      radius: o.radius ?? (sh.kind === "circle" ? sh.radius : 0),
+      tx: o.tx ?? sx.x + Math.cos(aim) * reach * CELL,
+      ty: o.ty ?? sx.y + Math.sin(aim) * reach * CELL,
+      beat: this.hooks.beatOf(caster),
+      dashed: !!o.dashed,
+      follow: () => {
+        const l = this.hooks.locate(caster);
+        return l ? { x: l.x, y: l.y } : null;
+      },
+    };
   }
 
   /** The blood layer covers the map (called once the map is known). */
   initGore(mapW: number, mapH: number) {
+    this.scars?.destroy();
+    this.scars = new Scars(this.scene, this.layer, mapW, mapH);
+    this.tools.scars = this.scars;
     this.gore?.destroy();
     this.gore = new Gore(this.scene, this.layer, this.kit, mapW, mapH);
     this.gore.reduced = settings.gore === "reduced";
@@ -95,6 +148,8 @@ export class Vfx {
         const skill = SKILLS.get(e.skill);
         if (!skill) return;
         this.hooks.playSound(`sfx_${skill.sfx}`, 0.6, worldToScreen(e.x, e.y));
+        // The wind-up shows on the caster at once; the blow itself after it.
+        recipeFor(skill.id, e.vfx)?.windup?.(this.ctx(skill, e.id, e.x, e.y, e.aim));
         // Melee and self shapes show when they land (after the wind-up).
         this.scene.time.delayedCall(skill.windup * 1000, () => this.castShape(skill, e.vfx || skill.vfx, e.x, e.y, e.aim, e.id));
         break;
@@ -105,14 +160,26 @@ export class Vfx {
       case "boltEnd":
         this.bolts.get(e.id)?.end(e.x, e.y);
         break;
-      case "zone":
+      case "zone": {
         this.shapes.zone(e.x, e.y, e.radius, e.duration, this.hooks.accentOf(e.owner));
-        this.spells.zone(SKILLS.get(e.skill), e.x, e.y, e.radius, e.duration);
+        const sk = SKILLS.get(e.skill);
+        const r = sk ? recipeFor(sk.id) : undefined;
+        if (sk && r?.zone) {
+          const p = worldToScreen(e.x, e.y);
+          r.zone(this.ctx(sk, e.owner, e.x, e.y, 0, { tx: p.x, ty: p.y, radius: e.radius }), e.duration * 1000);
+        } else this.spells.zone(sk, e.x, e.y, e.radius, e.duration);
         break;
+      }
       case "area": {
         this.shapes.circle(e.x, e.y, e.radius, this.hooks.accentOf(e.owner));
         const sk = SKILLS.get(e.skill);
-        if (sk) this.spells.area({ ...sk, vfx: e.vfx || sk.vfx }, e.x, e.y, e.radius);
+        const r = sk ? recipeFor(sk.id, e.vfx) : undefined;
+        if (sk && r?.land) {
+          const p = worldToScreen(e.x, e.y);
+          const from = this.hooks.locate(e.owner);
+          const aim = from ? Math.atan2(p.y - from.y, p.x - from.x) : 0;
+          r.land(this.ctx(sk, e.owner, e.x, e.y, aim, { tx: p.x, ty: p.y, radius: e.radius }));
+        } else if (sk) this.spells.area({ ...sk, vfx: e.vfx || sk.vfx }, e.x, e.y, e.radius);
         break;
       }
       case "phase":
@@ -137,9 +204,30 @@ export class Vfx {
         this.hooks.playSound("sfx_gate_bang", 0.8);
         this.hooks.shake(0.006, 600);
         break;
-      case "unitAtk":
-        this.spells.unitAttack(e.kind, e.atk, e.x, e.y, e.aim, e.ax, e.ay);
+      case "unitAtk": {
+        const r = ENEMY[`${e.kind}_${e.atk}`];
+        const def = GREYED[e.kind as GreyedKind]?.attacks.find((a) => a.id === e.atk);
+        if (r?.blow && def) {
+          const sh = def.shape;
+          const p = worldToScreen(e.x, e.y);
+          const a = worldToScreen(e.ax, e.ay);
+          r.blow({
+            t: this.tools,
+            id: e.id,
+            x: p.x,
+            y: p.y,
+            aim: e.aim,
+            ax: a.x,
+            ay: a.y,
+            range: sh.kind === "cone" ? sh.range : 0,
+            arc: sh.kind === "cone" ? sh.arc : 0,
+            length: sh.kind === "line" ? sh.length : 0,
+            width: sh.kind === "line" ? sh.width : 0,
+            radius: sh.kind === "circle" ? sh.radius : 0,
+          });
+        } else this.spells.unitAttack(e.kind, e.atk, e.x, e.y, e.aim, e.ax, e.ay);
         break;
+      }
       case "hit":
         this.hit(e);
         break;
@@ -218,6 +306,15 @@ export class Vfx {
     const sh = skill.shape;
     // A mastery form can change the look (vfx), never the hit.
     const look = vfx && vfx !== skill.vfx ? { ...skill, vfx } : skill;
+    const recipe = recipeFor(skill.id, vfx);
+    if (recipe?.release) {
+      const dashed = sh.kind === "line" && skill.effects.some((e) => e.kind === "dash" && e.distance > 0);
+      if (sh.kind === "cone") this.shapes.cone(ox, oy, aim, sh.range, sh.arc, accent);
+      else if (sh.kind === "line") this.shapes.line(dashed ? x : ox, dashed ? y : oy, aim, sh.length, sh.width, accent);
+      else if (sh.kind === "circle" && sh.at === "self") this.shapes.circle(ox, oy, sh.radius, accent);
+      recipe.release(this.ctx(skill, caster, dashed ? x : ox, dashed ? y : oy, aim, { dashed }));
+      return;
+    }
     if (sh.kind === "cone") {
       this.shapes.cone(ox, oy, aim, sh.range, sh.arc, accent);
       this.spells.cone(look, ox, oy, aim, sh.range, sh.arc, caster);
@@ -261,8 +358,17 @@ export class Vfx {
    * end of its range) with an impact, rather than always flying its full range.
    */
   private bolt(e: Extract<FxEvent, { t: "bolt" }>) {
-    const skill = SKILLS.get(e.skill);
-    const look = this.spells.projectile(skill, e.vfx || skill?.vfx || "");
+    // An enemy's shot (a crossbow quarrel) has no skill of its own: its recipe is the enemy's.
+    const enemy = ENEMY[e.skill]?.bolt;
+    const skill =
+      SKILLS.get(e.skill) ??
+      (enemy ? ({ id: e.skill, name: e.skill, description: "", cooldown: 0, cost: 0, windup: 0, shape: { kind: "projectile", speed: e.speed, range: e.range, radius: e.radius }, effects: [], vfx: e.vfx, sfx: "", anim: "attack" } as unknown as SkillDef) : undefined);
+    const recipe: Recipe | undefined = enemy ? { sig: e.skill, bolt: enemy } : skill ? recipeFor(skill.id, e.vfx) : undefined;
+    const rb = recipe?.bolt;
+    const c = skill && rb ? this.ctx(skill, e.owner, e.x, e.y, e.aim) : null;
+    const old = this.spells.projectile(skill, e.vfx || skill?.vfx || "");
+    const look = rb && c ? { anim: this.tools.pick(rb.anim.split("/")[0], (rb.anim.split("/")[1] ?? "steel") as Ramp), scale: rb.scale ?? 1, trail: rb.trail ?? null, spin: !!rb.spin, ramp: c.ramp } : old;
+    let lastTail = 0;
     const lift = 22;
     const start = this.scene.time.now;
     const shadow = this.scene.add.ellipse(0, 0, 10 * look.scale + 6, 5 * look.scale + 3, 0x000000, 0.35).setDepth(-5e5);
@@ -277,6 +383,7 @@ export class Vfx {
       return p;
     };
     let last = place(e.x, e.y);
+    if (rb?.launch && c) rb.launch(c, last.x, last.y - lift);
     this.kit.light(last.x, last.y - lift, 110 * Math.min(2, look.scale), 0xffffff, look.trail ? 0.6 : 0, (e.range / e.speed) * 1000, () => (h ? { x: h.sprite.x, y: h.sprite.y } : null));
     let ended = false;
     const live = {
@@ -291,6 +398,10 @@ export class Vfx {
           lastTrail = now;
           this.spells.trailPuff(last.x, last.y, look.trail as Ramp, look.scale > 1.5);
         }
+        if (rb?.tail && c && now - lastTail > (rb.every ?? 60)) {
+          lastTail = now;
+          rb.tail(c, last.x, last.y);
+        }
       },
       destroy: () => {
         h?.stop();
@@ -302,7 +413,10 @@ export class Vfx {
         if (ended) return;
         ended = true;
         place(x, y);
-        this.spells.impact(x, y, look.ramp, look.scale > 1.5);
+        if (rb?.impact && c) {
+          const p = worldToScreen(x, y);
+          rb.impact(c, p.x, p.y);
+        } else this.spells.impact(x, y, look.ramp, look.scale > 1.5);
         live.until = this.scene.time.now;
       },
     };

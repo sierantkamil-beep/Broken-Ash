@@ -208,3 +208,26 @@ looked broken and why; all of it was fixed.
   each one passes the reading-speed check; scenes can chain (`onEnd.next`). 16 new scenes in
   `act1scenes.ts`. The Tapper moved from the gate's last wave to the mine, where the design puts him.
 - `tools/e2e/act1.cjs` photographs each area from a story save and plays the cells from the start.
+
+### A move and an effect for every skill
+- **Moves** (`client/src/entities/moves.ts`): the bodies still have only PixelLab's strike and cast,
+  so each skill's motion is built at runtime from their frames. A pose timeline over the wind-up and
+  the release names the frame and how the body is carried: lunge, side-step, lift, lean, squash, the
+  upper body thrown forward on its own (the frame cropped at the waist), or turned through the
+  directions (a spin). 17 moves (slash, backhand, thrust, overhead, slam, spin, leap, dash, throw,
+  draw, channel, kneel, recoil, raise, flurry, push, drink).
+- **Strokes**: the weapon swings along its own arc relative to the aim (mirrored when facing left),
+  with the fist orbiting the shoulder. It leaves a pixel trail in the skill's colour; dashes leave
+  dark afterimages. Gear follows every pose.
+- **Basic attacks chain** (visual only): consecutive basics step through three beats per weapon,
+  e.g. blades forehand → backhand → twin thrust; greatblade cleave → back cleave → overhead slam.
+- **Recipes** (`client/src/fx/recipes/`): every skill (78), every mastery form (9) and every enemy
+  attack (18) has its own effect: a wind-up on the caster, the release over the exact hit shape, its
+  own projectile with trail, launch and impact, the landing of thrown circles, lingering zones.
+  Built from a toolbox of beats (`tools.ts`: smears, rings, seals, blasts, cyclones, sparks,
+  gathering and orbiting motes, petals and feathers, beams, chains, lightning, lobbed fireballs,
+  rain from the sky, cracks and scorch). A test fails if a skill has no recipe or two share one.
+- **Scars** (`client/src/fx/scars.ts`): scorch, cracks, ink and soot stay on the ground for the visit,
+  in a map-wide layer like the blood.
+- `tools/e2e/moves.cjs` films every move on a fixed clock; `tools/e2e/skills.cjs` films every skill
+  in 20× slow motion; `moves_sheet.py` puts either on sheets.

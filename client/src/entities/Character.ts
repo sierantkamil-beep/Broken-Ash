@@ -4,6 +4,8 @@ import { ALL_SKILLS } from "../net/loadout";
 import type { AudioDirector } from "../audio/AudioDirector";
 import { gearFor, recolorAtlas } from "../assets/recolor";
 import { atlasMeta, atlasOr, charKey, ensureAtlas, resolveAnim, type AtlasMeta } from "../assets/atlases";
+import { RAMP_COLORS } from "../fx/fxkit";
+import { CHAIN_WINDOW, inStroke, MOVES, poseAt, REACH, SKILL_MOTION, strokeAngle, WEAPON_TRAIL, type Pose, type SkillMotion } from "./moves";
 
 const IDLE_FPS = 6;
 
@@ -68,16 +70,33 @@ export class Character {
   private lastX = 0;
   private lastY = 0;
   private wasRolling = false;
-  /** A one-shot animation (cast, hit) and when it ends. */
-  private action: { anim: string; start: number; dur: number; strikeAt: number } | null = null;
+  /** A one-shot animation (cast, hit) and when it ends; a skill's move when it has one (moves.ts). */
+  private action: { anim: string; start: number; dur: number; strikeAt: number; motion?: SkillMotion; aim?: number } | null = null;
+  /** The pose of the move being played this frame (null when none). */
+  private pose: Pose | null = null;
+  private poseT = 0;
+  /** The upper body when a move throws it forward on its own (the legs stay planted). */
+  private readonly upperSprite: Phaser.GameObjects.Sprite;
+  /** The blade's trail: recent hand → tip segments per hand, drawn as a fading ribbon. */
+  private readonly trailGfx: Phaser.GameObjects.Graphics;
+  private trail: { main: { hx: number; hy: number; tx: number; ty: number; at: number }[]; off: { hx: number; hy: number; tx: number; ty: number; at: number }[] } = { main: [], off: [] };
+  private lastGhost = 0;
+  private facing = 0;
+  /** Basic attacks in a row step through the weapon's chain (0, 1, 2). */
+  private chainIdx = 0;
+  private lastBasicEnd = -1e9;
   private downedAt = -1;
   private frozenUntil = 0;
   screen = { x: 0, y: 0 };
   depth = 0;
+  /** A fixed clock for automated filmstrips (tools/e2e/moves.cjs); null in play. */
+  testNow: number | null = null;
+  /** Automated filmstrips hold the weapon they're showing (the game would reset it from the loadout). */
+  testWeapon: WeaponId | null = null;
 
   constructor(
     private readonly scene: Phaser.Scene,
-    layer: Phaser.GameObjects.Layer,
+    private readonly layer: Phaser.GameObjects.Layer,
     readonly path: PathId,
     readonly body: string,
     name: string,
@@ -113,7 +132,9 @@ export class Character {
       .setResolution(2)
       .setVisible(showName)
       .setDepth(9.7e6);
-    layer.add([this.shadow, this.sprite, this.label]);
+    this.upperSprite = scene.add.sprite(0, 0, this.atlas ?? "fx", this.atlas ? "idle/0/0" : "shadow").setVisible(false);
+    this.trailGfx = scene.add.graphics().setBlendMode(Phaser.BlendModes.ADD);
+    layer.add([this.shadow, this.sprite, this.upperSprite, this.trailGfx, this.label]);
     this.useAtlas(this.atlas);
   }
 
@@ -135,7 +156,7 @@ export class Character {
   }
 
   setWeapon(weapon: WeaponId) {
-    this.weapon = weapon;
+    this.weapon = this.testWeapon ?? weapon;
   }
 
   private dress() {
@@ -161,9 +182,26 @@ export class Character {
   playCast(skillId: string) {
     const skill = this.bar.find((s) => s.id === skillId) ?? ALL_SKILLS.get(skillId);
     if (!skill) return;
-    const now = this.scene.time.now;
+    const now = this.testNow ?? this.scene.time.now;
     const windup = skill.windup * 1000;
+    let motion = SKILL_MOTION[skill.id];
+    if (motion?.chain) {
+      // Basic attacks in quick succession play the chain's next beat (visual only).
+      this.chainIdx = now - this.lastBasicEnd < CHAIN_WINDOW * 1000 ? (this.chainIdx + 1) % (motion.chain.length + 1) : 0;
+      if (this.chainIdx > 0) motion = motion.chain[this.chainIdx - 1];
+    } else this.chainIdx = 0;
+    if (motion && this.meta.pixel && this.meta.anchors) {
+      const dur = windup + MOVES[motion.move].recover;
+      this.action = { anim: "move", start: now, dur, strikeAt: windup, motion, aim: this.facing };
+      if (SKILL_MOTION[skill.id]?.chain) this.lastBasicEnd = now + dur;
+      return;
+    }
     this.action = { anim: this.skillAnim(skill.anim), start: now, dur: windup + 320, strikeAt: windup };
+  }
+
+  /** Which beat of the basic-attack chain the last basic was (0 first, 2 the finisher). */
+  get chainBeat() {
+    return this.chainIdx;
   }
 
   /**
@@ -208,8 +246,10 @@ export class Character {
     this.lastX = s.x;
     this.lastY = s.y;
     const speed = Math.hypot(s.vx, s.vy);
-    const dir = directionIndex(s.facing);
-    const now = this.scene.time.now;
+    let dir = directionIndex(s.facing);
+    this.facing = s.facing;
+    const now = this.testNow ?? this.scene.time.now;
+    this.pose = null;
     let frame: number;
     let anim: string;
 
@@ -225,7 +265,20 @@ export class Character {
       const n = count(anim);
       frame = Math.min(n - 1, Math.floor((1 - s.dodgeT / BALANCE.dodge.duration) * n));
       this.action = null;
-    } else if (this.action && now - this.action.start < this.action.dur) {
+    } else if (this.action?.motion && now - this.action.start < this.action.dur) {
+      // A skill's move: the pose timeline over the wind-up and the release (moves.ts).
+      this.downedAt = -1;
+      const a = this.action;
+      const el = now - a.start;
+      const t = el < a.strikeAt ? el / Math.max(1, a.strikeAt) : 1 + (el - a.strikeAt) / Math.max(1, a.dur - a.strikeAt);
+      const pose = poseAt(MOVES[a.motion!.move], Math.min(2, t));
+      this.pose = pose;
+      this.poseT = t;
+      anim = resolveAnim(this.scene, atlas, pose.clip);
+      frame = Math.max(0, Math.min(count(anim) - 1, Math.round(pose.f)));
+      // The move faces where the skill was aimed; a spin turns through the directions.
+      dir = (((directionIndex(a.aim ?? s.facing) + Math.round(pose.turn)) % 8) + 8) % 8;
+    } else if (this.action && !this.action.motion && now - this.action.start < this.action.dur) {
       this.downedAt = -1;
       const a = this.action;
       anim = resolveAnim(this.scene, atlas, a.anim);
@@ -262,10 +315,84 @@ export class Character {
     const name = `${anim}/${dir}/${frame}`;
     const frozen = now < this.frozenUntil;
     if (!frozen && (this.sprite.texture.key !== atlas || this.sprite.frame.name !== name)) this.sprite.setTexture(atlas, name);
+    this.carry(scr, now);
     // Gear follows the frame actually shown (during hit-stop that's the held one).
     const shown = this.sprite.frame.name;
     const parts = shown.split("/");
     this.placeGear(shown, Number(parts[1] ?? dir), Number(parts[2] ?? frame), scr);
+  }
+
+  /** Where the move carries the body this frame: the facing it was aimed at, in screen pixels per art pixel. */
+  private moveFrame() {
+    const p = this.pose;
+    const aim = this.action?.aim ?? this.facing;
+    const fx = Math.cos(aim);
+    const fy = Math.sin(aim);
+    return { p, fx, fy, aim };
+  }
+
+  /**
+   * Places the body for this frame's pose: carried forward or aside, lifted, leaning into the facing
+   * (seen sideways it's a tilt; seen from the front or back a lean doesn't show and the upper body
+   * dips instead), squashed into the ground, the upper body thrown forward on its own.
+   */
+  private carry(scr: { x: number; y: number }, now: number) {
+    const sc = this.meta.scale;
+    const { p, fx, fy } = this.moveFrame();
+    const up = this.upperSprite;
+    if (!p) {
+      this.sprite.setRotation(0).setScale(sc).setCrop();
+      up.setVisible(false);
+      this.shadow.setScale(0.9);
+      this.trailGfx.clear();
+      this.trail = { main: [], off: [] };
+      return;
+    }
+    const ox = Math.round(scr.x + (fx * p.fwd - fy * p.side) * sc);
+    const oy = Math.round(scr.y + (fy * p.fwd + fx * p.side) * sc - p.lift * sc);
+    const lean = ((p.lean * Math.PI) / 180) * fx;
+    this.sprite.setPosition(ox, oy).setRotation(lean).setScale(sc, sc * p.squash);
+    this.shadow.setScale(0.9 * Math.max(0.55, 1 - p.lift / 30));
+    // The upper body on its own: the same frame cropped at the waist, shifted along the facing.
+    const a = this.meta.anchors?.[this.sprite.frame.name];
+    if (p.upper && a) {
+      const f = this.sprite.frame;
+      const waistRel = this.waistOf(a);
+      const row = Math.max(1, Math.min(f.cutHeight - 1, Math.round(f.pivotY * f.cutHeight + waistRel)));
+      this.sprite.setCrop(0, row, f.cutWidth, f.cutHeight - row);
+      up.setTexture(this.sprite.texture.key, f.name)
+        .setCrop(0, 0, f.cutWidth, row)
+        .setPosition(ox + Math.round(fx * p.upper) * sc, oy + Math.round(fy * p.upper * 0.5 + Math.abs(fy) * Math.abs(p.upper) * 0.3) * sc)
+        .setRotation(lean)
+        .setScale(sc, sc * p.squash)
+        .setDepth(this.sprite.depth + 0.01)
+        .setTint(0xffffff)
+        .setVisible(true);
+    } else {
+      this.sprite.setCrop();
+      up.setVisible(false);
+    }
+    // Afterimages: dark copies of the body left along a dash.
+    const m = this.action?.motion;
+    if (m?.ghosts && this.poseT >= 1 && this.poseT <= 1.45 && now - this.lastGhost > 40) {
+      this.lastGhost = now;
+      const g = this.scene.add
+        .image(this.sprite.x, this.sprite.y, this.sprite.texture.key, this.sprite.frame.name)
+        .setScale(sc, sc * p.squash)
+        .setRotation(lean)
+        .setDepth(this.sprite.depth - 2)
+        .setTintFill(RAMP_COLORS[m.trail ?? "shadow"].dark)
+        .setAlpha(0.55);
+      this.layer.add(g);
+      this.scene.tweens.add({ targets: g, alpha: 0, duration: 280, onComplete: () => g.destroy() });
+    }
+  }
+
+  /** The waist, relative to the feet (art px): below the chest by as much as the chest is below the neck. */
+  private waistOf(a: (number | null)[]) {
+    const neckY = a[10] ?? -40;
+    const torsoY = a[12] ?? -30;
+    return torsoY + (torsoY - neckY) * 1.1;
   }
 
   /**
@@ -285,7 +412,25 @@ export class Character {
     // art pixels from the feet: every part lands on the body's pixel grid and moves with it.
     const ox = this.sprite.x;
     const oy = this.sprite.y;
-    const at = (x: number | null, y: number | null) => ({ x: ox + (x ?? 0) * sc, y: oy + (y ?? 0) * sc });
+    // A move carries the anchors as it carries the body: the upper body's shift, the squash and the
+    // lean about the feet.
+    const mv = this.moveFrame();
+    const pose = mv.p;
+    const lean = pose ? ((pose.lean * Math.PI) / 180) * mv.fx : 0;
+    const waist = pose?.upper ? this.waistOf(a) : -1e9;
+    const at = (x: number | null, y: number | null) => {
+      let px = x ?? 0;
+      let py = y ?? 0;
+      if (pose) {
+        if (py < waist) {
+          px += Math.round(mv.fx * pose.upper);
+          py += Math.round(mv.fy * pose.upper * 0.5 + Math.abs(mv.fy) * Math.abs(pose.upper) * 0.3);
+        }
+        py *= pose.squash;
+        if (lean) [px, py] = [px * Math.cos(lean) - py * Math.sin(lean), px * Math.sin(lean) + py * Math.cos(lean)];
+      }
+      return { x: ox + px * sc, y: oy + py * sc };
+    };
     const mirror = dir >= 5;
     // The body's own turn this frame (roll, fall): worn gear turns with it. A mirrored frame is the
     // turned part flipped, which is the part turned the other way.
@@ -349,8 +494,80 @@ export class Character {
       const stow = part === "bow" ? -0.5 : -2.25;
       return show(img, `w/${part}/${angleFrame(stow + stowSide * 0.25 + (mirror ? -rot : rot))}`, at(ax, ay), away ? d + 0.35 : d - 0.6);
     };
-    place(this.weaponMain, main, a[0], a[1], a[2], handFront, 0);
-    place(this.weaponOff, off, a[3], a[4], a[5], handFront && view !== "side", main ? 1 : 0);
+    // A move's strokes swing the weapon along its own arc around the aim; otherwise it's held as the
+    // frame holds it (turned with the lean).
+    const m = this.action?.motion;
+    // Strokes are written for a figure facing right; facing left they're mirrored, like the body.
+    const side = Math.cos(mv.aim) < -0.01 ? -1 : 1;
+    const swing = (hand: "main" | "off", ang: number | null) => {
+      const r = pose && m ? strokeAngle(m.strokes, hand, this.poseT) : null;
+      const s = r === null ? null : r * side;
+      if (s !== null) return mv.aim + s;
+      return ang === null ? null : ang + lean;
+    };
+    const mainAng = swing("main", a[2]);
+    const offAng = swing("off", a[5]);
+    // Mid-stroke the fist travels with the blade, round the shoulder at arm's length, so the cut
+    // reads even where the drawn arm is somewhere else.
+    const orbit = (hand: "main" | "off", hx: number | null, hy: number | null): [number | null, number | null] => {
+      const r = pose && m ? strokeAngle(m.strokes, hand, this.poseT) : null;
+      const s = r === null ? null : r * side;
+      if (s === null || hx === null || hy === null || this.poseT < 1) return [hx, hy];
+      const sx = a[11] ?? hx;
+      const sy = ((a[10] ?? hy) + (a[12] ?? hy)) / 2;
+      const ang = mv.aim + s;
+      const k = 0.75;
+      return [Math.round(hx + (sx + Math.cos(ang) * 10 - hx) * k), Math.round(hy + (sy + Math.sin(ang) * 8 - hy) * k)];
+    };
+    const [mx, my] = orbit("main", a[0], a[1]);
+    const [fx2, fy2] = orbit("off", a[3], a[4]);
+    place(this.weaponMain, main, mx, my, mainAng, handFront, 0);
+    place(this.weaponOff, off, fx2, fy2, offAng, handFront && view !== "side", main ? 1 : 0);
+    for (const img of [this.cape, this.head, this.shoulderL, this.shoulderR]) img.setRotation(lean);
+    this.drawTrail(m, main, off, [mx, my, null, fx2, fy2], at, mainAng, offAng);
+  }
+
+  /** The blade's trail: a ribbon of the last ~100 ms of hand → tip, in the skill's colour, fading. */
+  private drawTrail(
+    m: SkillMotion | undefined,
+    main: string | null,
+    off: string | null,
+    a: (number | null)[],
+    at: (x: number | null, y: number | null) => { x: number; y: number },
+    mainAng: number | null,
+    offAng: number | null,
+  ) {
+    const g = this.trailGfx;
+    g.clear();
+    if (!m || !this.pose) return;
+    const now = this.testNow ?? this.scene.time.now;
+    const sc = this.meta.scale;
+    const ramp = RAMP_COLORS[m.trail ?? WEAPON_TRAIL[this.weapon]];
+    const sample = (hand: "main" | "off", part: string | null, hx: number | null, hy: number | null, ang: number | null) => {
+      const list = this.trail[hand];
+      if (part && hx !== null && hy !== null && ang !== null && inStroke(m.strokes, hand, this.poseT)) {
+        const h = at(hx, hy);
+        const reach = (REACH[part] ?? 10) * sc;
+        list.push({ hx: h.x + Math.cos(ang) * reach * 0.6, hy: h.y + Math.sin(ang) * reach * 0.6, tx: h.x + Math.cos(ang) * reach * 1.08, ty: h.y + Math.sin(ang) * reach * 1.08, at: now });
+      }
+      while (list.length && now - list[0].at > 110) list.shift();
+      g.setDepth(this.depth + 0.5);
+      for (let i = 1; i < list.length; i++) {
+        const p = list[i - 1];
+        const q = list[i];
+        const k = 1 - (now - q.at) / 110;
+        // Pixel grid: the ribbon's corners on whole art pixels.
+        const r = (v: number) => Math.round(v / sc) * sc;
+        g.fillStyle(ramp.mid, 0.45 * k);
+        g.fillTriangle(r(p.hx), r(p.hy), r(p.tx), r(p.ty), r(q.tx), r(q.ty));
+        g.fillTriangle(r(p.hx), r(p.hy), r(q.tx), r(q.ty), r(q.hx), r(q.hy));
+        // The edge itself: a bright line along the path of the tip.
+        g.lineStyle(sc, ramp.hot, 0.9 * k);
+        g.lineBetween(r(p.tx), r(p.ty), r(q.tx), r(q.ty));
+      }
+    };
+    sample("main", main, a[0], a[1], mainAng);
+    sample("off", off, a[3], a[4], offAng);
   }
 
   private footstep(x: number, y: number, at: { x: number; y: number }) {
@@ -367,6 +584,8 @@ export class Character {
 
   destroy() {
     for (const p of [this.cape, this.head, this.shoulderL, this.shoulderR, this.weaponMain, this.weaponOff]) p.destroy();
+    this.upperSprite.destroy();
+    this.trailGfx.destroy();
     this.sprite.destroy();
     this.shadow.destroy();
     this.label.destroy();

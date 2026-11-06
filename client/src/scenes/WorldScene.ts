@@ -170,6 +170,7 @@ export class WorldScene extends Phaser.Scene {
         if (c) c.corpse(mode);
         else this.pendingCorpse.set(id, mode);
       },
+      beatOf: (id) => (this.me && id === this.room?.sessionId ? this.me.char.chainBeat : this.remotes.get(id)?.char.chainBeat ?? 0),
       punch: (amount, ms) => {
         this.punchAmount = amount;
         this.punchUntil = this.time.now + ms;
