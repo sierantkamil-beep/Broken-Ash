@@ -1,55 +1,9 @@
 import { ALL_SKILLS } from "../net/loadout";
 import Phaser from "phaser";
+import { DEPTH_INK, DEPTH_INK_GROUND, InkPlayer } from "./ink/compose";
+import { blot, paint, splatter } from "./ink/ink";
 import { PATHS, worldToScreen, type FxEvent, type SkillDef } from "@broken-ash/shared";
 import { settings } from "../settings";
-
-/** Look of each skill's visual (SkillDef.vfx). */
-const STYLE: Record<string, { color: number; kind: "arc" | "ring" | "bolt" | "line" | "aura" | "zone" | "bolt_big"; size?: number }> = {
-  slash: { color: 0xe8e2d8, kind: "arc" },
-  slash_red: { color: 0xd02018, kind: "arc", size: 1.3 },
-  dash_slash: { color: 0xf0e8e0, kind: "line" },
-  whirl: { color: 0xe0d8d0, kind: "ring" },
-  cleave: { color: 0xd8c8a8, kind: "arc", size: 1.4 },
-  oath: { color: 0xc8a050, kind: "aura" },
-  roots: { color: 0x6a4a28, kind: "ring" },
-  quake: { color: 0xa88a60, kind: "ring", size: 1.3 },
-  bark: { color: 0x7a5a30, kind: "aura" },
-  grove: { color: 0x5a7a30, kind: "zone" },
-  blood_bolt: { color: 0xb0100c, kind: "bolt" },
-  blood_lance: { color: 0xd0140e, kind: "bolt_big" },
-  sigil: { color: 0xb0100c, kind: "zone" },
-  drink: { color: 0xc01010, kind: "ring" },
-  veil: { color: 0x8a0a10, kind: "aura" },
-  flood: { color: 0x9a0a0c, kind: "arc", size: 1.8 },
-  fire_bolt: { color: 0xff7a2a, kind: "bolt" },
-  pyre: { color: 0xff6a20, kind: "zone" },
-  ignite: { color: 0xffa040, kind: "ring", size: 1.4 },
-  nova_fire: { color: 0xff6a20, kind: "ring", size: 1.2 },
-  phoenix: { color: 0xff8a30, kind: "bolt_big" },
-  gust: { color: 0xc8e0f0, kind: "arc" },
-  lightning: { color: 0xa8d0ff, kind: "line" },
-  blink: { color: 0xc8e0f0, kind: "ring" },
-  gale: { color: 0xd8e8f0, kind: "arc", size: 1.6 },
-  ward: { color: 0x8ab8f0, kind: "aura" },
-  tempest: { color: 0x8ab8ff, kind: "zone" },
-  wisp: { color: 0xa8d8e8, kind: "bolt" },
-  raise: { color: 0x9ad0e0, kind: "aura" },
-  curse: { color: 0x6a3a8a, kind: "ring" },
-  rot: { color: 0x6a8a3a, kind: "zone" },
-  toll: { color: 0xa8d8e8, kind: "ring", size: 1.3 },
-  feast: { color: 0x8ad0c0, kind: "arc", size: 1.3 },
-  arrow: { color: 0xe0d0b0, kind: "bolt" },
-  arrow_mark: { color: 0xf0c040, kind: "bolt" },
-  arrow_heavy: { color: 0xf0e0c0, kind: "bolt_big" },
-  volley: { color: 0xd8c8a0, kind: "ring" },
-  snare: { color: 0x8a7a50, kind: "zone" },
-  fade: { color: 0x404860, kind: "aura" },
-  knife: { color: 0xc8d0d8, kind: "bolt" },
-  dart: { color: 0x80c040, kind: "bolt" },
-  smoke: { color: 0x606870, kind: "zone" },
-  boil: { color: 0x80c040, kind: "ring", size: 1.2 },
-  antidote: { color: 0x80d080, kind: "aura" },
-};
 
 const SKILLS: Map<string, SkillDef> = ALL_SKILLS;
 
@@ -113,6 +67,8 @@ export interface VfxHooks {
   shake(intensity: number, ms: number): void;
   banner(title: string, sub?: string): void;
   isMe(id: string): boolean;
+  /** The ink accent of a caster's path (shadow-ink skill visuals). */
+  accentOf(id: string): number;
 }
 
 /**
@@ -122,12 +78,15 @@ export interface VfxHooks {
 export class Vfx {
   private live: Live[] = [];
   private decals = 0;
+  private readonly ink: InkPlayer;
 
   constructor(
     private readonly scene: Phaser.Scene,
     private readonly layer: Phaser.GameObjects.Layer,
     private readonly hooks: VfxHooks,
-  ) {}
+  ) {
+    this.ink = new InkPlayer(scene, layer);
+  }
 
   handle(e: FxEvent) {
     switch (e.t) {
@@ -136,17 +95,17 @@ export class Vfx {
         if (!skill) return;
         this.hooks.playSound(`sfx_${skill.sfx}`, 0.6, worldToScreen(e.x, e.y));
         // Melee and self shapes show when they land (after the wind-up).
-        this.scene.time.delayedCall(skill.windup * 1000, () => this.castShape(skill, e.x, e.y, e.aim, e.id));
+        this.scene.time.delayedCall(skill.windup * 1000, () => this.castShape(skill, e.vfx || skill.vfx, e.x, e.y, e.aim, e.id));
         break;
       }
       case "bolt":
-        this.bolt(e.skill, e.x, e.y, e.aim, e.speed, e.range);
+        this.bolt(e.vfx, e.x, e.y, e.aim, e.speed, e.range, this.hooks.accentOf(e.owner));
         break;
       case "zone":
-        this.zone(e.skill, e.x, e.y, e.radius, e.duration);
+        this.ink.zone(e.vfx, worldToScreen(e.x, e.y), e.radius, e.duration, this.hooks.accentOf(e.owner));
         break;
       case "area":
-        this.areaBurst(e.skill, e.x, e.y, e.radius);
+        this.ink.circle(e.radius, e.vfx, worldToScreen(e.x, e.y), this.hooks.accentOf(e.owner));
         break;
       case "hit":
         this.hit(e);
@@ -194,6 +153,23 @@ export class Vfx {
     }
   }
 
+  /**
+   * Paints a bar's ink in idle moments, one skill at a time, so nobody's first cast stutters.
+   * Called when a player's bar changes (join, weapon or picks).
+   */
+  warm(skills: SkillDef[], accent: number) {
+    const queue = [...skills];
+    const next = () => {
+      const s = queue.shift();
+      if (!s) return;
+      this.ink.warm(s, s.vfx, accent);
+      const idle = (window as unknown as { requestIdleCallback?: (cb: () => void) => void }).requestIdleCallback;
+      if (idle) idle(next);
+      else setTimeout(next, 50);
+    };
+    next();
+  }
+
   private add(l: Live) {
     this.live.push(l);
   }
@@ -214,86 +190,20 @@ export class Vfx {
     return g;
   }
 
-  private castShape(skill: SkillDef, x: number, y: number, aim: number, caster: string) {
-    const st = STYLE[skill.vfx] ?? { color: 0xffffff, kind: "arc" };
+  /** Melee, line and self skills, in shadow-ink, where they land (after the wind-up). */
+  private castShape(skill: SkillDef, vfx: string, x: number, y: number, aim: number, caster: string) {
     const loc = this.hooks.locate(caster);
-    const cx = loc?.wx ?? x;
-    const cy = loc?.wy ?? y;
+    const at = loc ? { x: loc.x, y: loc.y } : worldToScreen(x, y);
+    const accent = this.hooks.accentOf(caster);
     const sh = skill.shape;
-    if (sh.kind === "cone") this.arc(cx, cy, aim, sh.range * (st.size && st.kind === "arc" ? 1 : 1), sh.arc, st.color, st.size ?? 1);
+    if (sh.kind === "cone") this.ink.arc(skill, vfx, at, aim, accent);
     else if (sh.kind === "line") {
-      if (skill.vfx === "lightning") this.lightning(cx, cy, aim, sh.length, st.color);
-      else this.streak(cx, cy, aim, sh.length, sh.width, st.color);
-    } else if (sh.kind === "circle" && sh.at === "self") this.ring(cx, cy, sh.radius, st.color, 380, 0.75);
-    else if (sh.kind === "self") this.aura(caster, st.color);
-  }
-
-  /** A sweeping crescent: the edge of a blade (or a wave of blood, a gust). */
-  private arc(x: number, y: number, aim: number, range: number, arcDeg: number, color: number, size: number) {
-    const g = this.graphics();
-    const start = this.scene.time.now;
-    const dur = 220 * size;
-    this.add({
-      until: start + dur,
-      update: (now) => {
-        const k = (now - start) / dur;
-        g.clear();
-        const sweep = Math.min(1, k * 1.6);
-        const half = arcDeg / 2;
-        const a0 = aim - (half * Math.PI) / 180;
-        const a1 = a0 + ((arcDeg * Math.PI) / 180) * sweep;
-        const pts = wedge(x, y, (a0 + a1) / 2, range, ((a1 - a0) * 180) / Math.PI, range * 0.55);
-        g.fillStyle(color, 0.55 * (1 - k));
-        g.fillPoints(pts, true);
-      },
-      destroy: () => g.destroy(),
-    });
-  }
-
-  private streak(x: number, y: number, aim: number, length: number, width: number, color: number) {
-    const g = this.graphics();
-    const start = this.scene.time.now;
-    this.add({
-      until: start + 260,
-      update: (now) => {
-        const k = (now - start) / 260;
-        g.clear();
-        g.fillStyle(color, 0.5 * (1 - k));
-        g.fillPoints(rect(x - Math.cos(aim) * length * 0.8, y - Math.sin(aim) * length * 0.8, aim, length, width * (1 - k * 0.6)), true);
-      },
-      destroy: () => g.destroy(),
-    });
-  }
-
-  private lightning(x: number, y: number, aim: number, length: number, color: number) {
-    const g = this.graphics(9.5e6);
-    const start = this.scene.time.now;
-    this.hooks.shake(0.004, 120);
-    this.add({
-      until: start + 240,
-      update: (now) => {
-        g.clear();
-        const alpha = 1 - (now - start) / 240;
-        for (const [w, a] of [[6, 0.35], [2, 1]] as const) {
-          g.lineStyle(w, color, a * alpha);
-          g.beginPath();
-          let px = x;
-          let py = y;
-          const s0 = worldToScreen(px, py);
-          g.moveTo(s0.x, s0.y - 60);
-          for (let i = 1; i <= 10; i++) {
-            const t = (i / 10) * length;
-            const j = i < 10 ? (Math.random() - 0.5) * 0.7 : 0;
-            px = x + Math.cos(aim) * t - Math.sin(aim) * j;
-            py = y + Math.sin(aim) * t + Math.cos(aim) * j;
-            const s = worldToScreen(px, py);
-            g.lineTo(s.x, s.y - 60);
-          }
-          g.strokePath();
-        }
-      },
-      destroy: () => g.destroy(),
-    });
+      // Dashes start where the caster stood; the server has already moved them.
+      const from = sh.length && skill.effects.some((e) => e.kind === "dash" && e.distance > 0) ? worldToScreen(x, y) : at;
+      this.ink.line(skill, vfx, from, aim, accent);
+      if (vfx.includes("lightning")) this.hooks.shake(0.004, 120);
+    } else if (sh.kind === "circle" && sh.at === "self") this.ink.circle(sh.radius, vfx, at, accent);
+    else if (sh.kind === "self") this.ink.aura(vfx, at, accent);
   }
 
   /** An expanding ring on the ground (whirls, quakes, novas, bells). */
@@ -314,115 +224,34 @@ export class Vfx {
     });
   }
 
-  private aura(caster: string, color: number) {
-    const g = this.graphics();
-    const start = this.scene.time.now;
-    this.add({
-      until: start + 700,
-      update: (now) => {
-        const loc = this.hooks.locate(caster);
-        if (!loc) return;
-        const k = (now - start) / 700;
-        g.clear();
-        g.lineStyle(4, color, 0.8 * (1 - k));
-        for (let i = 0; i < 3; i++) {
-          const r = 0.5 + ((k + i / 3) % 1) * 0.5;
-          const h = ((k + i / 3) % 1) * 120;
-          g.strokeEllipse(loc.x, loc.y - h, r * 90, r * 45);
-        }
-      },
-      destroy: () => g.destroy(),
-    });
-  }
-
-  private areaBurst(skill: string, x: number, y: number, radius: number) {
-    const s = SKILLS.get(skill);
-    const st = s ? STYLE[s.vfx] : undefined;
-    if (!st) return;
-    this.ring(x, y, radius, st.color, 420, 0.8);
-    if (s?.vfx === "volley") for (let i = 0; i < 14; i++) this.scene.time.delayedCall(i * 25, () => this.dropStreak(x + (Math.random() - 0.5) * radius * 1.6, y + (Math.random() - 0.5) * radius * 1.6, st.color));
-  }
-
-  private dropStreak(x: number, y: number, color: number) {
-    const g = this.graphics();
-    const start = this.scene.time.now;
-    const s = worldToScreen(x, y);
-    this.add({
-      until: start + 180,
-      update: (now) => {
-        const k = (now - start) / 180;
-        g.clear();
-        g.lineStyle(2, color, 1 - k);
-        g.lineBetween(s.x, s.y - 300 * (1 - k), s.x, s.y - 300 * (1 - k) + 40);
-      },
-      destroy: () => g.destroy(),
-    });
-  }
-
-  private bolt(skill: string, x: number, y: number, aim: number, speed: number, range: number) {
-    const s = SKILLS.get(skill);
-    const st = (s && STYLE[s.vfx]) ?? { color: 0xffffff, kind: "bolt" as const };
-    const big = st.kind === "bolt_big";
-    const img = this.scene.add.image(0, 0, "fx", "glow").setBlendMode(Phaser.BlendModes.ADD).setTint(st.color).setScale(big ? 0.4 : 0.18).setDepth(9.35e6);
-    const core = this.scene.add.image(0, 0, "fx", "ember").setBlendMode(Phaser.BlendModes.ADD).setTint(0xffffff).setScale(big ? 2.2 : 1.3).setDepth(9.36e6);
-    this.layer.add([img, core]);
-    const trail = this.graphics();
+  /** A projectile: an ink comet in flight, shedding drops that dry on the ground where it passed. */
+  private bolt(vfx: string, x: number, y: number, aim: number, speed: number, range: number, accent: number) {
+    const big = /lance|phoenix|heavy|chain|procession/.test(vfx);
+    const c = this.ink.comet(vfx, aim, accent, big);
+    const img = this.scene.add.image(0, 0, c.key, 0).setOrigin(c.ox / c.w, c.oy / c.h).setScale(2).setDepth(DEPTH_INK);
+    this.layer.add(img);
+    const drop = paint(this.scene, `drop|${accent}`, [...blot(0, 0, 2.2, 1, 0, true), ...splatter(0, 0, 3, 3, 2, 0.1)], { accent, frames: 6, reveal: 0.2 });
     const start = this.scene.time.now;
     const life = (range / speed) * 1000;
     const height = 70;
+    let lastDrop = 0;
     this.add({
       until: start + life,
       update: (now) => {
         const t = (now - start) / 1000;
         const d = Math.min(range, t * speed);
-        const wx = x + Math.cos(aim) * d;
-        const wy = y + Math.sin(aim) * d;
-        const p = worldToScreen(wx, wy);
-        img.setPosition(p.x, p.y - height);
-        core.setPosition(p.x, p.y - height);
-        const tail = worldToScreen(x + Math.cos(aim) * Math.max(0, d - (big ? 2.2 : 1.2)), y + Math.sin(aim) * Math.max(0, d - (big ? 2.2 : 1.2)));
-        trail.clear();
-        trail.lineStyle(big ? 10 : 4, st.color, 0.55);
-        trail.lineBetween(tail.x, tail.y - height, p.x, p.y - height);
+        const p = worldToScreen(x + Math.cos(aim) * d, y + Math.sin(aim) * d);
+        img.setPosition(Math.round(p.x), Math.round(p.y - height));
+        if (now - lastDrop > (big ? 45 : 90)) {
+          lastDrop = now;
+          const g = this.scene.add.image(Math.round(p.x - drop.ox * 2), Math.round(p.y - height * 0.15 - drop.oy * 2), drop.key, 0).setOrigin(0, 0).setScale(2).setDepth(DEPTH_INK_GROUND + 0.5);
+          this.layer.add(g);
+          let f = 0;
+          this.scene.time.addEvent({ delay: 70, repeat: drop.frames, callback: () => (++f >= drop.frames ? g.destroy() : g.setFrame(f)) });
+        }
       },
-      destroy: () => {
-        img.destroy();
-        core.destroy();
-        trail.destroy();
-      },
+      destroy: () => img.destroy(),
     });
-  }
-
-  private zone(skill: string, x: number, y: number, radius: number, duration: number) {
-    const s = SKILLS.get(skill);
-    const st = (s && STYLE[s.vfx]) ?? { color: 0xffffff, kind: "zone" as const };
-    const g = this.graphics(-5e5, Phaser.BlendModes.ADD);
-    const start = this.scene.time.now;
-    const dur = duration * 1000;
-    const fire = s?.vfx === "pyre";
-    this.add({
-      until: start + dur,
-      update: (now) => {
-        const k = (now - start) / dur;
-        const fade = Math.min(1, (now - start) / 200, (dur - (now - start)) / 400);
-        g.clear();
-        const pulse = 0.85 + 0.15 * Math.sin(now / 120);
-        g.fillStyle(st.color, 0.22 * fade * pulse);
-        groundEllipse(g, x, y, radius);
-        g.lineStyle(3, st.color, 0.6 * fade);
-        strokeGroundEllipse(g, x, y, radius);
-        if (fire && Math.random() < 0.6) this.ember(x + (Math.random() - 0.5) * radius * 1.4, y + (Math.random() - 0.5) * radius * 1.4, 0xff8030);
-        void k;
-      },
-      destroy: () => g.destroy(),
-    });
-  }
-
-  private ember(x: number, y: number, color: number) {
-    const s = worldToScreen(x, y);
-    const img = this.scene.add.image(s.x, s.y, "fx", "ember").setBlendMode(Phaser.BlendModes.ADD).setTint(color).setDepth(9.36e6);
-    this.layer.add(img);
-    this.scene.tweens.add({ targets: img, y: s.y - Phaser.Math.Between(40, 110), alpha: 0, duration: Phaser.Math.Between(500, 900), onComplete: () => img.destroy() });
   }
 
   private hit(e: Extract<FxEvent, { t: "hit" }>) {

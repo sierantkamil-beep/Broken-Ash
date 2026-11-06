@@ -7,7 +7,7 @@
 
 - [shared](#shared) — 22 files, 5 test files
 - [server](#server) — 10 files, 4 test files
-- [client](#client) — 25 files, 3 test files
+- [client](#client) — 27 files, 3 test files
 - [desktop](#desktop) — 3 files, 1 test files
 - [tools/catalogue](#toolscatalogue) — 1 files, 1 test files
 - [Python tools](#python-tools)
@@ -160,14 +160,16 @@ Phaser 3 + Vite client: rendering, prediction, cinematics, audio, DOM UI.
 | `client/src/desktop.ts` | What the desktop app found out when it started hosting (mirrors desktop/src/network.ts). | `HostReport`, `DesktopBridge`, `desktop` | — |
 | `client/src/entities/Character.ts` | The texture key of a body dressed in a look. | `CharacterState`, `Character` | `client/src/assets/atlases`, `client/src/assets/recolor`, `client/src/audio/AudioDirector`, `client/src/net/loadout`, @broken-ash/shared, phaser |
 | `client/src/entities/UnitSprite.ts` | The synced unit fields (server/src/schema/WorldState.ts UnitState). | `UnitView`, `UnitSprite` | `client/src/assets/atlases`, `client/src/net/Interpolation`, @broken-ash/shared, phaser |
-| `client/src/fx/Vfx.ts` | Look of each skill's visual (SkillDef.vfx). | `VfxHooks`, `Vfx`, `Telegraphs` | `client/src/net/loadout`, `client/src/settings`, @broken-ash/shared, phaser |
-| `client/src/main.ts` | — | — | `client/src/desktop`, `client/src/net`, `client/src/scenes/BootScene`, `client/src/scenes/WorldScene`, `client/src/settings`, `client/src/style.css`, `client/src/ui/Creator`, `client/src/ui/dom`, `client/src/ui/hostReport`, @fontsource/cormorant-garamond, @fontsource/shippori-mincho, phaser |
+| `client/src/fx/Vfx.ts` | Projects a world-space ring onto the iso ground. | `VfxHooks`, `Vfx`, `Telegraphs` | `client/src/fx/ink/compose`, `client/src/fx/ink/ink`, `client/src/net/loadout`, `client/src/settings`, @broken-ash/shared, phaser |
+| `client/src/fx/ink/compose.ts` | Ink compositions for skills: each turns a skill's real geometry (the cone, line or circle the server hits with, projected onto the iso ground) into brush dabs, then plays the painted strip. | `DEPTH_INK`, `DEPTH_INK_GROUND`, `Played`, `InkPlayer` | `client/src/fx/ink/ink`, @broken-ash/shared, phaser |
+| `client/src/fx/ink/ink.ts` | Shadow-ink: every skill visual in Broken Ash is sumi-e brush ink (CLAUDE.md "Skill VFX"). | `ART`, `ACCENTS`, `Dab`, `InkOpts`, `paint`, `rng`, `stroke`, `splatter`, `blot`, `enso` | @broken-ash/shared, phaser |
+| `client/src/main.ts` | — | — | `client/src/desktop`, `client/src/net`, `client/src/net/loadout`, `client/src/scenes/BootScene`, `client/src/scenes/WorldScene`, `client/src/settings`, `client/src/style.css`, `client/src/ui/Creator`, `client/src/ui/dom`, `client/src/ui/hostReport`, @fontsource/cormorant-garamond, @fontsource/shippori-mincho, phaser |
 | `client/src/net/Interpolation.ts` | Renders a remote player slightly in the past, between the two snapshots around that moment. | `Snapshot`, `Interpolation` | @broken-ash/shared |
 | `client/src/net/Prediction.ts` | Movement multiplier the server will apply (path speed, slows, rooted, downed). | `Intent`, `Prediction` | @broken-ash/shared |
 | `client/src/net/loadout.ts` | The synced fields a player's bar and look are resolved from (server/src/schema/WorldState.ts). | `LoadoutView`, `pathOf`, `weaponOf`, `masteryOf`, `barOf`, `lookOf`, `ALL_SKILLS` | @broken-ash/shared |
 | `client/src/net.ts` | Accepts "host", "host:port", IPv6 (bare or "[addr]:port") or a full ws:// / http:// URL, so players can paste whatever they were given. | `toServerUrl`, `joinWorld` | @broken-ash/shared, colyseus.js |
 | `client/src/scenes/BootScene.ts` | Loads the atlases (rendered by tools/art) and the sounds (tools/audio), with a thin progress line. | `BootScene` | `client/src/audio/AudioDirector`, phaser |
-| `client/src/scenes/WorldScene.ts` | The synced player fields (mirror of server/src/schema/WorldState.ts). | `WorldScene` | `client/src/assets/atlases`, `client/src/audio/AudioDirector`, `client/src/cinematic/CinematicPlayer`, `client/src/entities/Character`, `client/src/entities/UnitSprite`, `client/src/fx/Vfx`, `client/src/net`, `client/src/net/Interpolation`, `client/src/net/Prediction`, `client/src/net/loadout`, `client/src/ui/Hud`, `client/src/ui/dom`, `client/src/world/GroundLayer`, `client/src/world/Lighting`, `client/src/world/Petals`, `client/src/world/PropLayer`, @broken-ash/shared, phaser |
+| `client/src/scenes/WorldScene.ts` | The synced player fields (mirror of server/src/schema/WorldState.ts). | `WorldScene` | `client/src/assets/atlases`, `client/src/audio/AudioDirector`, `client/src/cinematic/CinematicPlayer`, `client/src/entities/Character`, `client/src/entities/UnitSprite`, `client/src/fx/Vfx`, `client/src/fx/ink/ink`, `client/src/net`, `client/src/net/Interpolation`, `client/src/net/Prediction`, `client/src/net/loadout`, `client/src/ui/Hud`, `client/src/ui/dom`, `client/src/world/GroundLayer`, `client/src/world/Lighting`, `client/src/world/Petals`, `client/src/world/PropLayer`, @broken-ash/shared, phaser |
 | `client/src/settings.ts` | Per-player preferences, kept in localStorage (wrapped: storage can be unavailable). | `Settings`, `settings`, `saveSettings`, `onSettingsChange` | — |
 | `client/src/ui/Creator.ts` | Character creation on the title screen: body, people of origin, path. | `setupCreator` | `client/src/settings`, `client/src/ui/dom`, @broken-ash/shared |
 | `client/src/ui/Hud.ts` | The DOM HUD: your bars and skill bar, your partner, the boss, being downed. | `MeView`, `Hud` | `client/src/ui/dom`, @broken-ash/shared |
@@ -198,6 +200,14 @@ Tests: `client/src/net/Prediction.test.ts`, `client/src/net.test.ts`, `client/sr
 - `UnitSprite` (class, `client/src/entities/UnitSprite.ts`) — A Greyed (or a Graves thrall) on screen: interpolated position, walk/attack/stagger animations, a health bar, and after death a corpse that stays where it fell.
 - `Vfx` (class, `client/src/fx/Vfx.ts`) — Turns the server's combat events into things you see: slashes, bolts, burning ground, lightning, blood.
 - `Telegraphs` (class, `client/src/fx/Vfx.ts`) — Red telegraphs on the ground for the Greyed's coming attacks: they fill as the blow nears.
+- `DEPTH_INK` (const, `client/src/fx/ink/compose.ts`) — Ink sits above the night lighting (Lighting DEPTH_LIGHT 9.5e6): it's a graphic brush mark, and black ink with a pale rim under the night multiply would vanish away from the lanterns.
+- `ART` (const, `client/src/fx/ink/ink.ts`) — Shadow-ink: every skill visual in Broken Ash is sumi-e brush ink (CLAUDE.md "Skill VFX").
+- `paint` (function, `client/src/fx/ink/ink.ts`) — Paints dabs into a frame strip texture (cached by `id`).
+- `rng` (function, `client/src/fx/ink/ink.ts`) — Seeded random for stroke shapes.
+- `stroke` (function, `client/src/fx/ink/ink.ts`) — A brush stroke along a polyline (art pixels): fat where the brush lands, tapering to a dry tail, laid down from the first point to the last over [t0, t1] of the reveal.
+- `splatter` (function, `client/src/fx/ink/ink.ts`) — Ink flung from the brush: droplets around a point.
+- `blot` (function, `client/src/fx/ink/ink.ts`) — A wet blot: an uneven pool of ink (flattened onto the iso ground).
+- `enso` (function, `client/src/fx/ink/ink.ts`) — An enso: one brush circle on the ground (whirls, rings), open where the brush lifts.
 - `Interpolation` (class, `client/src/net/Interpolation.ts`) — Renders a remote player slightly in the past, between the two snapshots around that moment.
 - `Prediction` (class, `client/src/net/Prediction.ts`) — Client-side prediction for your own character.
 - `LoadoutView` (interface, `client/src/net/loadout.ts`) — The synced fields a player's bar and look are resolved from (server/src/schema/WorldState.ts).

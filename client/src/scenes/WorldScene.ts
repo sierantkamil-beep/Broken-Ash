@@ -27,6 +27,7 @@ import { Prediction } from "../net/Prediction";
 import { $ } from "../ui/dom";
 import { Hud } from "../ui/Hud";
 import { barOf, lookOf, pathOf, weaponOf } from "../net/loadout";
+import { ACCENTS } from "../fx/ink/ink";
 import { GroundLayer } from "../world/GroundLayer";
 import { Lighting, type LightSource } from "../world/Lighting";
 import { Petals } from "../world/Petals";
@@ -97,7 +98,7 @@ export class WorldScene extends Phaser.Scene {
 
   private room: Room | null = null;
   private state: StateView | null = null;
-  private me: { char: Character; pred: Prediction; view: PlayerView; lastCast: string; wasHp: number } | null = null;
+  private me: { char: Character; pred: Prediction; view: PlayerView; lastCast: string; wasHp: number; warmed?: string } | null = null;
   private remotes = new Map<string, Remote>();
   private units = new Map<string, UnitSprite>();
   private corpses: UnitSprite[] = [];
@@ -131,6 +132,10 @@ export class WorldScene extends Phaser.Scene {
       shake: (i, ms) => this.cameras.main.shake(ms, i),
       banner: (t, s) => this.hud.banner(t, s),
       isMe: (id) => id === this.room?.sessionId,
+      accentOf: (id) => {
+        const p = this.state?.players.get(id);
+        return ACCENTS[(p ? pathOf(p) : "thorn") as PathId];
+      },
     });
 
     // Fog drifts in screen space on its own camera, so zoom doesn't stretch it.
@@ -379,6 +384,10 @@ export class WorldScene extends Phaser.Scene {
       // A faint cold light that follows each player, so you never lose your elf in the dark.
       lights.push({ x: s.x, y: s.y - 30, radius: 260, color: 0xa8b0d8, intensity: 0.5, seed: 1 });
       const bar = barOf(v);
+      if (this.me.warmed !== bar.key) {
+        this.me.warmed = bar.key;
+        this.vfx.warm(bar.skills, ACCENTS[pathOf(v)]);
+      }
       this.hud.setBar(pathOf(v), bar.skills, bar.key);
       this.me.char.setBar(bar.skills);
       this.me.char.setLook(lookOf(v));

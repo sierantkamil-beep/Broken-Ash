@@ -5,6 +5,7 @@ import "@fontsource/shippori-mincho/latin-500.css";
 import "@fontsource/shippori-mincho/latin-600.css";
 import "./style.css";
 import Phaser from "phaser";
+import { ALL_SKILLS } from "./net/loadout";
 import { desktop, type HostReport } from "./desktop";
 import { joinWorld } from "./net";
 import { BootScene } from "./scenes/BootScene";
@@ -32,6 +33,8 @@ game.events.on("world-ready", (scene: WorldScene) => {
   const q = new URLSearchParams(location.search);
   if (q.get("path")) saveSettings({ path: q.get("path")!, body: (q.get("body") as "male" | "female") ?? settings.body });
   if (q.get("name")) nameInput.value = q.get("name")!;
+  // The effects gallery (tools/e2e/gallery.cjs) needs every skill's shape.
+  if (q.toString()) (window as unknown as { __skills?: unknown }).__skills = [...ALL_SKILLS.values()];
   if (q.get("autohost")) $("host-btn").click();
   else if (q.get("autojoin")) void connect(q.get("address") ?? "localhost", q.get("name") ?? "Tester");
 });
