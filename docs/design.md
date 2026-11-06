@@ -298,6 +298,23 @@ Reviving a downed partner is universal (hold F), not a class skill.
 
 ★ = in the vertical slice. Thorn × Blood is the first combo: Blood drinks from enemies the Thorn has bled.
 
+### Weapons and mastery (decided after B1)
+**Any path can wield any weapon.** The skill bar is **path 3 + weapon 3**:
+- the **weapon** gives the basic attack (LMB), the RMB skill and one more (key 1), chosen from that
+  weapon type's own **mastery tree**;
+- the **path** gives its resource, sustain, co-op combo and **3 signature skills** (keys 2–4), which work
+  with any weapon.
+
+Nine weapon types: paired blades, glaive, greatblade, blood brush, talismans, war-fan, spirit lantern,
+longbow, throwing knives. Each path has 2–3 **home weapons** (more damage and a path rider, e.g. the
+Thorn's home weapons add bleed), so off-path builds work but feel different.
+
+**Mastery** is per weapon type and levelled by fighting with it (1–10). The tree: RMB is one of two
+skills (mastery 1 and 3), key 1 one of three (mastery 2, 5, 8), and passive rows at 4, 6, 7, 9 and 10
+offer one of two modifiers (damage, cooldown, reach, extra projectile, a status rider, or a *form* that
+changes the skill's look). Mastery is saved on the host's PC with the character. The weapon you hold
+and your armour are **visible** on the character.
+
 ### Carried over from Dinusie (the parts you liked)
 - **Skill pool → loadout.** About 12 skills per path, 6 on the bar (fewer than Dinusie's 8, since action
   combat needs fewer buttons). Unlocked by level and by story moments.
@@ -507,8 +524,20 @@ The dungeons were Dinusie's best part, so their mechanics come over intact:
 
 ## 9. Art direction
 
-**Goal:** higher-resolution 2D, painterly or pre-rendered, dark palette. **No visible pixel art.**
-Characters about 96–128 px tall on a 1080p screen (Dinusie's were 32 px).
+**Goal (revised after B1):** detailed **pixel art drawn at 2×** (one art pixel = 2×2 screen pixels),
+dark palette, characters about 120 px tall on screen. The two shared character bodies and their motion
+come from **PixelLab**; everything else is ours, made to match: the map is rendered in Blender and then
+put through a pixel-art pass that keeps its detail (art resolution, generous per-prop palettes, dark
+silhouette outline), gear is hand-placed pixel parts, and skill effects are shadow-ink.
+
+**Skill effects: shadow-ink, always.** Every skill visual (now and every future one) is sumi-e ink:
+tapered brush strokes, blots and splatter, dry-brush streaks, enso rings, smoky ink trails. A black ink
+core with a pale rice-paper rim and one accent colour per path (Thorn vermilion, Bark moss, Blood
+crimson, Ash ember, Storm pale indigo, Graves lantern teal, Dusk amber, Sting venom green), so the ink
+reads on the dark night map. Gore is not a skill effect and keeps its own look.
+
+The original goal ("no visible pixel art", painterly pre-rendered characters) was dropped: the Blender
+characters never looked good enough.
 
 **Only free assets.** Allowed licenses: CC0, CC-BY, CC-BY-SA (and GPL-compatible art). Nothing bought,
 and nothing whose license forbids redistribution. Every asset gets a line in `CREDITS.md` (author, link,
