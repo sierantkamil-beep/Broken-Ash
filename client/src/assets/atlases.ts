@@ -5,7 +5,8 @@ import Phaser from "phaser";
  * only the two players' sets and the enemies actually present. While one is missing (or still
  * being rendered by tools/art/characters.py), the closest available set stands in.
  */
-const loading = new Map<string, Promise<boolean>>();
+/** Loads in flight, per game (the character screen's preview is a game of its own with its own textures). */
+const loadingByGame = new WeakMap<Phaser.Game, Map<string, Promise<boolean>>>();
 let available: Set<string> | null = null;
 
 export interface AtlasMeta {
@@ -73,6 +74,8 @@ export function greyedKey(kind: string) {
 /** Loads an atlas if it exists; resolves to whether it's usable. */
 export function ensureAtlas(scene: Phaser.Scene, key: string): Promise<boolean> {
   if (scene.textures.exists(key)) return Promise.resolve(true);
+  let loading = loadingByGame.get(scene.sys.game);
+  if (!loading) loadingByGame.set(scene.sys.game, (loading = new Map()));
   let p = loading.get(key);
   if (!p) {
     p = manifest().then(

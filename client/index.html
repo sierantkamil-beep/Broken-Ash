@@ -37,7 +37,7 @@
         <div class="statuses"></div>
       </div>
       <div id="downed" hidden><div class="title">Wykrwawiasz się</div><div class="sub"></div><div class="bar"><div class="fill"></div></div></div>
-      <div id="hint">WASD — ruch · LPM/PPM/1–4 — umiejętności · Spacja — przewrót · F — dobij / podnieś partnera · Esc — menu</div>
+      <div id="hint">WASD — ruch · LPM/PPM/1–4 — umiejętności · Spacja — przewrót · F — dobij / podnieś partnera · K — mistrzostwo broni · Esc — menu</div>
     </div>
 
     <!-- Esc menu. -->
@@ -58,41 +58,98 @@
       <div class="buttons">
         <button id="resume" class="primary">Wróć do gry</button>
         <button id="leave">Wyjdź do menu</button>
+        <button id="settings-back" hidden>Wróć</button>
       </div>
     </div>
 
-    <!-- Title screen. -->
+    <!-- Title screen and character creation. The world drifts behind them. -->
     <div id="menu">
-      <div class="brand">
-        <h1>Broken Ash</h1>
-        <div class="tagline">Jesion Świata pękł. Krew jeszcze nie zaschła.</div>
-      </div>
-      <div class="panel" id="join">
-        <label>Imię postaci
-          <input id="name" maxlength="20" placeholder="np. Kasuren Ayume" autocomplete="off" />
-        </label>
-        <div class="row2">
-          <label>Ciało
-            <select id="body"><option value="female">kobiece</option><option value="male">męskie</option></select>
-          </label>
-          <label>Lud
-            <select id="people"></select>
-          </label>
+      <div id="screen-title" class="screen">
+        <div class="brand">
+          <div id="logo-ink"></div>
+          <h1>Broken Ash</h1>
+          <div class="tagline">Jesion Świata pękł. Krew jeszcze nie zaschła.</div>
         </div>
-        <label>Ścieżka</label>
-        <div id="paths"></div>
-        <div id="path-info" class="muted small"></div>
-        <button id="host-btn" class="primary" hidden>Hostuj grę na tym komputerze</button>
-        <div class="divider" id="host-divider" hidden><span>albo dołącz do partnera</span></div>
-        <label>Adres IP partnera
-          <input id="address" placeholder="np. 100.64.0.2" autocomplete="off" />
-        </label>
-        <button id="connect-btn">Dołącz</button>
-        <div id="host-report-box"></div>
-        <div id="error" class="error" hidden></div>
+        <nav id="main-nav" class="nav">
+          <button id="nav-continue" data-go="continue"><span>Kontynuuj</span><small id="continue-name"></small></button>
+          <button data-go="create"><span>Nowa postać</span><small>ścieżka, broń, wygląd</small></button>
+          <button id="nav-chars" data-go="characters"><span>Postacie</span><small>zapisane na tym komputerze</small></button>
+          <button data-go="settings"><span>Ustawienia</span><small>dźwięk, krew, najazdy</small></button>
+          <button data-go="quit"><span>Wyjdź</span></button>
+        </nav>
+        <div class="footer">Gra dla dwojga · tylko dla dorosłych: przemoc, krew, wulgaryzmy · ↑ ↓ Enter</div>
       </div>
-      <div class="footer">Gra dla dwojga · tylko dla dorosłych: przemoc, krew, wulgaryzmy</div>
+
+      <div id="screen-chars" class="screen" hidden>
+        <div class="sheet">
+          <h2>Postacie</h2>
+          <div class="muted small">Wygląd i wybory są zapisane tutaj; mistrzostwo broni pamięta komputer hosta.</div>
+          <div id="char-list"></div>
+          <div class="row-buttons">
+            <button id="chars-back">Wstecz</button>
+            <button id="chars-new" class="primary">Nowa postać</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="screen-create" class="screen" hidden>
+        <div class="create">
+          <header class="create-head">
+            <h2 id="create-title">Nowa postać</h2>
+            <div class="steps"><span class="on">1 · Ścieżka</span><span>2 · Broń</span><span>3 · Wygląd</span><span>4 · W drogę</span></div>
+          </header>
+          <aside id="path-list" class="path-list"></aside>
+          <section class="preview-box">
+            <div id="preview"></div>
+            <div class="preview-name" id="preview-name"></div>
+            <div class="preview-controls">
+              <button id="pv-left" title="Obróć (←)">⟲</button>
+              <button data-pv="idle">Spokój</button>
+              <button data-pv="run">Bieg</button>
+              <button data-pv="attack">Atak</button>
+              <button data-pv="roll">Unik</button>
+              <button id="pv-right" title="Obróć (→)">⟳</button>
+            </div>
+          </section>
+          <section class="detail">
+            <div class="tabs">
+              <button data-tab="path" class="on">Ścieżka</button>
+              <button data-tab="weapon">Broń</button>
+              <button data-tab="look">Wygląd</button>
+            </div>
+            <div id="tab-path" class="tab"></div>
+            <div id="tab-weapon" class="tab" hidden></div>
+            <div id="tab-look" class="tab" hidden></div>
+          </section>
+          <footer class="create-foot">
+            <label class="name-field">Imię postaci
+              <input id="name" maxlength="20" placeholder="np. Kasuren Ayume" autocomplete="off" />
+            </label>
+            <button id="create-back">Wstecz</button>
+            <button id="create-next" class="primary">Dalej — wyrusz</button>
+          </footer>
+        </div>
+      </div>
+
+      <div id="screen-lobby" class="screen" hidden>
+        <div class="sheet lobby">
+          <h2>W drogę</h2>
+          <div id="lobby-card" class="lobby-card"></div>
+          <button id="host-btn" class="primary" hidden>Hostuj grę na tym komputerze</button>
+          <div class="divider" id="host-divider" hidden><span>albo dołącz do partnera</span></div>
+          <label>Adres IP partnera
+            <input id="address" placeholder="np. 100.64.0.2" autocomplete="off" />
+          </label>
+          <button id="connect-btn">Dołącz</button>
+          <div id="host-report-box"></div>
+          <div id="error" class="error" hidden></div>
+          <button id="lobby-back">Wstecz</button>
+        </div>
+      </div>
     </div>
+
+    <!-- In game: the weapon's mastery tree (K). -->
+    <div id="mastery" class="panel" hidden></div>
 
     <div id="tooltip" hidden></div>
     <script type="module" src="/src/main.ts"></script>

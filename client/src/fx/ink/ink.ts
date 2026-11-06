@@ -71,6 +71,33 @@ const cache = new Map<string, { key: string; frames: number; ox: number; oy: num
 export function paint(scene: Phaser.Scene, id: string, dabs: Dab[], o: InkOpts) {
   const hit = cache.get(id);
   if (hit && scene.textures.exists(hit.key)) return hit;
+  const r = rasterize(dabs, o, (w, h) => scene.textures.createCanvas(`ink:${id}`, w, h)!.getContext());
+  const tex = scene.textures.get(`ink:${id}`) as Phaser.Textures.CanvasTexture;
+  for (let f = 0; f < r.frames; f++) tex.add(f, 0, f * r.w, 0, r.w, r.h);
+  tex.refresh();
+  tex.setFilter(Phaser.Textures.FilterMode.NEAREST);
+  const out = { key: `ink:${id}`, frames: r.frames, ox: r.ox, oy: r.oy, w: r.w, h: r.h };
+  cache.set(id, out);
+  return out;
+}
+
+/**
+ * One finished ink mark on a plain canvas (skill icons in the HUD and menus): the last frame of the
+ * reveal, before any drying.
+ */
+export function inkCanvas(dabs: Dab[], accent: number): HTMLCanvasElement {
+  let canvas!: HTMLCanvasElement;
+  rasterize(dabs, { accent, frames: 1, reveal: 1 }, (w, h) => {
+    canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    return canvas.getContext("2d")!;
+  });
+  return canvas;
+}
+
+/** Paints dabs into a strip of frames on the context `make` gives (sized w·frames × h). */
+function rasterize(dabs: Dab[], o: InkOpts, make: (w: number, h: number) => CanvasRenderingContext2D) {
   const frames = o.frames ?? 9;
   const reveal = o.reveal ?? 0.35;
   const pad = 3;
@@ -92,9 +119,7 @@ export function paint(scene: Phaser.Scene, id: string, dabs: Dab[], o: InkOpts) 
   const oy = Math.ceil(-y0) + pad;
   const w = Math.ceil(x1 - x0) + pad * 2;
   const h = Math.ceil(y1 - y0) + pad * 2;
-  const key = `ink:${id}`;
-  const tex = scene.textures.createCanvas(key, w * frames, h)!;
-  const ctx = tex.getContext();
+  const ctx = make(w * frames, h);
   const img = ctx.createImageData(w * frames, h);
   const px = img.data;
   const ac = [(o.accent >> 16) & 255, (o.accent >> 8) & 255, o.accent & 255];
@@ -176,12 +201,7 @@ export function paint(scene: Phaser.Scene, id: string, dabs: Dab[], o: InkOpts) 
     }
   }
   ctx.putImageData(img, 0, 0);
-  for (let f = 0; f < frames; f++) tex.add(f, 0, f * w, 0, w, h);
-  tex.refresh();
-  tex.setFilter(Phaser.Textures.FilterMode.NEAREST);
-  const out = { key, frames, ox, oy, w, h };
-  cache.set(id, out);
-  return out;
+  return { frames, ox, oy, w, h };
 }
 
 // ------------------------------------------------------------------------------------- strokes

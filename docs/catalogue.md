@@ -7,7 +7,7 @@
 
 - [shared](#shared) — 22 files, 5 test files
 - [server](#server) — 10 files, 4 test files
-- [client](#client) — 27 files, 3 test files
+- [client](#client) — 31 files, 3 test files
 - [desktop](#desktop) — 3 files, 1 test files
 - [tools/catalogue](#toolscatalogue) — 1 files, 1 test files
 - [Python tools](#python-tools)
@@ -162,8 +162,8 @@ Phaser 3 + Vite client: rendering, prediction, cinematics, audio, DOM UI.
 | `client/src/entities/UnitSprite.ts` | The synced unit fields (server/src/schema/WorldState.ts UnitState). | `UnitView`, `UnitSprite` | `client/src/assets/atlases`, `client/src/net/Interpolation`, @broken-ash/shared, phaser |
 | `client/src/fx/Vfx.ts` | Projects a world-space ring onto the iso ground. | `VfxHooks`, `Vfx`, `Telegraphs` | `client/src/fx/ink/compose`, `client/src/fx/ink/ink`, `client/src/net/loadout`, `client/src/settings`, @broken-ash/shared, phaser |
 | `client/src/fx/ink/compose.ts` | Ink compositions for skills: each turns a skill's real geometry (the cone, line or circle the server hits with, projected onto the iso ground) into brush dabs, then plays the painted strip. | `DEPTH_INK`, `DEPTH_INK_GROUND`, `Played`, `InkPlayer` | `client/src/fx/ink/ink`, @broken-ash/shared, phaser |
-| `client/src/fx/ink/ink.ts` | Shadow-ink: every skill visual in Broken Ash is sumi-e brush ink (CLAUDE.md "Skill VFX"). | `ART`, `ACCENTS`, `Dab`, `InkOpts`, `paint`, `rng`, `stroke`, `splatter`, `blot`, `enso` | @broken-ash/shared, phaser |
-| `client/src/main.ts` | — | — | `client/src/desktop`, `client/src/net`, `client/src/net/loadout`, `client/src/scenes/BootScene`, `client/src/scenes/WorldScene`, `client/src/settings`, `client/src/style.css`, `client/src/ui/Creator`, `client/src/ui/dom`, `client/src/ui/hostReport`, @fontsource/cormorant-garamond, @fontsource/shippori-mincho, phaser |
+| `client/src/fx/ink/ink.ts` | Shadow-ink: every skill visual in Broken Ash is sumi-e brush ink (CLAUDE.md "Skill VFX"). | `ART`, `ACCENTS`, `Dab`, `InkOpts`, `paint`, `inkCanvas`, `rng`, `stroke`, `splatter`, `blot`, `enso` | @broken-ash/shared, phaser |
+| `client/src/main.ts` | The settings panel from the title screen (the same panel as the in-game pause menu). | — | `client/src/desktop`, `client/src/net`, `client/src/net/loadout`, `client/src/scenes/BootScene`, `client/src/scenes/WorldScene`, `client/src/settings`, `client/src/style.css`, `client/src/ui/Mastery`, `client/src/ui/dom`, `client/src/ui/hostReport`, `client/src/ui/menu/Menu`, @broken-ash/shared, @fontsource/cormorant-garamond, @fontsource/shippori-mincho, phaser |
 | `client/src/net/Interpolation.ts` | Renders a remote player slightly in the past, between the two snapshots around that moment. | `Snapshot`, `Interpolation` | @broken-ash/shared |
 | `client/src/net/Prediction.ts` | Movement multiplier the server will apply (path speed, slows, rooted, downed). | `Intent`, `Prediction` | @broken-ash/shared |
 | `client/src/net/loadout.ts` | The synced fields a player's bar and look are resolved from (server/src/schema/WorldState.ts). | `LoadoutView`, `pathOf`, `weaponOf`, `masteryOf`, `barOf`, `lookOf`, `ALL_SKILLS` | @broken-ash/shared |
@@ -171,10 +171,14 @@ Phaser 3 + Vite client: rendering, prediction, cinematics, audio, DOM UI.
 | `client/src/scenes/BootScene.ts` | Loads the atlases (rendered by tools/art) and the sounds (tools/audio), with a thin progress line. | `BootScene` | `client/src/audio/AudioDirector`, phaser |
 | `client/src/scenes/WorldScene.ts` | The synced player fields (mirror of server/src/schema/WorldState.ts). | `WorldScene` | `client/src/assets/atlases`, `client/src/audio/AudioDirector`, `client/src/cinematic/CinematicPlayer`, `client/src/entities/Character`, `client/src/entities/UnitSprite`, `client/src/fx/Vfx`, `client/src/fx/ink/ink`, `client/src/net`, `client/src/net/Interpolation`, `client/src/net/Prediction`, `client/src/net/loadout`, `client/src/ui/Hud`, `client/src/ui/dom`, `client/src/world/GroundLayer`, `client/src/world/Lighting`, `client/src/world/Petals`, `client/src/world/PropLayer`, @broken-ash/shared, phaser |
 | `client/src/settings.ts` | Per-player preferences, kept in localStorage (wrapped: storage can be unavailable). | `Settings`, `settings`, `saveSettings`, `onSettingsChange` | — |
-| `client/src/ui/Creator.ts` | Character creation on the title screen: body, people of origin, path. | `setupCreator` | `client/src/settings`, `client/src/ui/dom`, @broken-ash/shared |
-| `client/src/ui/Hud.ts` | The DOM HUD: your bars and skill bar, your partner, the boss, being downed. | `MeView`, `Hud` | `client/src/ui/dom`, @broken-ash/shared |
+| `client/src/ui/Hud.ts` | The DOM HUD: your bars and skill bar, your partner, the boss, being downed. | `MeView`, `Hud` | `client/src/fx/ink/ink`, `client/src/ui/dom`, `client/src/ui/icons`, @broken-ash/shared |
+| `client/src/ui/Mastery.ts` | The weapon mastery panel (K): your weapon's level and progress, its tree — RMB and key-1 choices, the passive rows — and switching weapons. | `Mastery` | `client/src/fx/ink/ink`, `client/src/net/loadout`, `client/src/ui/dom`, `client/src/ui/icons`, @broken-ash/shared, colyseus.js |
 | `client/src/ui/dom.ts` | Shows a small tooltip next to the cursor while hovering `target`. | `$`, `el`, `tooltip`, `escapeHtml`, `scoped`, `endSession` | — |
 | `client/src/ui/hostReport.ts` | What the partner types (clickable to copy). | `HostLine`, `partnerAddress`, `hostLines`, `renderHostLines` | `client/src/desktop`, `client/src/ui/dom`, @broken-ash/shared |
+| `client/src/ui/icons.ts` | Skill icons in shadow-ink (the same brush as the skill visuals): a small glyph that says what the skill does — a crescent for a cut, a straight stroke for a thrust or dash, a comet for anything thrown, an enso for a whir | `skillIcon` | `client/src/fx/ink/ink`, @broken-ash/shared |
+| `client/src/ui/menu/Menu.ts` | The character is ready: show the host / join step. | `MenuHooks`, `Menu` | `client/src/fx/ink/ink`, `client/src/ui/dom`, `client/src/ui/icons`, `client/src/ui/menu/Preview`, `client/src/ui/menu/characters`, @broken-ash/shared |
+| `client/src/ui/menu/Preview.ts` | The character screen's live preview: a small Phaser game of its own showing the real paper doll — the same body atlas, recolour, armour and gear as in play — idling, running, attacking or rolling, turnable through all ei | `PreviewSpec`, `PreviewMode`, `Preview` | `client/src/audio/AudioDirector`, `client/src/entities/Character`, @broken-ash/shared, phaser |
+| `client/src/ui/menu/characters.ts` | Characters made on this computer: name, path, body, people, weapon and look. | `SavedCharacter`, `listCharacters`, `currentCharacter`, `saveCharacter`, `selectCharacter`, `deleteCharacter`, `newCharacter` | @broken-ash/shared |
 | `client/src/world/GroundLayer.ts` | Which ground draws its soft, feathered rim over which: higher priority creeps over lower (moss over flagstones, flagstones over the pond's edge). | `GroundLayer` | `client/src/world/frames`, @broken-ash/shared, phaser |
 | `client/src/world/Lighting.ts` | Screen position (px). | `LightSource`, `DEPTH_LIGHT`, `Lighting` | phaser |
 | `client/src/world/Petals.ts` | Red blossom petals drifting down across the view. | `Petals` | phaser |
@@ -203,6 +207,7 @@ Tests: `client/src/net/Prediction.test.ts`, `client/src/net.test.ts`, `client/sr
 - `DEPTH_INK` (const, `client/src/fx/ink/compose.ts`) — Ink sits above the night lighting (Lighting DEPTH_LIGHT 9.5e6): it's a graphic brush mark, and black ink with a pale rim under the night multiply would vanish away from the lanterns.
 - `ART` (const, `client/src/fx/ink/ink.ts`) — Shadow-ink: every skill visual in Broken Ash is sumi-e brush ink (CLAUDE.md "Skill VFX").
 - `paint` (function, `client/src/fx/ink/ink.ts`) — Paints dabs into a frame strip texture (cached by `id`).
+- `inkCanvas` (function, `client/src/fx/ink/ink.ts`) — One finished ink mark on a plain canvas (skill icons in the HUD and menus): the last frame of the reveal, before any drying.
 - `rng` (function, `client/src/fx/ink/ink.ts`) — Seeded random for stroke shapes.
 - `stroke` (function, `client/src/fx/ink/ink.ts`) — A brush stroke along a polyline (art pixels): fat where the brush lands, tapering to a dry tail, laid down from the first point to the last over [t0, t1] of the reveal.
 - `splatter` (function, `client/src/fx/ink/ink.ts`) — Ink flung from the brush: droplets around a point.
@@ -216,13 +221,17 @@ Tests: `client/src/net/Prediction.test.ts`, `client/src/net.test.ts`, `client/sr
 - `toServerUrl` (function, `client/src/net.ts`) — Accepts "host", "host:port", IPv6 (bare or "[addr]:port") or a full ws:// / http:// URL, so players can paste whatever they were given.
 - `BootScene` (class, `client/src/scenes/BootScene.ts`) — Loads the atlases (rendered by tools/art) and the sounds (tools/audio), with a thin progress line.
 - `Settings` (interface, `client/src/settings.ts`) — Per-player preferences, kept in localStorage (wrapped: storage can be unavailable).
-- `setupCreator` (function, `client/src/ui/Creator.ts`) — Character creation on the title screen: body, people of origin, path.
 - `Hud` (class, `client/src/ui/Hud.ts`) — The DOM HUD: your bars and skill bar, your partner, the boss, being downed.
+- `Mastery` (class, `client/src/ui/Mastery.ts`) — The weapon mastery panel (K): your weapon's level and progress, its tree — RMB and key-1 choices, the passive rows — and switching weapons.
 - `tooltip` (function, `client/src/ui/dom.ts`) — Shows a small tooltip next to the cursor while hovering `target`.
 - `scoped` (const, `client/src/ui/dom.ts`) — Listener options tied to the current game session.
 - `partnerAddress` (function, `client/src/ui/hostReport.ts`) — The address as the partner should type it: the default port is filled in on their side.
 - `hostLines` (function, `client/src/ui/hostReport.ts`) — Every way the partner can reach this host, best first, plus what to fix when the internet way failed.
 - `renderHostLines` (function, `client/src/ui/hostReport.ts`) — Renders the lines; clicking an address copies it.
+- `Menu` (class, `client/src/ui/menu/Menu.ts`) — The title screen and character creation: a real game menu (keyboard and mouse), path cards with full explanations, the weapon trees, appearance with a live preview, saved characters.
+- `PreviewSpec` (interface, `client/src/ui/menu/Preview.ts`) — The character screen's live preview: a small Phaser game of its own showing the real paper doll — the same body atlas, recolour, armour and gear as in play — idling, running, attacking or rolling, turnable through all ei
+- `SavedCharacter` (interface, `client/src/ui/menu/characters.ts`) — Characters made on this computer: name, path, body, people, weapon and look.
+- `newCharacter` (function, `client/src/ui/menu/characters.ts`) — A fresh character on a path, dressed in its people's colours with its first home weapon.
 - `GroundLayer` (class, `client/src/world/GroundLayer.ts`) — Bakes the whole ground into one render texture once: hard diamonds first, then soft rims by priority.
 - `Lighting` (class, `client/src/world/Lighting.ts`) — Night: a render texture filled with the ambient colour, with every light stamped in additively, then multiplied over the scene.
 - `Petals` (class, `client/src/world/Petals.ts`) — Red blossom petals drifting down across the view.

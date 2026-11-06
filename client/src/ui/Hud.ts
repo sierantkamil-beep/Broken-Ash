@@ -1,5 +1,7 @@
 import { PATHS, STATUS_INFO, type PathId, type SkillDef, type StatusId } from "@broken-ash/shared";
 import { $, el } from "./dom";
+import { skillIcon } from "./icons";
+import { ACCENTS } from "../fx/ink/ink";
 
 const KEYS = ["LPM", "PPM", "1", "2", "3", "4"];
 
@@ -37,7 +39,7 @@ export class Hud {
     this.slots = skills.map((s, i) => {
       const d = el("div", "skill");
       d.title = `${s.name}\n${s.description}${s.cost > 0 ? `\nKoszt: ${s.cost} (${p.resource.name})` : ""}${s.hpCost ? `\nKoszt: ${s.hpCost} życia` : ""}\nOdnowienie: ${s.cooldown} s`;
-      d.append(el("span", "key", KEYS[i]), el("span", "name", s.name), el("div", "cd"), el("div", "cdt"));
+      d.append(skillIcon(s, ACCENTS[path]), el("span", "key", KEYS[i]), el("span", "name", s.name), el("div", "cd"), el("div", "cdt"));
       box.append(d);
       return d;
     });

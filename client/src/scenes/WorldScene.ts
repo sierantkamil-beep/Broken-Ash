@@ -177,6 +177,9 @@ export class WorldScene extends Phaser.Scene {
       const slot = { Digit1: 2, Digit2: 3, Digit3: 4, Digit4: 5 }[e.code];
       if (slot !== undefined) this.cast(slot);
     });
+    kb.on("keydown-K", () => {
+      if (this.room && !this.cinematic.playing) this.game.events.emit("mastery");
+    });
     kb.on("keydown-ESC", () => {
       if (!this.room) return;
       if (this.cinematic.playing) this.room.send(MSG.skip);
