@@ -14,7 +14,9 @@ export interface JoinOptions {
 export type FxEvent =
   /** `vfx` is the skill's look for this caster (a mastery form can change it). */
   | { t: "cast"; id: string; skill: string; vfx: string; aim: number; x: number; y: number }
-  | { t: "bolt"; skill: string; vfx: string; x: number; y: number; aim: number; speed: number; range: number; owner: string }
+  | { t: "bolt"; id: number; skill: string; vfx: string; x: number; y: number; aim: number; speed: number; range: number; radius: number; owner: string }
+  /** A bolt stopped (hit, wall or end of range) at this point. */
+  | { t: "boltEnd"; id: number; x: number; y: number }
   | { t: "zone"; skill: string; vfx: string; x: number; y: number; radius: number; duration: number; owner: string }
   /** A circle skill landed (where its area is). */
   | { t: "area"; skill: string; vfx: string; x: number; y: number; radius: number; owner: string }

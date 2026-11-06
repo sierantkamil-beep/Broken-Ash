@@ -1,8 +1,7 @@
 import { ALL_SKILLS } from "../net/loadout";
 import Phaser from "phaser";
-import { DEPTH_INK, DEPTH_INK_GROUND, InkPlayer } from "./ink/compose";
-import { blot, paint, splatter } from "./ink/ink";
-import { CELL, PATHS, worldToScreen, type FxEvent, type SkillDef } from "@broken-ash/shared";
+import { groundCircle, rect, ShapePainter, wedge } from "./shapes";
+import { PATHS, worldToScreen, type FxEvent, type SkillDef } from "@broken-ash/shared";
 import { settings } from "../settings";
 
 const SKILLS: Map<string, SkillDef> = ALL_SKILLS;
@@ -13,52 +12,6 @@ interface Live {
   destroy(): void;
 }
 
-/** A world-space ring on the ground (the top-down ground is drawn flat, so it stays round). */
-function groundEllipse(g: Phaser.GameObjects.Graphics, x: number, y: number, r: number) {
-  const c = worldToScreen(x, y);
-  g.fillEllipse(c.x, c.y, r * 2 * CELL, r * 2 * CELL);
-  return c;
-}
-
-function strokeGroundEllipse(g: Phaser.GameObjects.Graphics, x: number, y: number, r: number) {
-  const c = worldToScreen(x, y);
-  g.strokeEllipse(c.x, c.y, r * 2 * CELL, r * 2 * CELL);
-}
-
-/** A world-space wedge as screen points. */
-function wedge(x: number, y: number, aim: number, range: number, arcDeg: number, inner = 0): Phaser.Math.Vector2[] {
-  const pts: Phaser.Math.Vector2[] = [];
-  const half = (arcDeg * Math.PI) / 360;
-  const n = 18;
-  for (let i = 0; i <= n; i++) {
-    const a = aim - half + (2 * half * i) / n;
-    const p = worldToScreen(x + Math.cos(a) * range, y + Math.sin(a) * range);
-    pts.push(new Phaser.Math.Vector2(p.x, p.y));
-  }
-  for (let i = n; i >= 0; i--) {
-    const a = aim - half + (2 * half * i) / n;
-    const p = worldToScreen(x + Math.cos(a) * inner, y + Math.sin(a) * inner);
-    pts.push(new Phaser.Math.Vector2(p.x, p.y));
-  }
-  return pts;
-}
-
-function rect(x: number, y: number, aim: number, length: number, width: number): Phaser.Math.Vector2[] {
-  const nx = -Math.sin(aim) * (width / 2);
-  const ny = Math.cos(aim) * (width / 2);
-  const ex = x + Math.cos(aim) * length;
-  const ey = y + Math.sin(aim) * length;
-  return [
-    [x + nx, y + ny],
-    [ex + nx, ey + ny],
-    [ex - nx, ey - ny],
-    [x - nx, y - ny],
-  ].map(([px, py]) => {
-    const s = worldToScreen(px, py);
-    return new Phaser.Math.Vector2(s.x, s.y);
-  });
-}
-
 export interface VfxHooks {
   /** Screen position (feet) and sprite height of a fighter, if on screen. */
   locate(id: string): { x: number; y: number; wx: number; wy: number; height: number } | null;
@@ -67,7 +20,7 @@ export interface VfxHooks {
   shake(intensity: number, ms: number): void;
   banner(title: string, sub?: string): void;
   isMe(id: string): boolean;
-  /** The ink accent of a caster's path (shadow-ink skill visuals). */
+  /** The accent colour of a caster's path (their skill shapes are drawn in it). */
   accentOf(id: string): number;
 }
 
@@ -78,14 +31,16 @@ export interface VfxHooks {
 export class Vfx {
   private live: Live[] = [];
   private decals = 0;
-  private readonly ink: InkPlayer;
+  private readonly shapes: ShapePainter;
+  /** Bolts in flight by server id, so a `boltEnd` stops the right one where it really stopped. */
+  private readonly bolts = new Map<number, Live & { end(x: number, y: number): void }>();
 
   constructor(
     private readonly scene: Phaser.Scene,
     private readonly layer: Phaser.GameObjects.Layer,
     private readonly hooks: VfxHooks,
   ) {
-    this.ink = new InkPlayer(scene, layer);
+    this.shapes = new ShapePainter(scene, layer);
   }
 
   handle(e: FxEvent) {
@@ -99,13 +54,16 @@ export class Vfx {
         break;
       }
       case "bolt":
-        this.bolt(e.vfx, e.x, e.y, e.aim, e.speed, e.range, this.hooks.accentOf(e.owner));
+        this.bolt(e);
+        break;
+      case "boltEnd":
+        this.bolts.get(e.id)?.end(e.x, e.y);
         break;
       case "zone":
-        this.ink.zone(e.vfx, worldToScreen(e.x, e.y), e.radius, e.duration, this.hooks.accentOf(e.owner));
+        this.shapes.zone(e.x, e.y, e.radius, e.duration, this.hooks.accentOf(e.owner));
         break;
       case "area":
-        this.ink.circle(e.radius, e.vfx, worldToScreen(e.x, e.y), this.hooks.accentOf(e.owner));
+        this.shapes.circle(e.x, e.y, e.radius, this.hooks.accentOf(e.owner));
         break;
       case "hit":
         this.hit(e);
@@ -153,23 +111,6 @@ export class Vfx {
     }
   }
 
-  /**
-   * Paints a bar's ink in idle moments, one skill at a time, so nobody's first cast stutters.
-   * Called when a player's bar changes (join, weapon or picks).
-   */
-  warm(skills: SkillDef[], accent: number) {
-    const queue = [...skills];
-    const next = () => {
-      const s = queue.shift();
-      if (!s) return;
-      this.ink.warm(s, s.vfx, accent);
-      const idle = (window as unknown as { requestIdleCallback?: (cb: () => void) => void }).requestIdleCallback;
-      if (idle) idle(next);
-      else setTimeout(next, 50);
-    };
-    next();
-  }
-
   private add(l: Live) {
     this.live.push(l);
   }
@@ -190,20 +131,22 @@ export class Vfx {
     return g;
   }
 
-  /** Melee, line and self skills, in shadow-ink, where they land (after the wind-up). */
-  private castShape(skill: SkillDef, vfx: string, x: number, y: number, aim: number, caster: string) {
+  /** Melee, line and self skills as their exact hit shapes, where they land (after the wind-up). */
+  castShape(skill: SkillDef, _vfx: string, x: number, y: number, aim: number, caster: string) {
     const loc = this.hooks.locate(caster);
-    const at = loc ? { x: loc.x, y: loc.y } : worldToScreen(x, y);
+    // The caster's world position now (the server resolves the hit from where the body is at release).
+    const ox = loc ? loc.wx : x;
+    const oy = loc ? loc.wy : y;
     const accent = this.hooks.accentOf(caster);
     const sh = skill.shape;
-    if (sh.kind === "cone") this.ink.arc(skill, vfx, at, aim, accent);
+    if (sh.kind === "cone") this.shapes.cone(ox, oy, aim, sh.range, sh.arc, accent);
     else if (sh.kind === "line") {
       // Dashes start where the caster stood; the server has already moved them.
-      const from = sh.length && skill.effects.some((e) => e.kind === "dash" && e.distance > 0) ? worldToScreen(x, y) : at;
-      this.ink.line(skill, vfx, from, aim, accent);
-      if (vfx.includes("lightning")) this.hooks.shake(0.004, 120);
-    } else if (sh.kind === "circle" && sh.at === "self") this.ink.circle(sh.radius, vfx, at, accent);
-    else if (sh.kind === "self") this.ink.aura(vfx, at, accent);
+      const dashed = skill.effects.some((e) => e.kind === "dash" && e.distance > 0);
+      this.shapes.line(dashed ? x : ox, dashed ? y : oy, aim, sh.length, sh.width, accent);
+      if (skill.vfx.includes("lightning")) this.hooks.shake(0.004, 120);
+    } else if (sh.kind === "circle" && sh.at === "self") this.shapes.circle(ox, oy, sh.radius, accent);
+    else if (sh.kind === "self") this.shapes.aura(ox, oy, accent);
   }
 
   /** An expanding ring on the ground (whirls, quakes, novas, bells). */
@@ -216,42 +159,47 @@ export class Vfx {
         const k = (now - start) / dur;
         g.clear();
         g.lineStyle(10 * (1 - k) + 2, color, alpha * (1 - k));
-        strokeGroundEllipse(g, x, y, radius * (0.35 + 0.65 * Math.sqrt(k)));
+        groundCircle(g, x, y, radius * (0.35 + 0.65 * Math.sqrt(k)), true);
         g.fillStyle(color, 0.18 * (1 - k));
-        groundEllipse(g, x, y, radius * (0.35 + 0.65 * Math.sqrt(k)));
+        groundCircle(g, x, y, radius * (0.35 + 0.65 * Math.sqrt(k)));
       },
       destroy: () => g.destroy(),
     });
   }
 
-  /** A projectile: an ink comet in flight, shedding drops that dry on the ground where it passed. */
-  private bolt(vfx: string, x: number, y: number, aim: number, speed: number, range: number, accent: number) {
-    const big = /lance|phoenix|heavy|chain|procession/.test(vfx);
-    const c = this.ink.comet(vfx, aim, accent, big);
-    const img = this.scene.add.image(0, 0, c.key, 0).setOrigin(c.ox / c.w, c.oy / c.h).setScale(2).setDepth(DEPTH_INK);
-    this.layer.add(img);
-    const drop = paint(this.scene, `drop|${accent}`, [...blot(0, 0, 2.2, 1, 0, true), ...splatter(0, 0, 3, 3, 2, 0.1)], { accent, frames: 6, reveal: 0.2 });
+  /**
+   * A projectile: a dot of its real radius flying the server's path, ended by the server's `boltEnd`
+   * (a hit, a wall or the end of its range) rather than always flying its full range.
+   */
+  private bolt(e: Extract<FxEvent, { t: "bolt" }>) {
+    const { dot, shadow } = this.shapes.bolt(e.radius ?? 0.25, this.hooks.accentOf(e.owner));
+    const lift = 22;
     const start = this.scene.time.now;
-    const life = (range / speed) * 1000;
-    const height = 70;
-    let lastDrop = 0;
-    this.add({
-      until: start + life,
-      update: (now) => {
-        const t = (now - start) / 1000;
-        const d = Math.min(range, t * speed);
-        const p = worldToScreen(x + Math.cos(aim) * d, y + Math.sin(aim) * d);
-        img.setPosition(Math.round(p.x), Math.round(p.y - height));
-        if (now - lastDrop > (big ? 45 : 90)) {
-          lastDrop = now;
-          const g = this.scene.add.image(Math.round(p.x - drop.ox * 2), Math.round(p.y - height * 0.15 - drop.oy * 2), drop.key, 0).setOrigin(0, 0).setScale(2).setDepth(DEPTH_INK_GROUND + 0.5);
-          this.layer.add(g);
-          let f = 0;
-          this.scene.time.addEvent({ delay: 70, repeat: drop.frames, callback: () => (++f >= drop.frames ? g.destroy() : g.setFrame(f)) });
-        }
+    const place = (wx: number, wy: number) => {
+      const p = worldToScreen(wx, wy);
+      shadow.setPosition(Math.round(p.x), Math.round(p.y));
+      dot.setPosition(Math.round(p.x), Math.round(p.y - lift));
+    };
+    place(e.x, e.y);
+    const live = {
+      // A safety end in case the end event is lost: the full range plus a little.
+      until: start + (e.range / e.speed) * 1000 + 250,
+      update: (now: number) => {
+        const d = Math.min(e.range, ((now - start) / 1000) * e.speed);
+        place(e.x + Math.cos(e.aim) * d, e.y + Math.sin(e.aim) * d);
       },
-      destroy: () => img.destroy(),
-    });
+      destroy: () => {
+        dot.destroy();
+        shadow.destroy();
+        this.bolts.delete(e.id);
+      },
+      end: (x: number, y: number) => {
+        place(x, y);
+        live.until = this.scene.time.now;
+      },
+    };
+    this.bolts.set(e.id, live);
+    this.add(live);
   }
 
   private hit(e: Extract<FxEvent, { t: "hit" }>) {
@@ -364,11 +312,11 @@ export class Telegraphs {
         const cx = sh.at === "aim" ? u.ax : u.x;
         const cy = sh.at === "aim" ? u.ay : u.y;
         g.fillStyle(0x8a1208, 0.22);
-        groundEllipse(g, cx, cy, sh.radius);
+        groundCircle(g, cx, cy, sh.radius);
         g.lineStyle(2, 0xd0301c, 0.7);
-        strokeGroundEllipse(g, cx, cy, sh.radius);
+        groundCircle(g, cx, cy, sh.radius, true);
         g.fillStyle(0xc0281a, 0.3);
-        groundEllipse(g, cx, cy, sh.radius * k);
+        groundCircle(g, cx, cy, sh.radius * k);
       }
     }
   }

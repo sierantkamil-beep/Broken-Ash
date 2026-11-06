@@ -21,6 +21,8 @@ const DOTS: StatusId[] = ["bleed", "burn", "poison"];
 const DOT_CAP = 24;
 
 export interface Projectile {
+  /** Names the bolt in fx events, so clients can end its visual where it really stopped. */
+  id: number;
   x: number;
   y: number;
   dx: number;
@@ -310,6 +312,8 @@ function isOnce(e: Effect): boolean {
   return e.kind === "dash" || e.kind === "resource" || e.kind === "summon" || e.kind === "zone" || e.kind === "heal";
 }
 
+let boltIds = 0;
+
 function spawnBolts(a: Arena, p: PlayerSim, skill: SkillDef, aim: number) {
   const s = skill.shape as Extract<Shape, { kind: "projectile" }>;
   const n = s.count ?? 1;
@@ -318,8 +322,9 @@ function spawnBolts(a: Arena, p: PlayerSim, skill: SkillDef, aim: number) {
     const ang = n === 1 ? aim : aim - spread / 2 + (spread * i) / (n - 1);
     const sx = p.body.x + Math.cos(ang) * 0.4;
     const sy = p.body.y + Math.sin(ang) * 0.4;
-    a.projectiles.push({ x: sx, y: sy, dx: Math.cos(ang), dy: Math.sin(ang), speed: s.speed, left: s.range, radius: s.radius, pierce: !!s.pierce, hit: new Set(), src: p.id, faction: p.faction, skill });
-    a.fx.push({ t: "bolt", skill: skill.id, vfx: skill.vfx, x: sx, y: sy, aim: ang, speed: s.speed, range: s.range, owner: p.id });
+    const id = (boltIds = (boltIds + 1) % 1e9);
+    a.projectiles.push({ id, x: sx, y: sy, dx: Math.cos(ang), dy: Math.sin(ang), speed: s.speed, left: s.range, radius: s.radius, pierce: !!s.pierce, hit: new Set(), src: p.id, faction: p.faction, skill });
+    a.fx.push({ t: "bolt", id, skill: skill.id, vfx: skill.vfx, x: sx, y: sy, aim: ang, speed: s.speed, range: s.range, radius: s.radius, owner: p.id });
   }
 }
 
@@ -346,7 +351,11 @@ export function tickProjectiles(a: Arena, dt: number) {
         }
       }
     }
-    if (done) a.projectiles.splice(i, 1);
+    if (done) {
+      a.projectiles.splice(i, 1);
+      // Without this the client flew every bolt its full range, through enemies and walls.
+      a.fx.push({ t: "boltEnd", id: b.id, x: b.x, y: b.y });
+    }
   }
 }
 

@@ -1,5 +1,5 @@
 /**
- * The shadow-ink gallery: hosts a game, then fires every skill's visual (path signatures and every
+ * The skill gallery: hosts a game, then fires every skill's visual (its exact hit shape) (path signatures and every
  * weapon skill) on a grid around the player, pauses time mid-stroke and screenshots the result, a
  * page of skills at a time, into tools/e2e/out/ink-*.png. For judging the art, not a pass/fail test.
  *
@@ -52,12 +52,12 @@ const electronPath = require(path.join(ROOT, "desktop", "node_modules", "electro
           // A 4 × 3 grid of world points around the player.
           const gx = (i % 4) - 1.5;
           const gy = Math.floor(i / 4) - 1;
-          const x = me.x + gx * 2.6 + gy * 2.6;
-          const y = me.y - gx * 2.6 + gy * 2.6;
+          const x = me.x + gx * 4.2;
+          const y = me.y + gy * 4.2;
           const aim = Math.PI * 0.25;
           const sh = sk.shape;
           const zone = sk.effects.find((e) => e.kind === "zone");
-          if (sh.kind === "projectile") s.vfx.handle({ t: "bolt", skill: sk.id, vfx: sk.vfx, x, y, aim, speed: 3, range: 40, owner: "x" });
+          if (sh.kind === "projectile") s.vfx.handle({ t: "bolt", id: 1e6 + i, skill: sk.id, vfx: sk.vfx, x, y, aim, speed: 3, range: 40, radius: sh.radius, owner: "x" });
           else if (sh.kind === "circle" && sh.at === "aim") s.vfx.handle({ t: "area", skill: sk.id, vfx: sk.vfx, x, y, radius: sh.radius, owner: "x" });
           else s.vfx.castShape(sk, sk.vfx, x, y, aim, "x");
           if (zone) s.vfx.handle({ t: "zone", skill: sk.id, vfx: sk.vfx, x: x + 0.5, y: y + 0.5, radius: zone.radius, duration: 5, owner: "x" });
@@ -86,10 +86,10 @@ const electronPath = require(path.join(ROOT, "desktop", "node_modules", "electro
         const w = l.getData("w");
         const a = s.me.char.screen;
         const me = s.me.pred.render();
-        // Same projection as the world: offset from the player's screen point.
+        // Same projection as the world (shared/src/view.ts, 64 px cells): offset from the player.
         const dx = w.x - me.x;
         const dy = w.y - me.y;
-        l.setPosition(a.x + (dx - dy) * 64, a.y + (dx + dy) * 32 + 40);
+        l.setPosition(a.x + dx * 64, a.y + dy * 64 + 40);
       }
     });
     await win.waitForTimeout(300);
