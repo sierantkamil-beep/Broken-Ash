@@ -258,6 +258,10 @@ def grass(seed):
     return col * shade(coarse * 0.4 + fine * 0.6 + tufts * 0.4, 6)[..., None]
 
 
+# Lifts for the Act 1 grounds: painted as they'd look in daylight-dark tones, they sank to black under
+# the night's multiply (the courtyard's paving and gravel are ~80–100 bright; these were ~30).
+LIFT = {"grass": 2.0, "mud": 1.9, "scorched": 1.9, "slabs": 1.7, "rock": 1.75, "planks": 1.25, "water": 1.3}
+
 GROUND = {"paving": flagstones, "moss": moss_ground, "gravel": gravel, "dirt": dirt, "water": water, "slabs": slabs, "rock": rock, "planks": planks, "mud": mud, "sap": sap, "scorched": scorched, "grass": grass}
 
 
@@ -343,7 +347,7 @@ def main():
     frames = []
     edge = periodic_noise(999, 1.1)
     for gi, (name, painter) in enumerate(GROUND.items()):
-        tex = painter(10 + gi * 7)
+        tex = painter(10 + gi * 7) * LIFT.get(name, 1.0)
         for cy in range(CELLS):
             for cx in range(CELLS):
                 im, pivot = square(tex, cx, cy, 0, edge)

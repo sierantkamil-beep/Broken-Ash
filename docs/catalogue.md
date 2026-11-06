@@ -338,7 +338,7 @@ Tests: `tools/catalogue/catalogue.test.ts`
 ## Generated assets
 
 - **`client/public/assets/audio/`** (54 files): `amb_night_wind`, `music_gate_fight`, `music_soramei_night`, `sfx_bell`, `sfx_blade`, `sfx_blade_heavy`, `sfx_blade_spin`, `sfx_blood`, `sfx_blood_heavy`, `sfx_blowpipe`, `sfx_bow`, `sfx_bow_heavy`, `sfx_burst`, `sfx_cin_split`, `sfx_dodge`, `sfx_downed`, `sfx_drink`, `sfx_execute`, `sfx_fire`, `sfx_fire_heavy`, `sfx_gate_bang`, `sfx_gong_small`, `sfx_gore`, `sfx_greyed_death`, `sfx_groan_0`, `sfx_groan_1`, `sfx_groan_2`, `sfx_hit_flesh`, `sfx_horn`, `sfx_poison`, `sfx_revive`, `sfx_roots`, `sfx_slam`, `sfx_smoke`, `sfx_spirit`, `sfx_spirit_heavy`, `sfx_step_soft_0`, `sfx_step_soft_1`, `sfx_step_soft_2`, `sfx_step_soft_3`, `sfx_step_stone_0`, `sfx_step_stone_1`, `sfx_step_stone_2`, `sfx_step_stone_3`, `sfx_tapper_roar`, `sfx_throw`, `sfx_thunder`, `sfx_title_gong`, `sfx_victory`, `sfx_whoosh`, `sfx_wind`, `ui_click`, `ui_confirm`, `ui_hover`
-- **`client/public/assets/chars/`** (23 files): `bloated_greyed`, `blood_female`, `body_female`, `body_male`, `drowned_greyed`, `eater_greyed`, `index`, `miner_greyed`, `runner_greyed`, `shambler_greyed`, `tapper_greyed`, `thorn_male`
+- **`client/public/assets/chars/`** (25 files): `bloated_greyed`, `blood_female`, `body_female`, `body_male`, `crossbow_greyed`, `drowned_greyed`, `eater_greyed`, `index`, `miner_greyed`, `runner_greyed`, `shambler_greyed`, `tapper_greyed`, `thorn_male`
 - **`client/public/assets/fx/`** (2 files): `spells`
 - **`client/public/assets/gear/`** (2 files): `gear`
 - **`client/public/assets/sprites/`** (10 files): `fx`, `ground`, `ground_px`, `props`, `props_px`
