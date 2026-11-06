@@ -4,6 +4,7 @@ import { groundCircle, rect, ShapePainter, wedge } from "./shapes";
 import { worldToScreen, type FxEvent, type SkillDef } from "@broken-ash/shared";
 import { DEPTH_GLOW, FxKit, type Handle, type Ramp } from "./fxkit";
 import { SpellFx } from "./spells";
+import { Gore, type CorpseMode } from "./gore";
 import type { LightSource } from "../world/Lighting";
 import { settings } from "../settings";
 
@@ -30,6 +31,10 @@ export interface VfxHooks {
   freeze(id: string, ms: number): void;
   /** A brief full-screen tint (lightning, executions). */
   flashScreen(color: number, ms: number): void;
+  /** How a corpse is left: gone (torn apart), charred, shocked, rotted or drained pale. */
+  corpse(id: string, mode: CorpseMode): void;
+  /** A short camera punch-in (executions). */
+  punch(amount: number, ms: number): void;
 }
 
 /**
@@ -42,6 +47,7 @@ export class Vfx {
   private readonly shapes: ShapePainter;
   readonly kit: FxKit;
   private readonly spells: SpellFx;
+  private gore: Gore | null = null;
   /** Looping status effects on each fighter (burning, poisoned, bleeding, rooted…), by id then status. */
   private readonly statusFx = new Map<string, Map<string, Handle>>();
   /** Bolts in flight by server id, so a `boltEnd` stops the right one where it really stopped. */
@@ -55,6 +61,12 @@ export class Vfx {
     this.shapes = new ShapePainter(scene, layer);
     this.kit = new FxKit(scene, layer);
     this.spells = new SpellFx(this.kit, { shake: hooks.shake, flashScreen: hooks.flashScreen, freeze: hooks.freeze });
+  }
+
+  /** The blood layer covers the map (called once the map is known). */
+  initGore(mapW: number, mapH: number) {
+    this.gore = new Gore(this.scene, this.layer, this.kit, mapW, mapH);
+    this.gore.reduced = settings.gore === "reduced";
   }
 
   /** Prepares a bar's effects in idle moments (called when a player's bar changes). */
@@ -109,7 +121,7 @@ export class Vfx {
         this.hit(e);
         break;
       case "death":
-        this.death(e.x, e.y, e.gore);
+        this.death(e);
         break;
       case "burst":
         this.ring(e.x, e.y, e.radius, 0x80b040, 450, 0.6);
@@ -117,14 +129,14 @@ export class Vfx {
         this.bloodSpray(e.x, e.y, 26, 0x5a7a20);
         break;
       case "execute": {
-        const t = this.hooks.locate(e.id);
+        // The finisher: everything holds for a heartbeat, the camera leans in, a red flash, and
+        // the blow (the death that follows always tears the body).
         this.hooks.playSound("sfx_execute", 1);
-        this.hooks.shake(0.01, 260);
-        if (t) {
-          this.bloodSpray(t.wx, t.wy, 60, 0x7a0606);
-          this.bloodPool(t.wx, t.wy, 1.2);
-        }
-        this.scene.cameras.main.flash(180, 120, 10, 6);
+        this.hooks.freeze(e.id, 160);
+        this.hooks.freeze(e.by, 160);
+        this.hooks.punch(0.12, 420);
+        this.hooks.shake(0.012, 280);
+        this.hooks.flashScreen(0x7a0a06, 200);
         break;
       }
       case "downed":
@@ -157,6 +169,7 @@ export class Vfx {
 
   update(now: number, delta = 16) {
     this.kit.update(now, delta);
+    this.gore?.update(delta);
     for (let i = this.live.length - 1; i >= 0; i--) {
       const l = this.live[i];
       if (now >= l.until) {
@@ -343,8 +356,10 @@ export class Vfx {
         this.hooks.shake(0.004, 90);
       }
       this.hooks.playSound(e.big ? "sfx_gore" : "sfx_hit_flesh", e.big ? 0.6 : 0.35, loc);
-      this.bloodSpray(loc.wx, loc.wy, e.big ? 22 : 9, 0x7a0606);
-      if (e.big || Math.random() < 0.25) this.bloodPool(loc.wx + (Math.random() - 0.5) * 0.6, loc.wy + (Math.random() - 0.5) * 0.6, e.big ? 0.8 : 0.45);
+      // Blood out the far side of the wound (fire and lightning cauterise: less of it).
+      const dry = e.cause === "fire" || e.cause === "shock";
+      this.gore?.hit(loc.x, loc.y, loc.height, e.dx ?? 0, e.dy ?? 0, !!e.big && !dry);
+      if (e.big && !dry && Math.random() < 0.5) this.gore?.pool(loc.x + (Math.random() - 0.5) * 30, loc.y + (Math.random() - 0.5) * 20, 0.5);
     }
     // Floating numbers: damage white (big ones gold), damage over time tinted, heals green, shields blue.
     const color = e.kind === "heal" ? "#7ad07a" : e.kind === "shield" ? "#8ab8f0" : e.kind === "dot" ? (e.status === "burn" ? "#ff9a40" : e.status === "poison" ? "#9ad050" : "#d04a40") : e.big ? "#f0c860" : "#f0e8e0";
@@ -365,52 +380,95 @@ export class Vfx {
     this.scene.tweens.add({ targets: txt, y: txt.y - 50, alpha: 0, duration: 800, ease: "Cubic.easeOut", onComplete: () => txt.destroy() });
   }
 
-  /** Droplets thrown from a wound; with reduced gore, a few dark sparks instead. */
-  bloodSpray(x: number, y: number, n: number, color: number) {
-    const count = settings.gore === "reduced" ? Math.ceil(n / 4) : n;
-    const s = worldToScreen(x, y);
-    for (let i = 0; i < count; i++) {
-      const img = this.scene.add.image(s.x, s.y - 70, "fx", "ember").setTint(color).setScale(Phaser.Math.FloatBetween(0.5, 1.2)).setDepth(9.36e6);
-      this.layer.add(img);
-      const a = Math.random() * Math.PI * 2;
-      const v = Phaser.Math.FloatBetween(40, 140);
-      this.scene.tweens.add({
-        targets: img,
-        x: s.x + Math.cos(a) * v,
-        y: { from: s.y - 70, to: s.y + Math.sin(a) * v },
-        alpha: { from: 1, to: 0.2 },
-        duration: Phaser.Math.Between(300, 600),
-        ease: "Quad.easeIn",
-        onComplete: () => img.destroy(),
-      });
-    }
+  /** A spray of blood (bursts, other effects). */
+  bloodSpray(x: number, y: number, n: number, _color: number) {
+    const p = worldToScreen(x, y);
+    this.gore?.spray(p.x, p.y, 30, 0, 0, n);
   }
 
-  /** A blood decal that stays on the ground (the courtyard keeps a record of the night). */
-  bloodPool(x: number, y: number, scale: number) {
-    if (settings.gore === "reduced") return;
-    const s = worldToScreen(x, y);
-    const img = this.scene.add.image(s.x, s.y, "props", `blood_pool_${Phaser.Math.Between(0, 3)}`).setScale(scale * 0.2).setAlpha(0.95).setDepth(-9e5 + this.decals++ * 0.01);
-    this.layer.add(img);
-    this.scene.tweens.add({ targets: img, scale, duration: 900, ease: "Cubic.easeOut" });
-  }
-
-  private death(x: number, y: number, gore: boolean) {
-    this.hooks.playSound("sfx_greyed_death", 0.7, worldToScreen(x, y));
-    this.bloodPool(x, y, gore ? 1.3 : 0.9);
-    if (gore && settings.gore === "full") {
-      this.hooks.playSound("sfx_gore", 0.9, worldToScreen(x, y));
-      this.bloodSpray(x, y, 50, 0x6a0404);
-      // Gibs: dark chunks thrown out that land and stay.
-      const s = worldToScreen(x, y);
-      for (let i = 0; i < 7; i++) {
-        const img = this.scene.add.image(s.x, s.y - 60, "fx", "petal_0").setTint(0x3a0404).setScale(Phaser.Math.FloatBetween(1.2, 2)).setDepth(-8e5);
-        this.layer.add(img);
-        const a = Math.random() * Math.PI * 2;
-        const d = Phaser.Math.FloatBetween(60, 170);
-        this.scene.tweens.add({ targets: img, x: s.x + Math.cos(a) * d, y: s.y + Math.sin(a) * d, angle: Phaser.Math.Between(-360, 360), duration: 500, ease: "Quad.easeOut" });
-      }
+  /**
+   * A death, broken the way it was dealt (gore.ts): torn apart by cuts, crushes and executions,
+   * charred by fire, blackened by lightning, melted by rot, drained by spirits; otherwise a body that
+   * bleeds out where it fell.
+   */
+  private death(e: Extract<FxEvent, { t: "death" }>) {
+    const p = worldToScreen(e.x, e.y);
+    const dx = e.dx ?? 0;
+    const dy = e.dy ?? 0;
+    const skin = /cross|arms|march|human/.test(e.kind ?? "") ? "human" : "grey";
+    this.hooks.playSound("sfx_greyed_death", 0.7, p);
+    const g = this.gore;
+    if (!g) return;
+    const full = settings.gore === "full";
+    const cause = e.cause ?? "cut";
+    const torn = full && e.gore && (cause === "exec" || cause === "crush" || cause === "cut" || cause === "claw" || cause === "pierce" || cause === "blood");
+    if (cause === "fire") {
+      this.hooks.corpse(e.id, "charred");
+      this.kit.emit(26, () => ({ x: p.x + (Math.random() - 0.5) * 40, y: p.y + (Math.random() - 0.5) * 20, z: Math.random() * 30, vx: (Math.random() - 0.5) * 30, vy: 0, vz: 30 + Math.random() * 60, drag: 0.02, max: 1 + Math.random(), size: 1, color: 0xffc23c, color2: 0x3a2a24 }));
+      g.pool(p.x, p.y, 0.6, 0x302420);
+      return;
     }
+    if (cause === "shock") {
+      this.hooks.corpse(e.id, "shocked");
+      this.kit.emit(18, () => ({ x: p.x + (Math.random() - 0.5) * 30, y: p.y, z: 20 + Math.random() * 30, vx: (Math.random() - 0.5) * 20, vy: 0, vz: 25 + Math.random() * 40, drag: 0.03, max: 1.2, size: 2, color: 0x54485e, color2: 0x1a1420, glow: false }));
+      this.kit.play("crackle/lightning", p.x, p.y - 20, { scale: 2, fps: 14 });
+      return;
+    }
+    if (cause === "rot") {
+      this.hooks.corpse(e.id, "rotted");
+      g.pool(p.x, p.y, 1.1, 0x9ac060);
+      this.kit.play("cloud/poison", p.x, p.y - 10, { scale: 1.6, fps: 9, loop: true, duration: 1600, alpha: 0.6 });
+      return;
+    }
+    if (cause === "spirit") {
+      this.hooks.corpse(e.id, "pale");
+      for (let i = 0; i < 3; i++) this.kit.play("mote/spirit", p.x + (i - 1) * 12, p.y - 30 - i * 8, { scale: 2, fps: 8, loop: true, duration: 900 });
+      g.pool(p.x, p.y, 0.7);
+      return;
+    }
+    if (!torn) {
+      // Bled out where it fell.
+      g.spray(p.x, p.y, 34, dx, dy, e.gore ? 34 : 14, e.gore ? 1.1 : 0.8);
+      g.pool(p.x, p.y, e.gore ? 1.25 : 0.85);
+      return;
+    }
+    this.hooks.playSound("sfx_gore", 0.9, p);
+    const off = (part: string) => `gib_${part}/${skin}/0`;
+    const bit = (part: string) => `gib_${part}/blood/0`;
+    const neck = () => ({ x: p.x, y: p.y - 4 });
+    if (cause === "crush" || (e.ok ?? 0) > 1.2) {
+      // Burst: the body comes apart.
+      this.hooks.corpse(e.id, "gone");
+      g.gib(off("torso"), p.x, p.y, 26, dx, dy, 0.6);
+      g.gib(off("head"), p.x, p.y, 44, dx, dy, 1.3);
+      g.gib(off("arm"), p.x, p.y, 30, dx, dy, 1.1);
+      g.gib(off("arm"), p.x, p.y, 30, -dy, dx, 1.0);
+      g.gib(off("leg"), p.x, p.y, 14, dy, -dx, 0.9);
+      for (const b of ["guts", "ribs", "chunk", "chunk", "chunk", "shard", "shard"]) g.gib(bit(b), p.x, p.y, 24, dx, dy, 1.2);
+      g.spray(p.x, p.y, 30, dx, dy, 70, 1.5);
+      g.pool(p.x, p.y, 1.6);
+      this.hooks.shake(0.008, 180);
+      return;
+    }
+    if (cause === "exec" || Math.random() < 0.6) {
+      // Beheaded: the head flies, the body falls in pieces, the neck pumps.
+      this.hooks.corpse(e.id, "gone");
+      g.gib(off("head"), p.x, p.y, 44, dx, dy, 1.2);
+      g.gib(off("torso"), p.x, p.y, 20, dx, dy, 0.25);
+      g.gib(off("arm"), p.x, p.y, 26, -dy, dx, 0.5);
+      g.gib(off("leg"), p.x, p.y, 10, dy, -dx, 0.35);
+      g.gib(bit("chunk"), p.x, p.y, 40, dx, dy, 1);
+      g.pump(neck, cause === "exec" ? 1400 : 900, dx, dy);
+      g.spray(p.x, p.y, 40, dx, dy, 50, 1.3);
+      g.pool(p.x, p.y, 1.5);
+      return;
+    }
+    // An arm off: the body stays where it fell, the arm lands beside it.
+    g.gib(off("arm"), p.x, p.y, 30, dx, dy, 1.1);
+    g.gib(bit("chunk"), p.x, p.y, 30, dx, dy, 1);
+    g.pump(neck, 700, dx, dy);
+    g.spray(p.x, p.y, 30, dx, dy, 40, 1.2);
+    g.pool(p.x, p.y, 1.35);
   }
 }
 

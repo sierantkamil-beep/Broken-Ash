@@ -163,3 +163,14 @@ looked broken and why; all of it was fixed.
 - Server: hits carry the attacker, the blow's direction and how it was dealt (cut, crush, fire,
   shock…), detonations are flagged, deaths carry direction, cause and overkill (for gore next),
   enemy blows send their own event.
+
+### Gore (Phase 2)
+- Blood flies the way the blow went, lands as splats and stays: one blood layer under the lighting
+  (art resolution, the whole map) keeps every drop, pool, smear and settled part for the visit.
+- Bodies break the way they were killed: crushing blows burst them (torso, head, limbs, ribs, guts,
+  bone shards that tumble, bounce, slide and smear), cuts behead or take an arm with the neck pumping,
+  executions always tear the body; fire chars the corpse and leaves embers, lightning blackens it
+  with smoke, rot melts it into a green pool, spirits drain it pale.
+- Executions: a held heartbeat on both fighters, a camera punch-in, a red flash, heavy shake.
+- Gib sprites drawn as pixel art in `tools/fx/build.py` (Greyed ash skin and human skin); the
+  reduced-gore setting keeps sprays only. `tools/e2e/gore.cjs` photographs each kind of death.

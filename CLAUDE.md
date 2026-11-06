@@ -69,7 +69,8 @@ client/   Phaser 3 + Vite.
                      Lighting (night multiply + lights), Petals (falling blossom).
   src/cinematic/     CinematicPlayer (camera, DOM overlay, events).
   src/entities/      Character (paper doll: dyed body + gear on anchors), UnitSprite (Greyed, thralls, corpses).
-  src/fx/            Vfx (combat events → effects, blood, gore, damage numbers, status loops), Telegraphs;
+  src/fx/            Vfx (combat events → effects, damage numbers, status loops), Telegraphs; gore.ts (blood
+                     layer, sprays, gibs, dismemberment by cause, corpse treatments);
                      spells.ts (every skill's effect recipe), fxkit.ts (effect sprites, pixel particles,
                      lightning, temporary lights, hit-stop), procfx.ts (big shapes at exact size),
                      shapes.ts (exact hit shapes), accents.ts (one colour per path).
@@ -92,7 +93,7 @@ tools/
   audio/  build.py (music, ambience, effects, combat sounds).
   fx/     build.py (skill-effect pixel animations in element palettes → client/public/assets/fx/spells.*).
   catalogue/ catalogue.ts (writes docs/catalogue.md).
-  e2e/    play.cjs (two Electron windows host/join and fight), menu.cjs (walks the menus, creation,
+  e2e/    play.cjs (two Electron windows host/join and fight), gore.cjs (each kind of death), menu.cjs (walks the menus, creation,
           lobby, mastery panel), gallery.cjs (every skill's shape, page by page), icons.cjs (every icon on
           one sheet); screenshots in tools/e2e/out.
 ```

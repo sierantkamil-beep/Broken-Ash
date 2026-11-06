@@ -7,7 +7,7 @@
 
 - [shared](#shared) — 22 files, 5 test files
 - [server](#server) — 10 files, 4 test files
-- [client](#client) — 34 files, 3 test files
+- [client](#client) — 35 files, 3 test files
 - [desktop](#desktop) — 3 files, 1 test files
 - [tools/catalogue](#toolscatalogue) — 1 files, 1 test files
 - [Python tools](#python-tools)
@@ -162,9 +162,10 @@ Phaser 3 + Vite client: rendering, prediction, cinematics, audio, DOM UI.
 | `client/src/desktop.ts` | What the desktop app found out when it started hosting (mirrors desktop/src/network.ts). | `HostReport`, `DesktopBridge`, `desktop` | — |
 | `client/src/entities/Character.ts` | The texture key of a body dressed in a look. | `CharacterState`, `Character` | `client/src/assets/atlases`, `client/src/assets/recolor`, `client/src/audio/AudioDirector`, `client/src/net/loadout`, @broken-ash/shared, phaser |
 | `client/src/entities/UnitSprite.ts` | The synced unit fields (server/src/schema/WorldState.ts UnitState). | `UnitView`, `UnitSprite` | `client/src/assets/atlases`, `client/src/net/Interpolation`, @broken-ash/shared, phaser |
-| `client/src/fx/Vfx.ts` | Screen position (feet) and sprite height of a fighter, if on screen. | `VfxHooks`, `Vfx`, `Telegraphs` | `client/src/fx/fxkit`, `client/src/fx/shapes`, `client/src/fx/spells`, `client/src/net/loadout`, `client/src/settings`, `client/src/world/Lighting`, @broken-ash/shared, phaser |
+| `client/src/fx/Vfx.ts` | Screen position (feet) and sprite height of a fighter, if on screen. | `VfxHooks`, `Vfx`, `Telegraphs` | `client/src/fx/fxkit`, `client/src/fx/gore`, `client/src/fx/shapes`, `client/src/fx/spells`, `client/src/net/loadout`, `client/src/settings`, `client/src/world/Lighting`, @broken-ash/shared, phaser |
 | `client/src/fx/accents.ts` | One accent colour per path: its skill shapes, icons and highlights are drawn in it. | `ACCENTS` | @broken-ash/shared |
 | `client/src/fx/fxkit.ts` | The effect toolkit every skill, hit and death is built from: - sprites: the pixel animations from tools/fx/build.py (atlas "spells"), played at a point with an aim, a scale, a blend and a depth, optionally following a fi | `ART`, `DEPTH_GLOW`, `DEPTH_GROUND`, `DEPTH_GORE_AIR`, `Ramp`, `RAMP_COLORS`, `PlayOpts`, `Particle`, `Handle`, `FxKit` | `client/src/fx/procfx`, `client/src/world/Lighting`, phaser |
+| `client/src/fx/gore.ts` | Gore. | `CorpseMode`, `Gore` | `client/src/fx/fxkit`, @broken-ash/shared, phaser |
 | `client/src/fx/procfx.ts` | Big effect shapes generated in the client at the exact size a skill needs: blade smears, whirls, shockwave rings, ground seals and cyclones. | `ProcKind`, `ProcFx` | `client/src/fx/fxkit`, phaser |
 | `client/src/fx/shapes.ts` | Skill visuals as their exact hit shapes: a cone is the wedge the server tests, a line is the rectangle, a circle has the true radius, all flat on the ground in the caster's path accent. | `DEPTH_FX_GROUND`, `DEPTH_FX`, `groundCircle`, `wedge`, `rect`, `ShapePainter` | @broken-ash/shared, phaser |
 | `client/src/fx/spells.ts` | Every skill's effect, built from its data: the element comes from the weapon (a talisman burns, a lantern haunts) or, for a path's own skills, from the path (Ash is fire, Storm lightning, Graves spirit…); the look from t | `PATH_RAMP`, `rampOf`, `Feel`, `SpellFx` | `client/src/fx/fxkit`, @broken-ash/shared |
@@ -214,6 +215,7 @@ Tests: `client/src/net/Prediction.test.ts`, `client/src/net.test.ts`, `client/sr
 - `DEPTH_GLOW` (const, `client/src/fx/fxkit.ts`) — Emissive effects glow above the night lighting (Lighting DEPTH_LIGHT 9.5e6); ground marks just above it.
 - `DEPTH_GORE_AIR` (const, `client/src/fx/fxkit.ts`) — Blood and debris sit under the lighting: the night darkens them like everything else on the ground.
 - `RAMP_COLORS` (const, `client/src/fx/fxkit.ts`) — The hottest and the base colour of each ramp (tools/fx/build.py RAMPS): particles and lights.
+- `CorpseMode` (type, `client/src/fx/gore.ts`) — Gore.
 - `DEPTH_FX_GROUND` (const, `client/src/fx/shapes.ts`) — Above the night lighting (Lighting DEPTH_LIGHT 9.5e6), so the accent colour reads the same next to a lantern and in the dark.
 - `groundCircle` (function, `client/src/fx/shapes.ts`) — A world-space circle on the ground (the top-down ground is drawn flat, so it stays round).
 - `wedge` (function, `client/src/fx/shapes.ts`) — A world-space wedge (cone hit test: shared/src/combat/geometry.ts) as screen points.
@@ -301,7 +303,7 @@ Tests: `tools/catalogue/catalogue.test.ts`
 | `tools/art/pixelate.py` | The map's pixel-art pass: takes the Blender-rendered prop and ground atlases and turns every frame into pixel art that matches the PixelLab characters (one art pixel = 2×2 screen pixels), keeping the detail and the baked | `pixelate`, `run`, `run_chars` |
 | `tools/art/render.py` | Renders every sprite with Blender (bpy) and packs them into atlases for the client. | `render_frame`, `props` |
 | `tools/audio/build.py` | Synthesises the game's music, ambience and sound effects into .ogg files (numpy + ffmpeg). | `t_axis`, `midi`, `fft_filter`, `env`, `pluck`, `flute`, `drum`, `bell`, `reverb`, `pan`, `place`, `mixin`, `loop_seamless`, `master`, `write_ogg`, `scale_note`, `music_soramei_night`, `amb_night_wind`, `sfx_title_gong`, `sfx_cin_split`, `sfx_gate_bang`, `footstep`, `sfx_dodge`, `ui_click`, `ui_hover`, `ui_confirm`, `noise`, `sweep_band`, `blade`, `impact_flesh`, `splatter`, `fire`, `thunder`, `wind_gust`, `spirit`, `bow`, `throw`, `poison_hiss`, `roots_crack`, `groan`, `roar`, `horn`, `chime`, `heartbeat`, `music_gate_fight`, `combat_sfx`, `main` |
-| `tools/fx/build.py` | Skill effects as pixel art: every effect is a short animation drawn procedurally at the game's art resolution (one art pixel = 2×2 screen pixels, like the characters) in hard-edged element palettes, then packed into one  | `hexrgb`, `noise2`, `grid`, `to_rgba`, `smooth`, `slash`, `streak`, `ring`, `sparks`, `explosion`, `flames`, `cloud`, `cyclone`, `roots`, `pillar`, `sigil`, `bubble`, `hands`, `mote`, `drip`, `crackle`, `vines`, `stars`, `proj`, `build`, `preview` |
+| `tools/fx/build.py` | Skill effects as pixel art: every effect is a short animation drawn procedurally at the game's art resolution (one art pixel = 2×2 screen pixels, like the characters) in hard-edged element palettes, then packed into one  | `hexrgb`, `noise2`, `grid`, `to_rgba`, `smooth`, `slash`, `streak`, `ring`, `sparks`, `explosion`, `flames`, `cloud`, `cyclone`, `roots`, `pillar`, `sigil`, `bubble`, `hands`, `mote`, `drip`, `crackle`, `vines`, `stars`, `proj`, `lit`, `compose`, `ellipse`, `capsule`, `gibs`, `gore_bits`, `build`, `preview` |
 | `tools/pixellab/anchors.py` | Finds where gear attaches on every body frame: head (centre + top), neck, torso, shoulders, and both hands with the arm's direction. | `region_map`, `components`, `anchors_for`, `candidates`, `pick_sheet`, `smooth`, `frames`, `resolve`, `own_shoulders`, `standing`, `moved`, `snap`, `median3`, `steady_head`, `compute`, `qa` |
 | `tools/pixellab/api.py` | Thin client for PixelLab's REST API (v2), used to build the game's sprites. | `call`, `log`, `wait` |
 | `tools/pixellab/clean.py` | Strips effects PixelLab baked into a clip (the fireball template draws a fire orb in some frames): the orb's colours, and any blob left floating off the figure, are erased, since spell visuals are the game's own (Vfx.ts) | `components`, `clean` |

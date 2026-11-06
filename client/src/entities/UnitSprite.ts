@@ -47,6 +47,7 @@ export class UnitSprite {
   private kickX = 0;
   private kickY = 0;
   private frozenUntil = 0;
+  private corpseTint = 0;
   view: UnitView;
   screen = { x: 0, y: 0 };
   depth = 0;
@@ -102,6 +103,17 @@ export class UnitSprite {
     if (freezeMs > 0) this.frozenUntil = this.scene.time.now + freezeMs;
   }
 
+  /** How the body is left: torn apart (nothing remains but the parts), charred, shocked, rotted or pale. */
+  corpse(mode: "gone" | "charred" | "shocked" | "rotted" | "pale") {
+    if (mode === "gone") {
+      this.sprite.setVisible(false);
+      this.shadow.setVisible(false);
+      this.bar.clear();
+      return;
+    }
+    this.corpseTint = { charred: 0x3a2c26, shocked: 0x3a3a4a, rotted: 0x8aa860, pale: 0xd8e0e8 }[mode];
+  }
+
   /** Death: play the fall once, then lie there as a corpse (drawn flat, under the living). */
   die() {
     this.dead = true;
@@ -134,6 +146,7 @@ export class UnitSprite {
       this.sprite.setTexture(atlas, `${death}/${dir}/${f}`);
       // Corpses lie on the ground: under anyone standing.
       this.sprite.setDepth(this.depth - 2e6);
+      if (this.corpseTint) this.sprite.setTint(this.corpseTint);
       this.shadow.setVisible(false);
       return;
     }

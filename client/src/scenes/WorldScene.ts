@@ -105,6 +105,11 @@ export class WorldScene extends Phaser.Scene {
   private remotes = new Map<string, Remote>();
   private units = new Map<string, UnitSprite>();
   private corpses: UnitSprite[] = [];
+  private corpseById = new Map<string, UnitSprite>();
+  private pendingCorpse = new Map<string, import("../fx/gore").CorpseMode>();
+  private punchAmount = 0;
+  private punchUntil = 0;
+  private punchMs = 1;
   private keys!: Record<"up" | "down" | "left" | "right" | "w" | "a" | "s" | "d" | "f", Phaser.Input.Keyboard.Key>;
   private userZoom = 1;
   private paused = false;
@@ -147,7 +152,19 @@ export class WorldScene extends Phaser.Scene {
         this.units.get(id)?.hit(0, 0, ms);
       },
       flashScreen: (color, ms) => this.cameras.main.flash(ms, (color >> 16) & 255, (color >> 8) & 255, color & 255, false),
+      corpse: (id, mode) => {
+        // The death message and the unit's removal arrive in either order: apply now or on removal.
+        const c = this.corpseById.get(id);
+        if (c) c.corpse(mode);
+        else this.pendingCorpse.set(id, mode);
+      },
+      punch: (amount, ms) => {
+        this.punchAmount = amount;
+        this.punchUntil = this.time.now + ms;
+        this.punchMs = ms;
+      },
     });
+    this.vfx.initGore(this.map.width, this.map.height);
 
     // Fog drifts in screen space on its own camera, so zoom doesn't stretch it.
     const { width, height } = this.scale;
@@ -302,8 +319,18 @@ export class WorldScene extends Phaser.Scene {
       s.die();
       if (s.view.faction === "greyed") {
         this.corpses.push(s);
+        this.corpseById.set(key, s);
+        const mode = this.pendingCorpse.get(key);
+        if (mode) {
+          s.corpse(mode);
+          this.pendingCorpse.delete(key);
+        }
         // The courtyard remembers the night, but not forever: the oldest bodies go first.
-        if (this.corpses.length > 60) this.corpses.shift()!.destroy();
+        if (this.corpses.length > 60) {
+          const old = this.corpses.shift()!;
+          for (const [k, v] of this.corpseById) if (v === old) this.corpseById.delete(k);
+          old.destroy();
+        }
       }
     });
     room.onMessage(MSG.fx, (events: FxEvent[]) => {
@@ -481,7 +508,9 @@ export class WorldScene extends Phaser.Scene {
       // Pixel art stays crisp only when each art pixel covers a whole number of screen pixels.
       const zoom = this.crispZoom(PLAY_ZOOM * this.baseZoom() * this.userZoom, px ?? 2);
       const next = Phaser.Math.Linear(cam.zoom, zoom, Math.min(1, delta / 250));
-      cam.setZoom(Math.abs(next - zoom) < 0.004 ? zoom : next);
+      // An execution leans the camera in for a moment, then eases back.
+      const punch = time < this.punchUntil ? this.punchAmount * Math.sin(Math.PI * (1 - (this.punchUntil - time) / this.punchMs)) : 0;
+      cam.setZoom((Math.abs(next - zoom) < 0.004 ? zoom : next) * (1 + punch));
       cam.roundPixels = !!px && cam.zoom === zoom;
       // Lead the camera a little towards where you aim, as action RPGs do.
       const lead = worldToScreen(Math.cos(this.aim.angle) * 0.9, Math.sin(this.aim.angle) * 0.9);

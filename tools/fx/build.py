@@ -532,6 +532,127 @@ SET = {
 }
 
 
+# ----------------------------------------------------------------------------------- gore
+# Body parts as small pixel sprites (one frame each, turned at runtime as they tumble): drawn from
+# masks in a few colour sets (skin ramps per creature, blood, bone, cloth), lit from the top left,
+# with a dark rim, like the characters.
+SKINS = {
+    "grey": ["#3a3d3a", "#62665f", "#8c908a", "#b4b8ae"],  # the Greyed: ash skin
+    "human": ["#4a2a1e", "#8a5a42", "#c8906c", "#e8b896"],  # Iron March men
+}
+BLOOD = ["#2a0306", "#5e0812", "#9a1220", "#c8302c"]
+BONE = ["#4a4438", "#8a8270", "#c8c0a8", "#eee6d0"]
+GUT = ["#3a0a10", "#7a2030", "#b04a58", "#d88890"]
+CLOTH = ["#1e1814", "#3a2e24", "#5a4836", "#7a644a"]
+HAIR = ["#0e0c0c", "#24201e", "#3a3430", "#4e4640"]
+
+
+def lit(mask, ramp_hex):
+    """A mask shaded as a rounded form: lighter towards the top left, darker towards the bottom right."""
+    h, w = mask.shape
+    cols = np.array([hexrgb(c) for c in ramp_hex], dtype=np.uint8)
+    ys, xs = np.mgrid[0:h, 0:w].astype(np.float32)
+    # Distance into the shape from its top-left edge vs bottom-right edge.
+    up = np.roll(mask, 1, 0) & np.roll(mask, 1, 1)
+    down = np.roll(mask, -1, 0) & np.roll(mask, -1, 1)
+    lvl = np.full(mask.shape, 2)
+    lvl[~down] = 1
+    lvl[~up] = 3
+    rgb = cols[np.clip(lvl, 0, 3)]
+    return rgb
+
+
+def compose(layers, w, h):
+    """Paints (mask, ramp) layers in order and draws a dark rim round the whole thing."""
+    rgb = np.zeros((h, w, 3), np.uint8)
+    a = np.zeros((h, w), bool)
+    for mask, ramp in layers:
+        rgb[mask] = lit(mask, ramp)[mask]
+        a |= mask
+    edge = np.zeros_like(a)
+    edge[1:, :] |= a[:-1, :]
+    edge[:-1, :] |= a[1:, :]
+    edge[:, 1:] |= a[:, :-1]
+    edge[:, :-1] |= a[:, 1:]
+    edge &= ~a
+    rgb[edge] = (14, 8, 10)
+    alpha = ((a | edge) * 255).astype(np.uint8)
+    return Image.fromarray(np.dstack([rgb, alpha]), "RGBA")
+
+
+def ellipse(w, h, cx, cy, rx, ry):
+    ys, xs = np.mgrid[0:h, 0:w].astype(np.float32) + 0.5
+    return ((xs - cx) / rx) ** 2 + ((ys - cy) / ry) ** 2 <= 1
+
+
+def capsule(w, h, x0, y0, x1, y1, r):
+    ys, xs = np.mgrid[0:h, 0:w].astype(np.float32) + 0.5
+    dx, dy = x1 - x0, y1 - y0
+    L2 = dx * dx + dy * dy or 1
+    k = np.clip(((xs - x0) * dx + (ys - y0) * dy) / L2, 0, 1)
+    return np.hypot(xs - (x0 + dx * k), ys - (y0 + dy * k)) <= r
+
+
+def gibs(skin):
+    S = SKINS[skin]
+    out = {}
+    # Severed head: skull, hair cap, two dim eyes, a raw neck.
+    w, h = 12, 12
+    head = ellipse(w, h, 6, 6, 4.2, 4.6)
+    hair = head & ellipse(w, h, 6, 4, 4.8, 3.2)
+    neck = ellipse(w, h, 6, 10.2, 2.6, 1.6)
+    im = compose([(head, S), (hair, HAIR), (neck, BLOOD)], w, h).copy()
+    px = im.load()
+    for ex in (4, 7):
+        px[ex, 6] = (150, 30, 24, 255) if skin == "grey" else (40, 30, 28, 255)
+    out["head"] = im
+    # Arm: upper arm and forearm, a hand, a bloody stump with a bone end.
+    w, h = 18, 8
+    arm = capsule(w, h, 3, 4, 13, 4, 1.8)
+    hand = ellipse(w, h, 14.6, 4, 2.2, 2.0)
+    stump = ellipse(w, h, 2.4, 4, 1.8, 2.1)
+    bone = ellipse(w, h, 1.2, 4, 0.9, 0.9)
+    out["arm"] = compose([(arm | hand, S), (stump, BLOOD), (bone, BONE)], w, h)
+    # Leg: thigh to shin, a dark foot, stump.
+    w, h = 20, 9
+    leg = capsule(w, h, 3, 4, 15, 4, 2.3)
+    foot = ellipse(w, h, 16.5, 5, 2.6, 1.8)
+    stump = ellipse(w, h, 2.6, 4, 2.0, 2.6)
+    out["leg"] = compose([(leg, S), (foot, CLOTH), (stump, BLOOD)], w, h)
+    # Headless torso in its rags, the neck a red ruin.
+    w, h = 18, 16
+    body = ellipse(w, h, 9, 8.5, 6.2, 7.0)
+    rags = body & (np.mgrid[0:h, 0:w][0] > 7)
+    neck = ellipse(w, h, 9, 2.6, 3.2, 2.2)
+    out["torso"] = compose([(body, S), (rags, CLOTH), (neck, BLOOD)], w, h)
+    return out
+
+
+def gore_bits():
+    out = {}
+    # Ribs: a curved cage of bone on raw meat.
+    w, h = 12, 10
+    meat = ellipse(w, h, 6, 5.5, 5, 4)
+    ys, xs = np.mgrid[0:h, 0:w].astype(np.float32) + 0.5
+    ribs = meat & ((np.round(ys) % 3) == 0) & (np.abs(xs - 6) > 0.8)
+    spine = meat & (np.abs(xs - 6) < 0.8)
+    out["ribs"] = compose([(meat, BLOOD), (ribs | spine, BONE)], w, h)
+    # Guts: coils of intestine.
+    w, h = 14, 9
+    coil = np.zeros((h, w), bool)
+    gy, gx = np.mgrid[0:h, 0:w].astype(np.float32) + 0.5
+    for cx, cy, r in ((4, 4, 3.0), (8.5, 5, 3.2), (11, 3.5, 2.2)):
+        d = np.hypot(gx - cx, gy - cy)
+        coil |= (d <= r) & (d >= r - 1.6)
+    out["guts"] = compose([(coil, GUT)], w, h)
+    # Meat chunk and bone shard.
+    w, h = 7, 6
+    out["chunk"] = compose([(ellipse(w, h, 3.5, 3, 3, 2.4), BLOOD)], w, h)
+    w, h = 6, 3
+    out["shard"] = compose([(capsule(w, h, 1, 1.5, 5, 1.5, 0.9), BONE)], w, h)
+    return out
+
+
 def build():
     os.makedirs(OUT, exist_ok=True)
     os.makedirs(SHEET, exist_ok=True)
@@ -544,6 +665,16 @@ def build():
             anims[key] = len(fields)
             for i, f in enumerate(fields):
                 frames.append((f"{key}/{i}", to_rgba(f, ramp, outline=outline), pivot))
+    # Gore: body parts per skin, and loose bits (one frame each).
+    for skin in SKINS:
+        for part, im in gibs(skin).items():
+            key = f"gib_{part}/{skin}"
+            anims[key] = 1
+            frames.append((f"{key}/0", im, (im.width / 2, im.height / 2)))
+    for part, im in gore_bits().items():
+        key = f"gib_{part}/blood"
+        anims[key] = 1
+        frames.append((f"{key}/0", im, (im.width / 2, im.height / 2)))
     print("fx frames", len(frames))
     size = pack_atlas(frames, os.path.join(OUT, "spells.png"), os.path.join(OUT, "spells.json"))
     data = json.load(open(os.path.join(OUT, "spells.json")))
