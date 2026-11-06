@@ -77,3 +77,22 @@ What each milestone actually built. The plan is `docs/design.md` §11.
 - Budget: 40 trial generations; a rejected Thorn concept (kept for an NPC) and a rejected custom
   sword-slash test are the only waste.
 
+### Weapons, visible gear, shadow-ink, one pixel style, a real menu
+- **Weapon mastery.** Nine weapon types (paired blades, glaive, greatblade, blood brush, talismans,
+  war-fan, spirit lantern, longbow, throwing knives), each with a tree: basic attack, RMB (1 of 2),
+  key 1 (1 of 3), five passive rows. Any path wields any weapon; the bar is weapon 3 + path 3
+  (signature skills). Home weapons: +15 % and the path's rider. Mastery grows from weapon-skill damage,
+  is saved on the host (`Profiles`), and the tree is picked in game (K) between waves. Balance sim
+  covers paths with home weapons and every weapon off-path.
+- **Gear on the body.** Per-frame anchors (detector for head, neck, torso and shoulders; hands
+  picked by eye on numbered candidates for strike/cast/idle); weapons, six head pieces, shoulder
+  plates, fur mantle and capes as hand-placed pixel parts; looks with 16 dyes, 5 skin tones and armour
+  materials (lamellar, scale, silk, leather, bark) drawn into the tunic in every frame.
+- **Shadow-ink skills.** A brush-dab painter (ink core, broken rice-paper rim, path accent) and
+  compositions for every skill shape; drawn above the night lighting, pre-painted per bar; ink skill
+  icons on the HUD and in menus.
+- **One pixel style.** The Blender props, ground and Greyed go through a pixel-art pass (art
+  resolution, per-frame palettes, soft-shadow alpha step, dark outlines).
+- **Menu.** Title screen with keyboard navigation, saved characters, three-column creation with
+  full path and weapon explanations and a live paper-doll preview, lobby for host/join.
+

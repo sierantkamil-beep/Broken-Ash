@@ -32,7 +32,7 @@ for porting its systems.
 | Paths (classes) | 8: 2 melee, 4 magic, 2 ranged. No healers or pure tanks; every path deals damage, sustains itself and has co-op combos. | Always exactly two players; support roles would be boring. |
 | Building | Core pillar: the players build, furnish and defend their fortress (Ostoja). Raids outside the story are a **setting** (on by default). | The users love building. |
 | Language | Player-facing content in **Polish**; code, comments, docs, data keys in English. Avoid gendered verb forms where possible; counts via `plural()`. | User request; the two players are different genders. |
-| Art | **PixelLab** (pixellab.ai) generates the hard parts: the **two shared bodies** (male/female, 64 px, 8 rotations) and their motion (run, strike, cast; 5 directions, the other 3 mirrored). Everything else is ours, made from those pixels: path looks by **palette recolour** (`shared/src/data/looks.ts`, `client/src/assets/recolor.ts`), idle/hit/death/roll derived in `tools/pixellab/derive.py`, gear add-ons drawn on top later. Pixel art drawn at 2× with nearest filtering and whole-pixel zoom. Generations are scarce (40 on the trial): test one direction before buying the rest. Props/ground still from the Blender pipeline. Free assets (CC0/CC-BY/CC-BY-SA) only with a `CREDITS.md` entry; **nothing paid**. | User decision ("visuals still ugly"; "male/female models, animations within the skills, armour that actually appears"). |
+| Art | **PixelLab** (pixellab.ai) generates the hard parts: the **two shared bodies** (male/female, 64 px, 8 rotations) and their motion (run, strike, cast; 5 directions, the other 3 mirrored). Everything else is ours, made from those pixels: path looks by **palette recolour** (`shared/src/data/looks.ts`, `client/src/assets/recolor.ts`), idle/hit/death/roll derived in `tools/pixellab/derive.py`, gear (weapons, head pieces, shoulders, capes) hand-placed pixel parts pinned to per-frame anchors (`tools/pixellab/anchors.py` + `anchor_picks.json`, `parts.py`), armour materials drawn into the tunic. Pixel art drawn at 2× with nearest filtering and whole-pixel zoom. Generations are scarce (40 on the trial): test one direction before buying the rest. Props, ground and the Greyed are Blender renders put through `tools/art/pixelate.py` (art resolution, per-frame palettes, dark outlines) so the whole screen is one pixel style. Free assets (CC0/CC-BY/CC-BY-SA) only with a `CREDITS.md` entry; **nothing paid**. | User decision ("visuals still ugly"; "male/female models, animations within the skills, armour that actually appears"). |
 | Skill VFX | **Shadow-ink, always.** Every skill visual, now and every future one, is sumi-e ink: tapered brush strokes, blots and splatter, dry-brush streaks, enso rings, smoky ink trails. Black ink core, pale rice-paper rim, **one accent colour per path** (Thorn vermilion, Bark moss, Blood crimson, Ash ember, Storm pale indigo, Graves lantern teal, Dusk amber, Sting venom green), on the same 2× pixel grid as the characters (`client/src/fx/ink/`). Gore is not a skill effect and keeps its own look. | User decision ("shadow-ink, no matter how many skills"). |
 | Weapons | **Any path can wield any of 9 weapon types**; each path has 2–3 home weapons (+damage and a path rider). The bar is **path 3 + weapon 3**: the weapon gives LMB, RMB and key 1 from its own **mastery tree** (levelled by use, saved on the host); the path gives its 3 signature skills. Weapons and armour are **visible** on the body (anchored parts + armour materials). | User decision. |
 | Bodies | Each player picks a male or female body; **one body per sex for every path**, dressed by the path's look and gear. | User request. |
@@ -53,33 +53,44 @@ shared/   Pure logic + data used by both sides (no Phaser/Colyseus/Node imports)
   src/map.ts         AreaMap, CollisionGrid. src/maps/ maps written as code (MapBuilder).
   src/cinematic.ts   Cinematic timeline types, evaluateCinematic (seekable), validation.
   src/combat/        types.ts (SkillDef, Shape, Effect, StatusId, PathDef), geometry.ts (hit tests).
-  src/data/          paths.ts (8 paths × 6 skills), greyed.ts (enemies, waves), props.ts, cinematics.ts.
+  src/data/          paths.ts (8 paths: resource, sustain, 3 signature skills, home weapons), weapons.ts
+                     (9 weapon types × mastery trees), looks.ts (dyes, skin tones, armour/head/shoulders,
+                     validLook), greyed.ts (enemies, waves), props.ts, cinematics.ts.
+  src/loadout.ts     The skill bar: weapon basic/RMB/key 1 (+ passives, home affinity) + path signature;
+                     masteryLevel, validPicks. Server and client resolve the same bar from synced inputs.
   src/balance.ts     Every tunable number, each with its reason.
 server/   Colyseus. game/World.ts is the network-free simulation (unit tested): Combat.ts (casts,
           projectiles, zones, statuses, damage), Units.ts (Greyed/thrall AI), Pathing.ts (flow fields);
-          sim.test.ts is the balance simulation. rooms/WorldRoom.ts mirrors World into the schema.
+          sim.test.ts is the balance simulation (paths and weapons). Profiles.ts saves characters (mastery,
+          picks, look) as JSON in the host's data dir. rooms/WorldRoom.ts mirrors World into the schema.
 client/   Phaser 3 + Vite.
   src/scenes/        BootScene (atlases + audio), WorldScene (title drift, play, cinematics).
   src/world/         GroundLayer (baked ground), PropLayer (props, light sources, occlusion fade),
                      Lighting (night multiply + lights), Petals (falling blossom).
   src/net/           Prediction (own player), Interpolation (partner).
   src/cinematic/     CinematicPlayer (camera, DOM overlay, events).
-  src/entities/      Character (player sprite & anims), UnitSprite (Greyed, thralls, corpses).
-  src/fx/            Vfx (skill visuals, blood, gore, damage numbers), Telegraphs (enemy wind-ups).
-  src/assets/        On-demand loading of the character atlases.
-  src/ui/            Hud (bars, skill bar, partner, boss, downed), Creator (character creation).
+  src/entities/      Character (paper doll: dyed body + gear on anchors), UnitSprite (Greyed, thralls, corpses).
+  src/fx/            Vfx (skill visuals, blood, gore, damage numbers), Telegraphs (enemy wind-ups);
+                     ink/ (shadow-ink painter + per-shape compositions; every skill visual goes through it).
+  src/assets/        Atlas loading (per game), recolor.ts (looks: dyes, skin, armour materials; gear dyes).
+  src/net/           Prediction, Interpolation, loadout.ts (bar/look of a synced player).
+  src/ui/            Hud (bars, ink skill icons), Mastery (K panel), icons.ts (ink skill glyphs),
+                     menu/ (Menu: title, characters, creation, lobby; Preview: live paper doll; characters.ts).
   src/audio/         AudioDirector (buses, crossfades, positional effects).
   public/assets/     Generated sprites (atlases with pivots), chars/ (one WebP atlas per path×body and
                      per Greyed, index.json), audio — committed.
 desktop/  Electron shell (embedded server, UPnP/host report, app:// protocol). From Dinusie.
 tools/
-  pixellab/ PixelLab REST tooling + generated frames (src/), pack.py (atlases), derive.py (free clips).
+  pixellab/ PixelLab REST tooling + generated frames (src/), pack.py (atlases + anchors), derive.py (free
+          clips), clean.py (strips baked-in effects), anchors.py (+ anchor_picks.json: hands picked by
+          eye on numbered candidates), parts.py (gear as letter grids, RotSprite angles).
   art/    render.py (props), characters.py (players + Greyed), mh_fetch.py / mh.py (MakeHuman bodies),
           outfits.py (path outfits, hair, weapons, Greyed), anims.py (poses), models.py, materials.py,
           decals.py, ground.py, common.py.
   audio/  build.py (music, ambience, effects, combat sounds).
   catalogue/ catalogue.ts (writes docs/catalogue.md).
-  e2e/    play.cjs (two Electron windows host/join and fight; screenshots in tools/e2e/out).
+  e2e/    play.cjs (two Electron windows host/join and fight), menu.cjs (walks the menus, creation,
+          lobby, mastery panel), gallery.cjs (every skill's ink effect, page by page); screenshots in tools/e2e/out.
 ```
 
 ## Commands
@@ -97,6 +108,9 @@ pnpm art:pack       # pack PixelLab frames (tools/pixellab/src) into atlases; bo
                     # tools/pixellab/: api.py (REST client; the token is injected by the environment's proxy),
                     # queue.py (one job at a time, skips what exists), derive.py (free idle/hit/death/roll),
                     # ids.json (everything generated, so nothing is paid for twice)
+python tools/pixellab/parts.py      # gear atlas (client/public/assets/gear)
+python tools/pixellab/anchors.py body_male body_female && pnpm art:pack --palette tools/pixellab/body_palette.json body_male body_female
+node tools/e2e/menu.cjs / gallery.cjs   # after building client + desktop; under xvfb-run on Linux
 pnpm catalogue      # regenerate docs/catalogue.md
 pnpm audio          # re-synthesise audio (needs: numpy + ffmpeg)
 ```
