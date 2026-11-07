@@ -15,6 +15,18 @@ function flourish(c: Ctx, ramp: Ctx["ramp"] = "blood") {
   c.t.sparks(c.hx, c.hy, ramp, 3, 50, 20);
 }
 
+/** A motion line behind something fast and small (an arrow, a knife), so its flight reads. */
+function whoosh(c: Ctx, x: number, y: number, ramp: Ctx["ramp"], len = 0.3) {
+  c.t.sprite("streak", ramp, x, y - 22, { rot: c.aim + Math.PI, scaleX: len, scaleY: 0.35, fps: 30, alpha: 0.75 });
+}
+
+/** A string or wrist snap at the hand as something is loosed. */
+function snap(c: Ctx, ramp: Ctx["ramp"], n = 5) {
+  c.t.sprite("sparks", ramp, c.hx, c.hy, { scale: 0.6, fps: 30, rot: c.aim });
+  c.t.streaks(c.hx, c.hy, c.aim, 46, 3, 0.35, ramp === "steel" ? "wind" : ramp, { alpha: 0.8 });
+  c.t.sparks(c.hx, c.hy, ramp, n, 90, 22, c.aim, 0.6);
+}
+
 /** A paper talisman lit at the fingertips. */
 function lit(c: Ctx) {
   c.t.sprite("flames", "fire", c.hx, c.hy + 6, { scale: 0.4, fps: 20, loop: true, duration: 260 });
@@ -46,8 +58,9 @@ export const RANGED: Record<string, Recipe> = {
     },
     release: (c) => c.t.beam(c.hx, c.hy, c.hx + Math.cos(c.aim) * 60, c.hy + Math.sin(c.aim) * 60, "blood", 8, 160),
     bolt: {
-      anim: "needle/blood",
-      scale: 2.2,
+      // A spear of ink as long as a body, not a needle.
+      anim: "streak/blood",
+      scale: 0.5,
       trail: "blood",
       every: 40,
       tail: (c, x, y) => c.t.sparks(x, y, "blood", 2, 50, 22, c.aim + Math.PI, 0.8),
@@ -116,7 +129,10 @@ export const RANGED: Record<string, Recipe> = {
     },
     release: (c) => {
       const { t } = c;
-      for (let i = 0; i < 4; i++) t.smear(c.x, c.y - 6, c.range * (0.4 + i * 0.2), c.arc, c.aim, "blood", { fps: 24, delay: i * 70, alpha: 0.9 - i * 0.12 });
+      // A rolling wave: crests one behind another, foam of streaks and spray along its front.
+      for (let i = 0; i < 5; i++) t.smear(c.x, c.y - 6, c.range * (0.3 + i * 0.17), c.arc + 10, c.aim, "blood", { fps: 20, delay: i * 60, alpha: 0.95 - i * 0.1 });
+      t.streaks(c.x, c.y - 10, c.aim, t.px(c.range), 9, (c.arc * Math.PI) / 180, "blood");
+      t.sprite("cloud", "blood", c.tx, c.ty - 10, { scale: 2.2, fps: 10, alpha: 0.7, delay: 200 });
       for (let i = 0; i < 6; i++) {
         const a = c.aim + ((i / 5 - 0.5) * c.arc * Math.PI) / 180;
         const r = t.px(c.range) * (0.5 + Math.random() * 0.45);
@@ -311,7 +327,7 @@ export const RANGED: Record<string, Recipe> = {
     windup: (c) => c.t.orbit(c.follow, "wind", 5, 30, 250, 10, 12),
     release: (c) => {
       const { t } = c;
-      t.cyclone(c.x, c.y - 16, c.radius, "wind", { loop: true, duration: 700, alpha: 0.9 });
+      t.cyclone(c.x, c.y - 16, c.radius, "wind", { loop: true, duration: 700, alpha: 0.6 });
       t.rise(c.x, c.y, "wind", 30, t.px(c.radius) * 0.8, 2.5);
       t.dust(c.x, c.y, t.px(c.radius), 16);
       t.ring(c.x, c.y, c.radius, "wind", { delay: 120 });
@@ -433,10 +449,16 @@ export const RANGED: Record<string, Recipe> = {
   bow_arrow: {
     sig: "bow basic: string snap, arrow with a thin air trail, splinters on hit, beat 3 a heavier shot",
     windup: (c) => c.t.sparks(c.hx, c.hy, "wind", 2, 30, 22),
-    release: (c) => c.t.streaks(c.hx, c.hy, c.aim, c.beat === 2 ? 60 : 34, 1, 0, "wind"),
+    release: (c) => {
+      snap(c, "wind", c.beat === 2 ? 10 : 4);
+      if (c.beat === 2) c.t.ring(c.hx, c.hy + 20, 0.35, "wind", { depth: undefined });
+    },
     bolt: {
       anim: "arrow/steel",
+      scale: 1.5,
       trail: "wind",
+      every: 30,
+      tail: (c, x, y) => whoosh(c, x, y, "wind"),
       impact: (c, x, y) => {
         c.t.sparks(x, y - 20, "gold", c.beat === 2 ? 8 : 4, 110, 20);
         c.t.flakes(x, y, 8, 3, [0x6a4e34, 0x4a3424], false);
@@ -455,10 +477,13 @@ export const RANGED: Record<string, Recipe> = {
     },
     bolt: {
       anim: "arrow/dusk",
-      scale: 1.4,
+      scale: 2,
       trail: "gold",
       every: 30,
-      tail: (c, x, y) => c.t.sparks(x, y, "gold", 1, 30, 22, c.aim + Math.PI, 0.6),
+      tail: (c, x, y) => {
+        whoosh(c, x, y, "gold", 0.5);
+        c.t.sparks(x, y, "gold", 1, 30, 22, c.aim + Math.PI, 0.6);
+      },
       impact: (c, x, y) => {
         c.t.sprite("sigil", "dusk", x, y - 30, { scale: 0.6, fps: 18 });
         c.t.sparks(x, y - 22, "gold", 14, 200, 22, c.aim, 1);
@@ -468,10 +493,16 @@ export const RANGED: Record<string, Recipe> = {
   bow_split: {
     sig: "split arrow: one arrow that bursts into three with a puff mid-flight",
     windup: (c) => c.t.sparks(c.hx, c.hy, "steel", 3, 30, 22),
-    release: (c) => c.t.sprite("cloud", "wind", c.hx + Math.cos(c.aim) * 40, c.hy + Math.sin(c.aim) * 40, { scale: 0.6, fps: 16, alpha: 0.7 }),
+    release: (c) => {
+      snap(c, "steel", 4);
+      c.t.sprite("cloud", "wind", c.hx + Math.cos(c.aim) * 40, c.hy + Math.sin(c.aim) * 40, { scale: 0.8, fps: 16, alpha: 0.8 });
+    },
     bolt: {
       anim: "arrow/wind",
+      scale: 1.4,
       trail: "steel",
+      every: 30,
+      tail: (c, x, y) => whoosh(c, x, y, "steel"),
       impact: (c, x, y) => c.t.sprite("sparks", "steel", x, y - 20, { scale: 0.8, fps: 28 }),
     },
   },
@@ -488,10 +519,13 @@ export const RANGED: Record<string, Recipe> = {
   bow_pin: {
     sig: "pin: a heavy arrow with a green wake that nails the target, roots bursting from the hole",
     windup: (c) => c.t.gather(c.hx, c.hy, "nature", 8, 30, 20, 250),
+    release: (c) => snap(c, "nature", 6),
     bolt: {
       anim: "arrow/steel",
-      scale: 1.3,
+      scale: 1.7,
       trail: "nature",
+      every: 30,
+      tail: (c, x, y) => whoosh(c, x, y, "nature"),
       impact: (c, x, y) => {
         c.t.sprite("roots", "nature", x, y, { scale: 0.9, fps: 18, add: false });
         c.t.ring(x, y, 0.45, "nature");
@@ -516,9 +550,13 @@ export const RANGED: Record<string, Recipe> = {
   knives_throw: {
     sig: "knives basic: two flicked knives, glints, steel pings, beat 3 a spinning pair",
     windup: (c) => c.t.sparks(c.hx, c.hy, "steel", 2, 30, 22),
+    release: (c) => snap(c, "steel", c.beat === 2 ? 8 : 3),
     bolt: {
       anim: "knife/steel",
+      scale: 1.6,
       trail: "steel",
+      every: 30,
+      tail: (c, x, y) => whoosh(c, x, y, "steel"),
       impact: (c, x, y) => c.t.sprite("sparks", "gold", x, y - 20, { scale: c.beat === 2 ? 0.9 : 0.6, fps: 30 }),
     },
   },
@@ -527,10 +565,14 @@ export const RANGED: Record<string, Recipe> = {
     windup: (c) => {
       for (let i = -2; i <= 2; i++) c.t.sparks(c.hx + i * 5, c.hy, "steel", 1, 20, 22);
     },
+    release: (c) => snap(c, "steel", 8),
     bolt: {
       anim: "knife/blood",
+      scale: 1.5,
       spin: true,
       trail: "steel",
+      every: 30,
+      tail: (c, x, y) => whoosh(c, x, y, "steel"),
       impact: (c, x, y) => {
         c.t.sparks(x, y - 20, "blood", 6, 120, 20);
         c.t.stain(x, y, 6, 0x5e0812, 0.6);
@@ -540,12 +582,16 @@ export const RANGED: Record<string, Recipe> = {
   knives_dart: {
     sig: "dart: a blowpipe puff, a venom-green dart with dripping trail, a sickly splash",
     windup: (c) => c.t.sprite("cloud", "poison", c.hx, c.hy, { scale: 0.4, fps: 16, alpha: 0.6 }),
+    release: (c) => snap(c, "poison", 4),
     bolt: {
       anim: "knife/poison",
-      scale: 0.8,
+      scale: 1.3,
       trail: "poison",
       every: 60,
-      tail: (c, x, y) => c.t.stain(x, y, 2, 0x365e12, 0.6),
+      tail: (c, x, y) => {
+        whoosh(c, x, y, "poison");
+        c.t.stain(x, y, 2, 0x365e12, 0.6);
+      },
       impact: (c, x, y) => {
         c.t.boom(x, y - 14, 0.5, "poison");
         c.t.stain(x, y, 10, 0x365e12, 0.5);
@@ -555,11 +601,16 @@ export const RANGED: Record<string, Recipe> = {
   knives_hamstring: {
     sig: "hamstring: a low skimming knife along the ground, a red cut line at the legs",
     windup: (c) => c.t.dust(c.x, c.y, 16, 4),
+    release: (c) => snap(c, "blood", 4),
     bolt: {
       anim: "knife/blood",
+      scale: 1.5,
       trail: "blood",
       every: 50,
-      tail: (c, x, y) => c.t.dust(x, y + 20, 6, 1),
+      tail: (c, x, y) => {
+        whoosh(c, x, y, "blood");
+        c.t.dust(x, y + 20, 6, 1);
+      },
       impact: (c, x, y) => {
         c.t.smear(x, y + 4, 0.5, 90, c.aim + Math.PI / 2, "blood", { fps: 30 });
         c.t.sparks(x, y, "blood", 8, 100, 4);
@@ -569,10 +620,14 @@ export const RANGED: Record<string, Recipe> = {
   knives_ricochet: {
     sig: "ricochet: gold-edged knives that ping off with a spark star at each hit",
     windup: (c) => c.t.sprite("sparks", "gold", c.hx, c.hy, { scale: 0.5, fps: 30 }),
+    release: (c) => snap(c, "gold", 5),
     bolt: {
       anim: "knife/steel",
+      scale: 1.6,
       spin: true,
       trail: "gold",
+      every: 30,
+      tail: (c, x, y) => whoosh(c, x, y, "gold"),
       impact: (c, x, y) => {
         c.t.sprite("stars", "gold", x, y - 26, { scale: 0.8, fps: 18 });
         c.t.streaks(x, y - 20, c.aim + Math.PI * 0.75, 30, 3, 1.4, "gold");

@@ -52,7 +52,8 @@ export const MELEE: Record<string, Recipe> = {
       t.sprite("streak", "shadow", c.x, c.y - CHEST, { rot: c.aim, scaleX: t.px(c.length) / 192, scaleY: 1.4, fps: 22, add: false, alpha: 0.7 });
       // The cut appears a beat after the body has passed: a thin white hairline, then it bursts.
       t.later(110, () => {
-        t.beam(c.x, c.y - CHEST, c.tx, c.ty - CHEST, "steel", 6, 220);
+        t.beam(c.x, c.y - CHEST, c.tx, c.ty - CHEST, "steel", 10, 400);
+        t.light((c.x + c.tx) / 2, c.y - CHEST, t.px(c.length) * 0.6, "steel", 1, 260, undefined, true);
         for (let i = 1; i <= 4; i++) t.sparks(c.x + ((c.tx - c.x) * i) / 5, c.y - CHEST + ((c.ty - c.y) * i) / 5, "gold", 3, 90, 18);
       });
       t.dust(c.x, c.y, 30, 8);
@@ -275,13 +276,15 @@ export const MELEE: Record<string, Recipe> = {
     windup: (c) => c.t.dust(c.x, c.y, 26, 6),
     release: (c) => {
       const { t } = c;
-      t.ring(c.x, c.y, c.radius, "steel");
+      t.ring(c.x, c.y, c.radius, "gold");
       t.ring(c.x, c.y, c.radius * 0.7, "dusk", { delay: 70 });
+      t.burst(c.x, c.y, "gold", 36, 320);
+      t.light(c.x, c.y, t.px(c.radius) * 1.8, "dusk", 1.2, 300);
       for (let i = 0; i < 6; i++) {
         const a = (i / 6) * Math.PI * 2 + 0.3;
         t.crack(c.x, c.y, c.x + Math.cos(a) * t.px(c.radius) * 0.9, c.y + Math.sin(a) * t.px(c.radius) * 0.8, 160);
       }
-      t.dust(c.x, c.y, t.px(c.radius), 34);
+      t.dust(c.x, c.y, t.px(c.radius), 40, 0xb0a898);
       t.shake(0.014, 280);
       t.freeze(c.caster, 90);
     },

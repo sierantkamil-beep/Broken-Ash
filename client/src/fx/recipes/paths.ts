@@ -180,6 +180,11 @@ export const PATH_RECIPES: Record<string, Recipe> = {
       const { t } = c;
       t.ring(c.x, c.y, c.radius, "fire", { fps: 30 });
       t.burst(c.x, c.y, "fire", 40, 380);
+      // Flames flare up round the ring as the fire races out.
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * Math.PI * 2;
+        t.sprite("explosion", "fire", c.x + Math.cos(a) * t.px(c.radius) * 0.7, c.y + Math.sin(a) * t.px(c.radius) * 0.55 - 10, { scale: 0.9, fps: 26, delay: 40 + i * 15 });
+      }
       t.light(c.x, c.y, t.px(c.radius) * 2, "fire", 1.4, 350);
       t.flash(0xffa040, 60);
     },
@@ -190,6 +195,8 @@ export const PATH_RECIPES: Record<string, Recipe> = {
     release: (c) => {
       const { t } = c;
       t.boom(c.x, c.y - 10, c.radius, "fire");
+      t.sprite("explosion", "fire", c.x, c.y - 20, { scale: 2.4, fps: 22 });
+      t.sprite("pillar", "fire", c.x, c.y, { scale: 1.4, fps: 20 });
       t.ring(c.x, c.y, c.radius, "fire");
       t.ring(c.x, c.y, c.radius * 1.15, "wind", { delay: 80, alpha: 0.5 });
       t.scorch(c.x, c.y, t.px(c.radius) * 0.6);
@@ -299,7 +306,14 @@ export const PATH_RECIPES: Record<string, Recipe> = {
     release: (c) => {
       const { t } = c;
       t.smear(c.x, c.y - 16, c.range, c.arc, c.aim, "spirit");
-      t.sprite("hands", "spirit", c.tx, c.ty + 6, { scale: 1.3, fps: 16 });
+      t.smear(c.x, c.y - 16, c.range * 0.7, c.arc, c.aim, "spirit", { flipY: true, delay: 80, alpha: 0.8 });
+      t.sprite("hands", "spirit", c.tx, c.ty + 6, { scale: 1.6, fps: 16 });
+      // Souls torn out along the cone, streaming back to the caster.
+      for (let i = 0; i < 5; i++) {
+        const a = c.aim + ((i / 4 - 0.5) * c.arc * Math.PI) / 180;
+        const r = t.px(c.range) * 0.85;
+        t.beam(c.x + Math.cos(a) * r, c.y + Math.sin(a) * r - 20, c.x, c.y - 26, "spirit", 4, 360, 140 + i * 30);
+      }
       t.later(160, () => t.gather(c.x, c.y - 24, "spirit", 30, t.px(c.range) * 0.7, 24, 380));
       t.later(520, () => t.sprite("pillar", "spirit", c.x, c.y, { scale: 0.8, fps: 20 }));
     },
@@ -311,10 +325,12 @@ export const PATH_RECIPES: Record<string, Recipe> = {
     windup: (c) => c.t.gather(c.hx, c.hy, "dusk", 10, 36, 20, 250),
     bolt: {
       anim: "arrow/dusk",
-      scale: 1.2,
+      scale: 1.8,
       trail: "dusk",
+      every: 30,
+      tail: (c, x, y) => c.t.sprite("streak", "dusk", x, y - 22, { rot: c.aim + Math.PI, scaleX: 0.4, scaleY: 0.35, fps: 30, alpha: 0.8 }),
       impact: (c, x, y) => {
-        c.t.sprite("sigil", "dusk", x, y - 60, { scale: 0.5, fps: 16 });
+        c.t.sprite("sigil", "dusk", x, y - 60, { scale: 0.7, fps: 16 });
         c.t.sparks(x, y - 22, "dusk", 10, 150, 22);
       },
     },
@@ -373,7 +389,10 @@ export const PATH_RECIPES: Record<string, Recipe> = {
       for (let i = 0; i < 10; i++) {
         const a = Math.random() * Math.PI * 2;
         const r = Math.sqrt(Math.random()) * t.px(c.radius);
-        t.later(i * 35, () => t.boom(c.x + Math.cos(a) * r, c.y + Math.sin(a) * r * 0.8 - 8, 0.35, "poison"));
+        t.later(i * 35, () => {
+          t.sprite("explosion", "poison", c.x + Math.cos(a) * r, c.y + Math.sin(a) * r * 0.8 - 8, { scale: 0.8, fps: 24 });
+          t.sprite("bubble", "nature", c.x + Math.cos(a) * r, c.y + Math.sin(a) * r * 0.8 - 14, { scale: 0.4, fps: 16 });
+        });
       }
       t.stain(c.x, c.y, t.px(c.radius) * 0.5, 0x1e2a10, 0.4);
     },

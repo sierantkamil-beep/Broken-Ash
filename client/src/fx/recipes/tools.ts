@@ -224,13 +224,15 @@ export class Tools {
       const by = y0 + ((y1 - y0) * (i + 1)) / n;
       this.later((msTotal * i) / n, () => {
         this.scars?.crack(ax, ay, bx, by, i % 2 === 0);
-        this.dust(bx, by, 30, 5);
+        // The fissure glows as it opens, then it's just a dark crack left in the ground.
+        this.beam(ax, ay, bx, by, "dusk", 6, 420);
+        this.dust(bx, by, 30, 6, 0xb0a898);
       });
     }
   }
 
   /** Projectiles falling from the sky onto random spots of a disc (volleys, blade rain). */
-  rain(x: number, y: number, Rpx: number, n: number, fam: string, ramp: Ramp, spreadMs: number, onLand?: (lx: number, ly: number) => void) {
+  rain(x: number, y: number, Rpx: number, n: number, fam: string, ramp: Ramp, spreadMs: number, onLand?: (lx: number, ly: number) => void, scale = 1.6) {
     for (let i = 0; i < n; i++) {
       const a = Math.random() * Math.PI * 2;
       const r = Math.sqrt(Math.random()) * Rpx;
@@ -242,11 +244,13 @@ export class Tools {
         const sh = this.scene.add.ellipse(tx, ty, 4, 2, 0x000000, 0.4).setDepth(-5e5);
         this.layer.add(sh);
         this.scene.tweens.add({ targets: sh, scaleX: 3, scaleY: 3, duration: 160, onComplete: () => sh.destroy() });
-        const h = this.kit.play(this.pick(fam, ramp), tx - 24, ty - 150, { rot: Math.atan2(150, 24), fps: 1, add: false });
+        const h = this.kit.play(this.pick(fam, ramp), tx - 24, ty - 150, { rot: Math.atan2(150, 24), fps: 1, add: false, scale, duration: 200 });
         if (h) this.scene.tweens.add({ targets: h.sprite, x: tx, y: ty - 6, duration: 160, ease: "Quad.easeIn", onComplete: () => h.stop() });
       });
       this.later(delay + 160, () => {
-        this.sparks(tx, ty, ramp === "steel" ? "gold" : ramp, 3, 90, 2);
+        this.sparks(tx, ty, ramp === "steel" ? "gold" : ramp, 4, 110, 2);
+        this.dust(tx, ty, 10, 3);
+        this.scars?.dot(tx, ty, 2, 0x1a1410, 0.8);
         onLand?.(tx, ty);
       });
     }

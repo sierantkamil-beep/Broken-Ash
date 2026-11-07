@@ -177,7 +177,8 @@ export class FxKit {
       start: now,
       fps,
       loop: !!o.loop,
-      until: o.loop ? now + (o.duration ?? 1000) : now + (frames / fps) * 1000,
+      // A one-shot ends with its last frame, or sooner when given a duration (a still held briefly).
+      until: o.loop ? now + (o.duration ?? 1000) : now + Math.min(o.duration ?? Infinity, (frames / fps) * 1000),
       alpha: o.alpha ?? 1,
       follow: o.follow,
       dx: o.dx ?? 0,

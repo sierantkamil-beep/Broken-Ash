@@ -51,8 +51,8 @@ export class Scars {
       wob *= 0.8;
       x += Math.cos(ang + wob) * ART;
       y += Math.sin(ang + wob) * ART;
-      this.dot(x, y, 1, 0x0c0a08, 0.95);
-      this.dot(x + ART, y - ART, 1, 0x8a7f72, 0.35);
+      this.dot(x, y, 2, 0x0c0a08, 0.95);
+      this.dot(x + ART, y - ART, 1, 0xa89a88, 0.55);
       if (branch && Math.random() < 0.06) this.crack(x, y, x + Math.cos(ang + (Math.random() < 0.5 ? 0.8 : -0.8)) * len * ART * 0.25, y + Math.sin(ang + (Math.random() < 0.5 ? 0.8 : -0.8)) * len * ART * 0.25, false);
     }
   }

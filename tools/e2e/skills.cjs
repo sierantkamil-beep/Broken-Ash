@@ -51,6 +51,9 @@ const WEAPONS = ["blades", "glaive", "greatblade", "brush", "talismans", "fan", 
   const ids = (await win.evaluate(() => window.__skills.map((s) => s.id))).filter((id) => !process.env.ONLY || id.startsWith(process.env.ONLY));
 
   for (const id of ids) {
+    // A rerun picks up where the last one stopped.
+    if (fs.existsSync(path.join(OUT, `${id}_2.png`))) continue;
+    try {
     const weapon = WEAPONS.find((w) => id.startsWith(w + "_")) ?? "blades";
     const windup = await win.evaluate(
       ([id, weapon]) => {
@@ -96,13 +99,17 @@ const WEAPONS = ["blades", "glaive", "greatblade", "brush", "talismans", "fan", 
     const shots = [windup * 0.6, windup + 130, windup + 420];
     for (const [i, at] of shots.entries()) {
       await win.waitForFunction((t) => window.__game().scene.getScene("world").time.now >= t, start + at, { polling: 30, timeout: 120000 });
-      await win.screenshot({ path: path.join(OUT, `${id}_${i}.png`), clip });
+      await win.screenshot({ path: path.join(OUT, `${id}_${i}.png`), clip, timeout: 120000 });
     }
     // Let it all finish at full speed (2 game seconds), then back to slow motion for the next.
     await win.evaluate(() => (window.__slow = 1));
     await win.waitForTimeout(2000);
     await win.evaluate((slow) => (window.__slow = slow), Number(process.env.SLOW ?? 0.05));
     console.log("filmed", id);
+    } catch (err) {
+      console.log("failed", id, String(err).split("\n")[0]);
+      await win.evaluate(() => (window.__slow = 1)).catch(() => {});
+    }
   }
   await app.close();
 })().catch((e) => {
