@@ -59,6 +59,8 @@ export interface Recipe {
   windup?(c: Ctx): void;
   /** The release: cones, lines, circles round the caster, buffs (after the wind-up). */
   release?(c: Ctx): void;
+  /** A thrown circle's flight from the hand (x0, y0) to where it lands (x1, y1), over `ms`. */
+  travel?(c: Ctx, x0: number, y0: number, x1: number, y1: number, ms: number): void;
   /** A circle thrown onto a spot lands (c.tx, c.ty is its centre). */
   land?(c: Ctx): void;
   /** Lingering ground for `ms` (c.tx, c.ty is its centre). */

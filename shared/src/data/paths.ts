@@ -89,7 +89,7 @@ export const PATHS: Record<PathId, PathDef> = {
     signature: [
       skill("ash_pyre", "Stos", "Ziemia w miejscu celu zaczyna płonąć.", { cd: 8, cost: 22, windup: 0.4, shape: circle(2.5, "aim", 8), effects: [dmg(24), { kind: "zone", radius: 2.5, duration: 5, dps: 13, status: "burn", statusDuration: 2 }], anim: "skill2", vfx: "pyre", sfx: "fire_heavy", fire: true }),
       skill("ash_ignite", "Zapłon", "Każda trucizna i płomień na wrogach wokół wybucha naraz.", { cd: 9, cost: 20, windup: 0.3, shape: circle(4), effects: [{ kind: "detonate", status: "poison", damage: 40 }, { kind: "detonate", status: "burn", damage: 22 }], anim: "skill2", vfx: "ignite", sfx: "fire_heavy", fire: true }),
-      skill("ash_vent", "Upust żaru", "Zrzucasz żar w podmuchu ognia wokół siebie.", { cd: 12, cost: -45, windup: 0.2, shape: circle(2.6), effects: [dmg(30, 30), st("burn", 3, 4), { kind: "knockback", distance: 1.5 }], anim: "skill1", vfx: "nova_fire", sfx: "fire_heavy", fire: true }),
+      skill("ash_vent", "Upust żaru", "Zrzucasz żar w podmuchu ognia wokół siebie.", { cd: 12, cost: -45, windup: 0.2, shape: circle(2.6), effects: [dmg(30, 30), st("burn", 3, 4), { kind: "knockback", distance: 1.5 }], anim: "skill1", vfx: "nova_fire", sfx: "fire_heavy", fire: true , channel: { duration: 1, pulses: 3 }}),
     ],
     homeWeapons: ["talismans", "brush"],
     affinity: { text: "Broń Ludu Żaru podpala: trafienia nakładają płonięcie.", rider: [st("burn", 3, 2)] },
@@ -110,7 +110,7 @@ export const PATHS: Record<PathId, PathDef> = {
     signature: [
       skill("storm_bolt", "Piorun", "Błyskawica w cel, przeskakuje na ładunki statyczne.", { cd: 3.5, cost: 22, windup: 0.2, shape: line(9, 1.0), effects: [dmg(30, 20), { kind: "detonate", status: "static", damage: 20 }], anim: "skill1", vfx: "lightning", sfx: "thunder" }),
       skill("storm_ward", "Statyczna osłona", "Wiatr i iskry wokół ciebie wchłaniają ciosy.", { cd: 15, cost: 30, windup: 0.1, shape: self, effects: [st("shield", 6, 55, "self"), st("haste", 4, 0.25, "self")], anim: "skill1", vfx: "ward", sfx: "thunder" }),
-      skill("storm_tempest", "Nawałnica", "Burza nad wskazanym miejscem: pioruny biją raz za razem.", { cd: 20, cost: 50, windup: 0.5, shape: circle(3, "aim", 9), effects: [dmg(30), { kind: "zone", radius: 3, duration: 5, dps: 18, status: "static", statusDuration: 2 }], anim: "skill1", vfx: "tempest", sfx: "thunder" }),
+      skill("storm_tempest", "Nawałnica", "Burza nad wskazanym miejscem: pioruny biją raz za razem.", { cd: 20, cost: 50, windup: 0.5, shape: circle(3, "aim", 9), effects: [dmg(30), { kind: "zone", radius: 3, duration: 5, dps: 18, status: "static", statusDuration: 2 }], anim: "skill1", vfx: "tempest", sfx: "thunder", channel: { duration: 1.6, pulses: 4 } }),
     ],
     homeWeapons: ["fan", "bow"],
     affinity: { text: "Broń Klanu Wiatru niesie ładunek: trafienia nakładają ładunek statyczny.", rider: [st("static", 4)] },
@@ -131,7 +131,7 @@ export const PATHS: Record<PathId, PathDef> = {
     signature: [
       skill("graves_raise", "Powstańcie", "Podnosi dwóch Szarych, którzy walczą u twego boku.", { cd: 14, cost: 40, windup: 0.5, shape: self, effects: [{ kind: "summon", count: 2, duration: 18 }], anim: "skill1", vfx: "raise", sfx: "spirit_heavy" }),
       skill("graves_curse", "Klątwa", "Przeklina wrogów w miejscu: otrzymują więcej obrażeń i chudną z sił.", { cd: 8, cost: 20, windup: 0.3, shape: circle(2.6, "aim", 8), effects: [st("weaken", 6), st("poison", 4, 3)], anim: "skill2", vfx: "curse", sfx: "spirit" }),
-      skill("graves_feast", "Uczta", "Wysysa życie z wrogów przed tobą i dzieli je z partnerem.", { cd: 16, cost: 35, windup: 0.4, shape: cone(4, 80), effects: [dmg(34), { kind: "lifesteal", fraction: 0.6 }, { kind: "heal", amount: 18, target: "partner" }], anim: "skill1", vfx: "feast", sfx: "spirit_heavy" }),
+      skill("graves_feast", "Uczta", "Wysysa życie z wrogów przed tobą i dzieli je z partnerem.", { cd: 16, cost: 35, windup: 0.4, shape: cone(4, 80), effects: [dmg(38), { kind: "lifesteal", fraction: 0.6 }, { kind: "heal", amount: 18, target: "partner" }], anim: "skill1", vfx: "feast", sfx: "spirit_heavy", channel: { duration: 1.2, pulses: 3 } }),
     ],
     homeWeapons: ["lantern", "talismans"],
     affinity: { text: "Broń strażników niesie rozkład: trafienia zatruwają.", rider: [st("poison", 3, 2)] },
@@ -151,7 +151,7 @@ export const PATHS: Record<PathId, PathDef> = {
     combo: "Naznaczony cel otrzymuje więcej obrażeń od partnera; Strzała łowcy zrywa naznaczenie.",
     signature: [
       skill("dusk_mark", "Naznaczenie", "Strzała znacząca cel: wszyscy ranią go mocniej.", { cd: 6, cost: 20, windup: 0.25, shape: bolt(26, 13, 0.3), effects: [dmg(24), st("mark", 8, 0.25)], anim: "skill1", vfx: "arrow_mark", sfx: "bow" }),
-      skill("dusk_snare", "Sidła", "Rzucone sidła unieruchamiają i ranią.", { cd: 9, cost: 20, windup: 0.25, shape: circle(1.8, "aim", 7), effects: [dmg(14), st("rooted", 2.5), { kind: "zone", radius: 1.8, duration: 4, dps: 6, status: "slow", statusDuration: 1 }], anim: "skill2", vfx: "snare", sfx: "throw" }),
+      skill("dusk_snare", "Sidła", "Rzucone sidła unieruchamiają i ranią.", { cd: 9, cost: 20, windup: 0.25, shape: circle(2.1, "aim", 7), effects: [dmg(22), st("rooted", 2.5), { kind: "zone", radius: 2.1, duration: 4, dps: 6, status: "slow", statusDuration: 1 }], anim: "skill2", vfx: "snare", sfx: "throw" }),
       skill("dusk_fade", "Zmierzch", "Znikasz w półmroku i odskakujesz.", { cd: 16, cost: 25, windup: 0.0, shape: self, effects: [{ kind: "dash", distance: -3.5 }, st("stealth", 4, 0, "self"), st("haste", 4, 0.3, "self")], anim: "skill2", vfx: "fade", sfx: "whoosh" }),
     ],
     homeWeapons: ["bow", "knives"],

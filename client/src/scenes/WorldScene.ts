@@ -15,6 +15,7 @@ import {
   type FxEvent,
   type GreyedKind,
   type PathId,
+  aimLanding,
 } from "@broken-ash/shared";
 import { ensureAtlas, greyedKey } from "../assets/atlases";
 import { AudioDirector } from "../audio/AudioDirector";
@@ -29,6 +30,7 @@ import { $ } from "../ui/dom";
 import { Hud } from "../ui/Hud";
 import { barOf, lookOf, pathOf, weaponOf } from "../net/loadout";
 import { ACCENTS } from "../fx/accents";
+import { groundCircle, rect, wedge } from "../fx/shapes";
 import { AreaLife } from "../world/AreaLife";
 import { LootLayer, type LootView } from "../world/LootLayer";
 import { Progression } from "../ui/Progression";
@@ -239,7 +241,11 @@ export class WorldScene extends Phaser.Scene {
         return;
       }
       const slot = { Digit1: 2, Digit2: 3, Digit3: 4, Digit4: 5 }[e.code];
-      if (slot !== undefined) this.cast(slot);
+      if (slot !== undefined && !e.repeat) this.press(slot);
+    });
+    kb.on("keyup", (e: KeyboardEvent) => {
+      const slot = { Digit1: 2, Digit2: 3, Digit3: 4, Digit4: 5 }[e.code];
+      if (slot !== undefined) this.release(slot);
     });
     // The book: character and bag (I or C), skills (K), talents (T), weapon mastery (M).
     const book = (tab: string) => () => {
@@ -257,8 +263,11 @@ export class WorldScene extends Phaser.Scene {
     });
     this.input.mouse?.disableContextMenu();
     this.input.on("pointerdown", (p: Phaser.Input.Pointer) => {
-      if (p.rightButtonDown()) this.cast(1);
+      if (p.rightButtonDown()) this.press(1);
       else if (p.leftButtonDown()) this.cast(0);
+    });
+    this.input.on("pointerup", (p: Phaser.Input.Pointer) => {
+      if (p.rightButtonReleased()) this.release(1);
     });
     this.input.on("wheel", (_p: unknown, _o: unknown, _dx: number, dy: number) => {
       if (this.room && !this.cinematic.playing) this.userZoom = Phaser.Math.Clamp(this.userZoom * (dy > 0 ? 0.92 : 1.08), 0.8, 2.2);
@@ -314,6 +323,77 @@ export class WorldScene extends Phaser.Scene {
   private cast(slot: number) {
     if (!this.canAct()) return;
     this.me!.pred.pressCast(slot);
+  }
+
+  /** The slot being aimed (held), shown on the ground until released. */
+  private aiming: number | null = null;
+  private aimGfx: Phaser.GameObjects.Graphics | null = null;
+
+  /**
+   * A skill key goes down: skills that need a place (cones, lines, bolts, thrown circles) are aimed
+   * while held, with their reach and shape drawn on the ground; skills on yourself go at once.
+   */
+  private press(slot: number) {
+    const skill = this.me ? barOf(this.me.view).skills[slot] : undefined;
+    if (!skill) return;
+    const sh = skill.shape;
+    if (sh.kind === "self" || (sh.kind === "circle" && sh.at !== "aim")) return this.cast(slot);
+    this.aiming = slot;
+  }
+
+  private release(slot: number) {
+    if (this.aiming !== slot) return;
+    this.aiming = null;
+    this.aimGfx?.clear();
+    this.cast(slot);
+  }
+
+  /** Draws the held skill's reach and shape at the cursor. */
+  private drawAim() {
+    const g = (this.aimGfx ??= this.add.graphics().setDepth(-8.9e5));
+    if (this.aimGfx && !this.aimGfx.parentContainer && !this.worldLayer.exists(this.aimGfx)) this.worldLayer.add(this.aimGfx);
+    g.clear();
+    if (this.aiming === null || !this.me || !this.canAct()) return;
+    const skill = barOf(this.me.view).skills[this.aiming];
+    if (!skill) return;
+    const p = this.me.pred.render();
+    const a = this.aim.angle;
+    const col = ACCENTS[pathOf(this.me.view) as PathId];
+    const sh = skill.shape;
+    const reach = sh.kind === "circle" ? sh.reach ?? 8 : sh.kind === "projectile" ? sh.range : sh.kind === "line" ? sh.length : sh.kind === "cone" ? sh.range : 0;
+    // The reach: a faint ring of dashes round the caster.
+    g.lineStyle(2, col, 0.35);
+    const n = 48;
+    for (let i = 0; i < n; i += 2) {
+      const a0 = (i / n) * Math.PI * 2;
+      const a1 = ((i + 1) / n) * Math.PI * 2;
+      const s0 = worldToScreen(p.x + Math.cos(a0) * reach, p.y + Math.sin(a0) * reach);
+      const s1 = worldToScreen(p.x + Math.cos(a1) * reach, p.y + Math.sin(a1) * reach);
+      g.lineBetween(s0.x, s0.y, s1.x, s1.y);
+    }
+    g.lineStyle(2, col, 0.9);
+    g.fillStyle(col, 0.2);
+    if (sh.kind === "cone") {
+      g.fillPoints(wedge(p.x, p.y, a, sh.range, sh.arc), true);
+      g.strokePoints(wedge(p.x, p.y, a, sh.range, sh.arc), true);
+    } else if (sh.kind === "line") {
+      g.fillPoints(rect(p.x, p.y, a, sh.length, sh.width), true);
+      g.strokePoints(rect(p.x, p.y, a, sh.length, sh.width), true);
+    } else if (sh.kind === "projectile") {
+      const count = sh.count ?? 1;
+      for (let i = 0; i < count; i++) {
+        const off = count > 1 ? ((i / (count - 1) - 0.5) * (sh.spread ?? 0) * Math.PI) / 180 : 0;
+        g.fillPoints(rect(p.x, p.y, a + off, sh.range, Math.max(0.3, sh.radius * 2)), true);
+        const tip = worldToScreen(p.x + Math.cos(a + off) * sh.range, p.y + Math.sin(a + off) * sh.range);
+        g.fillStyle(col, 0.85).fillCircle(tip.x, tip.y, 5).fillStyle(col, 0.2);
+      }
+    } else if (sh.kind === "circle") {
+      const land = aimLanding(p, a, { x: p.x + Math.cos(a) * this.aim.dist, y: p.y + Math.sin(a) * this.aim.dist }, reach);
+      groundCircle(g, land.x, land.y, sh.radius);
+      groundCircle(g, land.x, land.y, sh.radius, true);
+      const s = worldToScreen(land.x, land.y);
+      g.lineStyle(1, col, 0.6).lineBetween(s.x - 8, s.y, s.x + 8, s.y).lineBetween(s.x, s.y - 8, s.x, s.y + 8);
+    }
   }
 
   /** Called by main.ts once connected. */
@@ -503,6 +583,7 @@ export class WorldScene extends Phaser.Scene {
 
   /** Aim: from your elf to the cursor, in world space. */
   private updateAim() {
+    this.drawAim();
     if (!this.me) return;
     const ptr = this.input.activePointer;
     const wp = this.cameras.main.getWorldPoint(ptr.x, ptr.y);

@@ -620,8 +620,69 @@ def combat_sfx():
     write_ogg("sfx_burst", mixin(splatter(44), poison_hiss(45), 0, 0.8), 4)
 
 
+# Vowel formants (F1, F2) for whispered syllables: a, e, o, u, i.
+VOWELS = [(800, 1200), (500, 1900), (500, 900), (350, 800), (300, 2300)]
+
+
+def whisper_syllables(seconds, seed, syllables=5, low=1.0):
+    """A whispered incantation: breathy noise shaped into vowel formants, one syllable after another."""
+    r = np.random.default_rng(seed)
+    n = int(seconds * SR)
+    out = np.zeros(n)
+    step = n // syllables
+    for k in range(syllables):
+        f1, f2 = VOWELS[r.integers(len(VOWELS))]
+        seg = step + int(step * 0.3)
+        breath = r.normal(0, 1, seg)
+        v = fft_filter(breath, peak=f1 * low, q=6) * 0.8 + fft_filter(breath, peak=f2 * low, q=7) * 0.5
+        # A consonant: a short hiss or click before the vowel.
+        cons = fft_filter(r.normal(0, 1, seg), lo=3000, hi=8000) * np.exp(-np.arange(seg) / SR / 0.025) * 0.5
+        e = np.sin(np.linspace(0, math.pi, seg)) ** 1.5
+        at = k * step
+        end = min(n, at + seg)
+        out[at:end] += ((v + cons) * e)[: end - at]
+    return out / (np.abs(out).max() + 1e-9)
+
+
+def chant(kind, seed):
+    """The four chants a spell is spoken with: a whisper, a hummed choir, a growl, a crackling hiss."""
+    if kind == "whisper":
+        x = whisper_syllables(1.1, seed, 6)
+        return reverb(x * 0.9, 1.6, 0.35)
+    if kind == "choir":
+        d = 1.4
+        n = int(d * SR)
+        tt = np.arange(n) / SR
+        hum = sum(np.sin(math.tau * midi(m) * tt * (1 + 0.004 * np.sin(math.tau * 5 * tt))) for m in (50, 57, 62)) / 3
+        hum = fft_filter(hum, peak=500, q=2) * 0.8 + hum * 0.3
+        x = hum * np.sin(np.linspace(0, math.pi, n)) ** 0.8 * 0.6 + whisper_syllables(d, seed, 4) * 0.5
+        return reverb(x, 3.0, 0.5)
+    if kind == "growl":
+        d = 1.0
+        n = int(d * SR)
+        tt = np.arange(n) / SR
+        buzz = np.sign(np.sin(math.tau * 70 * tt * (1 + 0.05 * np.sin(math.tau * 3 * tt)))) * 0.3
+        buzz = fft_filter(buzz, peak=380, q=3)
+        x = buzz * np.sin(np.linspace(0, math.pi, n)) + whisper_syllables(d, seed, 4, low=0.7) * 0.6
+        return reverb(x, 1.5, 0.3)
+    # crackle: a whisper riding on static.
+    d = 1.0
+    n = int(d * SR)
+    crack = (np.random.default_rng(seed).random(n) > 0.995) * np.random.default_rng(seed + 1).normal(0, 1, n)
+    x = whisper_syllables(d, seed, 5) * 0.7 + fft_filter(crack, lo=2000) * 0.6
+    return reverb(x, 1.4, 0.3)
+
+
+def chants():
+    for kind in ("whisper", "choir", "growl", "crackle"):
+        for i in range(2):
+            write_ogg(f"sfx_chant_{kind}_{i}", master(chant(kind, 70 + i * 7 + len(kind)), 0.7), 4)
+
+
 def main():
-    which = sys.argv[1:] or ["music", "amb", "sfx", "combat"]
+    which = sys.argv[1:] or ["music", "amb", "sfx", "combat", "chant"]
+    if "chant" in which:
+        chants()
     if "combat" in which:
         combat_sfx()
         write_ogg("music_gate_fight", music_gate_fight(), 5)

@@ -54,6 +54,12 @@ export const BALANCE = {
     exitDwell: 0.8,
     /** How close (cells) you must stand to talk to someone (F). */
     talkRange: 1.6,
+    /** Thrown circles fly at this speed (cells/s), between these times: long enough to see and dodge. */
+    throwSpeed: 22,
+    throwMin: 0.12,
+    throwMax: 0.4,
+    /** A channel's pulses together deal this much of the skill's damage (holding still is rewarded). */
+    channelBonus: 1.2,
     /** Seconds within which all levers of a group must be pulled: two people, not one running between them. */
     leverWindow: 1.5,
     /** Seconds a boss spends drinking a phase heal (long enough to punish with a stagger). */

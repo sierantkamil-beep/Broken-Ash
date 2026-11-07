@@ -73,6 +73,10 @@ export const RANGED: Record<string, Recipe> = {
   },
   brush_seal: {
     sig: "seal: a seal drawn in the air, then stamped on the ground with binding chains of ink",
+    travel: (c, x0, y0, x1, y1, ms) => {
+      // The seal slides off the brush across the ground.
+      c.t.runner(x0, y0 + 30, x1, y1, ms, "sigil", "blood", 30, { scale: 0.35, add: true });
+    },
     windup: (c) => c.t.sigil(c.hx, c.hy, 0.4, "blood", { fps: 18, depth: undefined }),
     land: (c) => {
       const { t } = c;
@@ -87,6 +91,7 @@ export const RANGED: Record<string, Recipe> = {
   },
   brush_sigil: {
     sig: "sigil: a turning burning seal, boiling bubbles of red, rising steam",
+    travel: (c, x0, y0, x1, y1, ms) => c.t.lob(x0, y0, x1, y1, "sigil", "fire", 0.4, ms),
     windup: (c) => flourish(c, "fire"),
     land: (c) => {
       const { t } = c;
@@ -180,6 +185,9 @@ export const RANGED: Record<string, Recipe> = {
   },
   talismans_ward: {
     sig: "ward: a ring of talismans planted round the spot, catching fire one after another",
+    travel: (c, x0, y0, x1, y1, ms) => {
+      for (let i = 0; i < 4; i++) c.t.later(i * 30, () => c.t.lob(x0, y0, x1 + (i - 1.5) * 20, y1, "talisman", "fire", 1, ms - i * 30));
+    },
     windup: (c) => lit(c),
     land: (c) => {
       const { t } = c;
@@ -208,6 +216,7 @@ export const RANGED: Record<string, Recipe> = {
   },
   talismans_mine: {
     sig: "mine: a paper stuck to the ground blinking, then a tall pillar of flame and soot",
+    travel: (c, x0, y0, x1, y1, ms) => c.t.lob(x0, y0, x1, y1, "talisman", "fire", 1.2, ms),
     windup: (c) => c.t.sprite("talisman", "fire", c.hx, c.hy, { rot: c.aim, fps: 1, duration: 250, add: false }),
     land: (c) => {
       const { t } = c;
@@ -335,6 +344,7 @@ export const RANGED: Record<string, Recipe> = {
   },
   fan_cyclone: {
     sig: "cyclone: a tall turning funnel on the spot, dust pulled in, leaves orbiting",
+    travel: (c, x0, y0, x1, y1, ms) => c.t.runner(x0, y0 + 30, x1, y1, ms, "cyclone", "wind", 34, { scale: 0.45, add: false, alpha: 0.7 }),
     windup: (c) => c.t.cyclone(c.hx, c.hy, 0.4, "wind", { loop: true, duration: 400 }),
     land: (c) => c.t.gather(c.tx, c.ty, "wind", 24, c.t.px(c.radius), 12, 400),
     zone: (c, ms) => {
@@ -398,6 +408,7 @@ export const RANGED: Record<string, Recipe> = {
   },
   lantern_rot: {
     sig: "rot: the lantern's light turns green, a grave-mould cloud, flies and bones of light",
+    travel: (c, x0, y0, x1, y1, ms) => c.t.lob(x0, y0, x1, y1, "orb", "poison", 1.6, ms),
     windup: (c) => c.t.light(c.hx, c.hy, 70, "poison", 0.9, 350),
     land: (c) => {
       c.t.ring(c.tx, c.ty, c.radius, "poison");
@@ -508,6 +519,8 @@ export const RANGED: Record<string, Recipe> = {
   },
   bow_volley: {
     sig: "volley: arrows loosed up into the sky, then a staggered rain with shadows on the spot",
+    // The arrows are already up in the sky (the release): the flight is their shadows sliding in.
+    travel: (c, _x0, _y0, x1, y1, ms) => c.t.ring(x1, y1, c.radius, "wind", { duration: ms, alpha: 0.4 }),
     windup: (c) => c.t.streaks(c.hx, c.hy - 10, -Math.PI / 2, 40, 3, 0.4, "wind"),
     release: (c) => c.t.streaks(c.x, c.y - 40, -Math.PI / 2 + Math.cos(c.aim) * 0.3, 90, 7, 0.4, "steel"),
     land: (c) => {
@@ -535,6 +548,9 @@ export const RANGED: Record<string, Recipe> = {
   },
   bow_barrage: {
     sig: "barrage: rapid string snaps, a dense long rain over a wide circle, dust everywhere",
+    travel: (c, x0, y0, _x1, _y1, ms) => {
+      for (let i = 0; i < 6; i++) c.t.later((i * ms) / 6, () => c.t.streaks(x0, y0 - 10, -Math.PI / 2 + (Math.random() - 0.5) * 0.5, 70, 1, 0, "steel"));
+    },
     windup: (c) => {
       for (let i = 0; i < 4; i++) c.t.later(i * 110, () => c.t.streaks(c.hx, c.hy - 10, -Math.PI / 2 + (Math.random() - 0.5) * 0.4, 50, 2, 0.3, "steel"));
     },
@@ -636,6 +652,9 @@ export const RANGED: Record<string, Recipe> = {
   },
   knives_rain: {
     sig: "blade rain: knives thrown up in a glittering spray, falling as a poisoned rain",
+    travel: (c, x0, y0, x1, y1, ms) => {
+      for (let i = 0; i < 5; i++) c.t.lob(x0, y0, x1 + (i - 2) * 18, y1 + ((i * 7) % 3) * 10, "knife", "steel", 1, ms);
+    },
     windup: (c) => c.t.sparks(c.hx, c.hy - 10, "steel", 10, 160, 30, -Math.PI / 2, 0.8),
     land: (c) => {
       const { t } = c;

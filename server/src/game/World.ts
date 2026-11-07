@@ -163,6 +163,12 @@ export class World implements Arena {
   /** Items and gold lying on the ground in this area. */
   readonly loot = new Map<string, Loot>();
   private uidSeq = 0;
+  /** Things due later in simulation time (thrown skills landing, channel pulses). */
+  private timers: { at: number; fn: () => void }[] = [];
+
+  later(sec: number, fn: () => void) {
+    this.timers.push({ at: this.time + sec, fn });
+  }
   readonly units = new Map<string, UnitSim>();
   projectiles: Projectile[] = [];
   /** Where the dead lie (corpse-eaters go for them), newest last. */
@@ -226,6 +232,7 @@ export class World implements Arena {
     this.map = map;
     this.grid = CollisionGrid.fromMap(map, this.flags);
     this.levers.clear();
+    this.timers = [];
     // Nothing is left behind when a scene carries you off: what lay on the ground goes into the bags
     // (in turn, where it fits), gold is shared out.
     const ps = [...this.players.values()];
@@ -701,6 +708,12 @@ export class World implements Arena {
 
   step(dt: number) {
     this.time += dt;
+    // Due timers (they may add more: a channel's pulses).
+    if (this.timers.length) {
+      const due = this.timers.filter((t) => t.at <= this.time);
+      this.timers = this.timers.filter((t) => t.at > this.time);
+      for (const t of due) t.fn();
+    }
     if (this.cinematic) {
       const def = CINEMATICS[this.cinematic.id];
       const waiting = def.choice && this.cinematic.chosen === undefined && this.cinematic.elapsedMs >= def.choice.t;

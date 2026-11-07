@@ -15,7 +15,7 @@ import {
   masteryLevel,
   slotOpen,
 } from "@broken-ash/shared";
-import type { Fighter, PlayerSim, Status, UnitSim } from "./fighters.js";
+import type { CastState, Fighter, PlayerSim, Status, UnitSim } from "./fighters.js";
 
 const C = BALANCE.combat;
 const DOTS: StatusId[] = ["bleed", "burn", "poison"];
@@ -65,6 +65,8 @@ export interface Arena {
   fx: FxEvent[];
   summon(owner: PlayerSim, count: number, duration: number): void;
   killed(victim: Fighter, killer: Fighter | undefined, overkill: number): void;
+  /** Runs `fn` after `sec` seconds of simulation (a thrown skill landing, a channel's next pulse). */
+  later(sec: number, fn: () => void): void;
 }
 
 export function fighters(a: Arena): Fighter[] {
@@ -329,8 +331,12 @@ export function startCast(a: Arena, p: PlayerSim, slot: number, aim: number, aim
   if (skill.hpCost) p.hp = Math.max(1, p.hp - skill.hpCost);
   p.statuses.delete("stealth");
   p.body.facing = aim;
-  p.cast = { slot, t: skill.windup, aim, aimDist };
-  a.fx.push({ t: "cast", id: p.id, skill: skill.id, vfx: skill.vfx, aim, x: p.body.x, y: p.body.y });
+  // A thrown circle's landing is fixed now, so the wind-up can mark it on the ground.
+  const sh = skill.shape;
+  const landing = sh.kind === "circle" && sh.at === "aim" ? aimLanding(p.body, aim, { x: p.body.x + Math.cos(aim) * aimDist, y: p.body.y + Math.sin(aim) * aimDist }, sh.reach ?? 6) : undefined;
+  p.cast = { slot, t: skill.windup, aim, aimDist, landing };
+  p.channel = undefined;
+  a.fx.push({ t: "cast", id: p.id, skill: skill.id, vfx: skill.vfx, aim, x: p.body.x, y: p.body.y, ax: landing ? round2(landing.x) : undefined, ay: landing ? round2(landing.y) : undefined });
   if (skill.windup <= 0) releaseCast(a, p);
   return true;
 }
@@ -339,6 +345,8 @@ export function tickCasts(a: Arena, dt: number) {
   for (const p of a.players.values()) {
     for (let i = 0; i < p.cds.length; i++) p.cds[i] = Math.max(0, p.cds[i] - dt);
     if (p.silenceT > 0) p.silenceT = Math.max(0, p.silenceT - dt);
+    // A dodge, a stagger or going down breaks a channel.
+    if (p.channel !== undefined && (p.body.dodgeT > 0 || p.downed || p.staggerT > 0)) p.channel = undefined;
     if (!p.cast) continue;
     if (p.downed || p.staggerT > 0) {
       p.cast = null;
@@ -349,19 +357,62 @@ export function tickCasts(a: Arena, dt: number) {
   }
 }
 
+let channelIds = 0;
+const round2 = (v: number) => Math.round(v * 100) / 100;
+
+/** A skill's effects with its damage scaled (a channel's pulse carries its share). */
+function scaled(effects: Effect[], k: number): Effect[] {
+  if (k === 1) return effects;
+  return effects.map((e) => (e.kind === "damage" ? { ...e, amount: e.amount * k, poise: (e.poise ?? 0) * k } : e.kind === "detonate" ? { ...e, damage: e.damage * k } : e));
+}
+
 function releaseCast(a: Arena, p: PlayerSim) {
   const c = p.cast!;
   p.cast = null;
   const skill = p.skills[c.slot];
-  const once = skill.effects.filter(isOnce);
-  const each = skill.effects.filter((e) => !isOnce(e));
+  const ch = skill.channel;
+  if (!ch) return strike(a, p, skill, c, 1, true);
+  // A channel: the first pulse now, the rest spread over its duration while it isn't broken.
+  const id = ++channelIds;
+  p.channel = id;
+  const k = C.channelBonus / ch.pulses;
+  strike(a, p, skill, c, k, true);
+  for (let i = 1; i < ch.pulses; i++)
+    a.later((ch.duration * i) / ch.pulses, () => {
+      if (p.channel !== id) return;
+      a.fx.push({ t: "pulse", id: p.id, skill: skill.id, vfx: skill.vfx, i, n: ch.pulses, aim: c.aim, x: p.body.x, y: p.body.y });
+      strike(a, p, skill, c, k, false);
+      if (i === ch.pulses - 1) p.channel = undefined;
+    });
+}
+
+/**
+ * One strike of a skill: its one-off effects (on the first strike), the hit shape, bolts. A thrown
+ * circle flies first (`throw`) and lands after its flight time; until then nothing is hit.
+ */
+function strike(a: Arena, p: PlayerSim, skill: SkillDef, c: CastState, k: number, first: boolean) {
+  const once = first ? skill.effects.filter(isOnce) : [];
+  const each = scaled(skill.effects.filter((e) => !isOnce(e)), k);
   // A forward dash with a line shape cuts through everything along its path; any other dash
   // (a leap back, a gust that leaves a vortex behind) hits where you stood, then moves you.
   const dashE = once.find((e) => e.kind === "dash");
   const through = !!dashE && dashE.kind === "dash" && dashE.distance > 0 && skill.shape.kind === "line";
   const origin = { x: p.body.x, y: p.body.y };
   if (through && dashE?.kind === "dash") dash(a, p, c.aim, dashE.distance);
-  const landing = skill.shape.kind === "circle" && skill.shape.at === "aim" ? aimLanding(p.body, c.aim, { x: p.body.x + Math.cos(c.aim) * c.aimDist, y: p.body.y + Math.sin(c.aim) * c.aimDist }, skill.shape.reach ?? 6) : origin;
+  const thrown = skill.shape.kind === "circle" && skill.shape.at === "aim";
+  const landing = thrown ? c.landing ?? aimLanding(p.body, c.aim, { x: p.body.x + Math.cos(c.aim) * c.aimDist, y: p.body.y + Math.sin(c.aim) * c.aimDist }, (skill.shape as { reach?: number }).reach ?? 6) : origin;
+  if (thrown && first) {
+    // It flies from the hand to the spot; the landing is the hit.
+    const fly = Math.max(C.throwMin, Math.min(C.throwMax, Math.hypot(landing.x - origin.x, landing.y - origin.y) / C.throwSpeed));
+    a.fx.push({ t: "throw", id: p.id, skill: skill.id, vfx: skill.vfx, x0: round2(origin.x), y0: round2(origin.y), x: round2(landing.x), y: round2(landing.y), ms: Math.round(fly * 1000) });
+    a.later(fly, () => land(a, p, skill, c, landing, origin, once, each));
+    return;
+  }
+  land(a, p, skill, c, landing, origin, once, each);
+  if (dashE && dashE.kind === "dash" && !through && first) dash(a, p, c.aim, dashE.distance);
+}
+
+function land(a: Arena, p: PlayerSim, skill: SkillDef, c: CastState, landing: { x: number; y: number }, origin: { x: number; y: number }, once: Effect[], each: Effect[]) {
   for (const e of once) if (e.kind !== "dash") applyOnce(a, p, skill, e, landing);
 
   if (skill.shape.kind === "circle") a.fx.push({ t: "area", skill: skill.id, vfx: skill.vfx, x: landing.x, y: landing.y, radius: skill.shape.radius, owner: p.id });
@@ -375,7 +426,6 @@ function releaseCast(a: Arena, p: PlayerSim) {
       }
     }
   }
-  if (dashE && dashE.kind === "dash" && !through) dash(a, p, c.aim, dashE.distance);
 }
 
 /** Effects that happen once per cast (on the caster, partner or ground), not once per target hit. */

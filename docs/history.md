@@ -231,3 +231,36 @@ looked broken and why; all of it was fixed.
   in a map-wide layer like the blood.
 - `tools/e2e/moves.cjs` films every move on a fixed clock; `tools/e2e/skills.cjs` films every skill
   in 20× slow motion; `moves_sheet.py` puts either on sheets.
+
+### Growth, equipment, the book, and skills that travel
+After the playtest ("no equipment, weapons switch without owning them, every skill from minute one,
+no introduction, skills appear out of nowhere").
+- **Levels** (`shared/src/progress.ts`): XP from kills (by enemy kind) and cleared encounters, shared
+  by both players; levels 1–20. Bar slots open with level (basic + first path skill at 1, RMB 2, path
+  skill 2 at 3, weapon key 1 at 4, path skill 3 at 6); locked slots stay on the bar, greyed.
+- **Talents**: a point per level, three branches (Ostrze, Żywot, Sztuka), four tiers of one-of-two and
+  a keystone; typed bonuses (damage, cooldown, reach, projectiles, cost, riders, hp, armour, speed,
+  status damage). Respec only at a bonfire. Saved with the character.
+- **Items** (`shared/src/data/items.ts`, `inventory.ts`): weapons in three tiers per type, chest and
+  head pieces that set the body's armour/shoulders/head look, hands, legs, boots, amulet, rings,
+  relics (a gift and a curse), ashen uniques tied to the story; rarities common → ashen with rolled
+  affixes. A 10×6 bag. **The weapon is whatever is equipped**: the free switch in the mastery panel
+  is gone, and a weapon can't be changed mid-fight.
+- **Loot**: enemies drop by table, bosses always; chests on the Act 1 maps (one per story save); the
+  dead guard in the cells carries the first spare weapon. Drops lie on the ground with a beam in their
+  rarity's colour (taller for better things) and their name; F picks up, gold is walked over.
+- **The book** (I/C/K/T): character (paper doll, equipment slots, drag-and-drop bag, tooltips that
+  compare with what's worn, stats), skills (cards with shape, numbers and how to aim), talents,
+  weapon mastery. HUD: level badge, XP bar, locked slots, rich tooltips.
+- **Introductions**: a level-up banner, sound and pillar of light; a card for each new skill (what it
+  does, its key, how to aim) and the slot glows until first used; a first-hour tutorial, one prompt at
+  a time (move, attack, dodge, skill, search the guard, pick up, the bag, talents); pickup toasts.
+- **Skills that travel**: hold a key to aim (reach ring + the exact shape at the cursor), release to
+  cast. Wind-ups mark the ground (the shape fills, a sigil at the landing point), show a cast bar and a
+  chanted line over the caster with a synthesised chant per element (`sfx_chant_*`). Thrown circles
+  fly for real on the server (distance / speed, so they can be dodged) and each recipe draws the flight
+  (lobbed orbs, sliding seals, racing roots, arcing arrows). Nawałnica, Uczta grobów and Wylot popiołu
+  are channels (rooted, pulsing, broken by a roll or a stagger). Every area landing leaves an element
+  stain; bolts are ~1.5× bigger with their own light.
+- `tools/e2e/ui.cjs` photographs the book and loot; `tools/e2e/casts.cjs` films aiming and casting
+  each slot.

@@ -17,6 +17,7 @@ export interface SkillOpts {
   sfx: string;
   fire?: boolean;
   weapon?: WeaponId;
+  channel?: { duration: number; pulses: number };
 }
 
 export function skill(id: string, name: string, description: string, o: SkillOpts): SkillDef {
@@ -35,6 +36,7 @@ export function skill(id: string, name: string, description: string, o: SkillOpt
     sfx: o.sfx,
     fire: o.fire,
     weapon: o.weapon,
+    channel: o.channel,
   };
 }
 

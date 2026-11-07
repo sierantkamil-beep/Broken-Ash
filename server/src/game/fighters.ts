@@ -38,6 +38,8 @@ export interface CastState {
   t: number;
   aim: number;
   aimDist: number;
+  /** Where a thrown circle will land, fixed when the cast begins (what the wind-up marks). */
+  landing?: { x: number; y: number };
 }
 
 export interface PlayerSim extends Fighter {
@@ -60,6 +62,8 @@ export interface PlayerSim extends Fighter {
   taken: number;
   speed: number;
   statusMul: Partial<Record<StatusId, number>>;
+  /** A channel in progress (its id breaks it when changed: a dodge, a stagger, going down). */
+  channel?: number;
   /** The bag, what's worn, and gold (shared/src/inventory.ts). */
   inv: Inventory;
   /** Appearance (skin, dyes, armour and gear pieces). */

@@ -257,3 +257,42 @@ describe("the gate assault", () => {
     expect(w.cinematic?.id).toBe("escape");
   });
 });
+
+describe("thrown skills and channels", () => {
+  it("a thrown circle flies first: nothing is hit until it lands, and it lands where the cast marked", () => {
+    const { w, ps } = arena(["bark"]);
+    const p = ps[0];
+    p.body.x = 10.5;
+    p.body.y = 14.5;
+    const u = dummy(w, 15.5, 14.5);
+    send(w, p, { cast: 3, aim: 0, aimDist: 5 });
+    w.step(SIM_DT);
+    const cast = w.drainFx().find((e) => e.t === "cast");
+    expect(cast && "ax" in cast && cast.ax).toBeCloseTo(15.5, 0);
+    run(w, p.skills[3].windup + 0.02);
+    expect(u.hp).toBe(u.hpMax);
+    expect(w.drainFx().some((e) => e.t === "throw")).toBe(true);
+    run(w, BALANCE.combat.throwMax + 0.05);
+    expect(u.hp).toBeLessThan(u.hpMax);
+  });
+
+  it("a channel strikes again and again, and a dodge breaks it", () => {
+    for (const dodge of [false, true]) {
+      const { w, ps } = arena(["ash"]);
+      const p = ps[0];
+      p.body.x = 10.5;
+      p.body.y = 14.5;
+      p.res = 0;
+      const u = dummy(w, 11.5, 14.5);
+      const vent = p.skills.findIndex((s) => s.id === "ash_vent");
+      send(w, p, { cast: vent, aim: 0, aimDist: 1 });
+      run(w, p.skills[vent].windup + 0.05);
+      const after1 = u.hp;
+      if (dodge) send(w, p, { dodge: true, mx: -1 });
+      run(w, 1.2);
+      const pulses = w.drainFx().filter((e) => e.t === "pulse").length;
+      expect(pulses).toBe(dodge ? 0 : 2);
+      if (!dodge) expect(u.hp).toBeLessThan(after1);
+    }
+  });
+});

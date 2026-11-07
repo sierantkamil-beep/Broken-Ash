@@ -16,7 +16,12 @@ export type HitCause = "cut" | "crush" | "pierce" | "fire" | "shock" | "rot" | "
 /** A transient combat event the server broadcasts for visuals and sound (MSG.fx). */
 export type FxEvent =
   /** `vfx` is the skill's look for this caster (a mastery form can change it). */
-  | { t: "cast"; id: string; skill: string; vfx: string; aim: number; x: number; y: number }
+  /** A cast begins (its wind-up); `ax, ay` is where a thrown circle will land. */
+  | { t: "cast"; id: string; skill: string; vfx: string; aim: number; x: number; y: number; ax?: number; ay?: number }
+  /** A thrown circle leaves the hand: it flies from (x0, y0) to (x, y) for `ms`, then lands (its `area`). */
+  | { t: "throw"; id: string; skill: string; vfx: string; x0: number; y0: number; x: number; y: number; ms: number }
+  /** A channel's pulse (`i` of `n`): the skill strikes again where it was aimed. */
+  | { t: "pulse"; id: string; skill: string; vfx: string; i: number; n: number; aim: number; x: number; y: number }
   | { t: "bolt"; id: number; skill: string; vfx: string; x: number; y: number; aim: number; speed: number; range: number; radius: number; owner: string }
   /** An enemy's blow landing: which attack, from where, which way (and the spot, for aimed slams). */
   | { t: "unitAtk"; id: string; kind: string; atk: string; aim: number; x: number; y: number; ax: number; ay: number }

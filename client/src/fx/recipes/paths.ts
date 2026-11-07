@@ -50,6 +50,11 @@ export const PATH_RECIPES: Record<string, Recipe> = {
   // --- Bark
   bark_roots: {
     sig: "roots: hand to the soil, a green ripple running to the spot, roots erupting in a ring",
+    // Roots racing under the ground from the caster to the spot, breaking the surface as they go.
+    travel: (c, x0, y0, x1, y1, ms) => {
+      c.t.runner(x0, y0 + 30, x1, y1, ms, "roots", "nature", 30, { scale: 0.6 });
+      c.t.crack(x0, y0 + 30, x1, y1, ms);
+    },
     windup: (c) => c.t.sprite("vines", "nature", c.x, c.y, { scale: 1, fps: 14, add: false }),
     land: (c) => {
       const { t } = c;
@@ -143,6 +148,8 @@ export const PATH_RECIPES: Record<string, Recipe> = {
 
   // --- Ash
   ash_pyre: {
+    // A fireball lobbed high from the hands.
+    travel: (c, x0, y0, x1, y1, ms) => c.t.lob(x0, y0, x1, y1, "orb", "fire", 2.4, ms),
     sig: "pyre: a fireball lobbed high, a blast and a pyre of flames left burning with embers",
     windup: (c) => {
       c.t.gather(c.hx, c.hy, "fire", 16, 40, 20, 400);
@@ -150,16 +157,14 @@ export const PATH_RECIPES: Record<string, Recipe> = {
     },
     land: (c) => {
       const { t } = c;
-      // The ball comes down out of the sky onto the spot.
-      t.lob(c.hx, c.hy, c.tx, c.ty, "orb", "fire", 2, 180);
-      t.later(180, () => {
+      {
         t.boom(c.tx, c.ty - 14, c.radius, "fire");
         t.ring(c.tx, c.ty, c.radius, "fire");
         t.sparks(c.tx, c.ty, "fire", 30, 300, 20);
         t.scorch(c.tx, c.ty, t.px(c.radius) * 0.8);
         t.light(c.tx, c.ty, t.px(c.radius) * 2.6, "fire", 1.8, 600);
         t.shake(0.009, 220);
-      });
+      }
     },
     zone: (c, ms) => {
       const { t } = c;
@@ -236,6 +241,11 @@ export const PATH_RECIPES: Record<string, Recipe> = {
     },
   },
   storm_tempest: {
+    // The sky over the spot darkens and crackles before the first bolt.
+    travel: (c, _x0, _y0, x1, y1, ms) => {
+      c.t.sprite("cloud", "shadow", x1, y1 - 120, { scale: 3, fps: 8, loop: true, duration: ms + 900, add: false, alpha: 0.75 });
+      c.t.lightning(x1 - 40, y1 - 140, x1 + 40, y1 - 120, ms, 1);
+    },
     sig: "tempest: hands to the sky, a seal on the spot, bolts falling one after another",
     windup: (c) => {
       c.t.lightning(c.hx, c.hy - 20, c.hx + (Math.random() - 0.5) * 30, c.hy - 200, 300);
@@ -290,6 +300,7 @@ export const PATH_RECIPES: Record<string, Recipe> = {
     },
   },
   graves_curse: {
+    travel: (c, x0, y0, x1, y1, ms) => c.t.lob(x0, y0, x1, y1, "orb", "shadow", 1.6, ms),
     sig: "curse: a black hand thrown out, a spirit seal on the spot, shadow hands dragging down",
     windup: (c) => c.t.sprite("cloud", "shadow", c.hx, c.hy, { scale: 0.6, fps: 12, add: false, alpha: 0.7 }),
     land: (c) => {
@@ -336,6 +347,11 @@ export const PATH_RECIPES: Record<string, Recipe> = {
     },
   },
   dusk_snare: {
+    // The trap spun through the air on a golden wire.
+    travel: (c, x0, y0, x1, y1, ms) => {
+      c.t.lob(x0, y0, x1, y1, "mote", "dusk", 1.6, ms);
+      c.t.beam(x0, y0, x1, y1, "dusk", 2, ms + 120);
+    },
     sig: "snare: a hunter's wire trap snapping shut, golden threads, a slowing net",
     windup: (c) => c.t.sparks(c.x, c.y, "dusk", 4, 30, 2),
     land: (c) => {

@@ -8,6 +8,8 @@ import { Scars } from "./scars";
 import { Tools } from "./recipes/tools";
 import { recipeFor } from "./recipes";
 import { ENEMY } from "./recipes/enemies";
+import { CHANTS, chantSound } from "./recipes/chants";
+import { RAMP_COLORS } from "./fxkit";
 import type { Ctx, Recipe } from "./recipes/types";
 import { Gore, type CorpseMode } from "./gore";
 import type { LightSource } from "../world/Lighting";
@@ -150,6 +152,7 @@ export class Vfx {
         this.hooks.playSound(`sfx_${skill.sfx}`, 0.6, worldToScreen(e.x, e.y));
         // The wind-up shows on the caster at once; the blow itself after it.
         recipeFor(skill.id, e.vfx)?.windup?.(this.ctx(skill, e.id, e.x, e.y, e.aim));
+        this.windupMarks(skill, e);
         // Melee and self shapes show when they land (after the wind-up).
         this.scene.time.delayedCall(skill.windup * 1000, () => this.castShape(skill, e.vfx || skill.vfx, e.x, e.y, e.aim, e.id));
         break;
@@ -157,6 +160,26 @@ export class Vfx {
       case "bolt":
         this.bolt(e);
         break;
+      case "throw": {
+        // The thrown circle's flight, from the hand to where it will land.
+        const sk = SKILLS.get(e.skill);
+        if (!sk) break;
+        const a = worldToScreen(e.x, e.y);
+        const r = recipeFor(sk.id, e.vfx);
+        const c = this.ctx(sk, e.id, e.x0, e.y0, Math.atan2(e.y - e.y0, e.x - e.x0), { tx: a.x, ty: a.y });
+        if (r?.travel) r.travel(c, c.hx, c.hy, a.x, a.y, e.ms);
+        else this.tools.lob(c.hx, c.hy, a.x, a.y, "orb", c.ramp, 1.6, e.ms);
+        this.hooks.playSound("sfx_throw", 0.4, worldToScreen(e.x0, e.y0));
+        break;
+      }
+      case "pulse": {
+        // A channel strikes again: the release replays (thrown circles land again on their own).
+        const sk = SKILLS.get(e.skill);
+        if (!sk || (sk.shape.kind === "circle" && sk.shape.at === "aim")) break;
+        this.hooks.playSound(`sfx_${sk.sfx}`, 0.45, worldToScreen(e.x, e.y));
+        this.castShape(sk, e.vfx || sk.vfx, e.x, e.y, e.aim, e.id);
+        break;
+      }
       case "boltEnd":
         this.bolts.get(e.id)?.end(e.x, e.y);
         break;
@@ -174,6 +197,12 @@ export class Vfx {
         this.shapes.circle(e.x, e.y, e.radius, this.hooks.accentOf(e.owner));
         const sk = SKILLS.get(e.skill);
         const r = sk ? recipeFor(sk.id, e.vfx) : undefined;
+        // Every landing leaves the ground marked in its element (scorch, ink, rot, frost of sparks…).
+        if (sk) {
+          const p = worldToScreen(e.x, e.y);
+          const rp = rampOf(sk);
+          this.tools.stain(p.x, p.y, e.radius * CELL * 0.45, RAMP_COLORS[rp === "steel" ? "shadow" : rp].dark, 0.28);
+        }
         if (sk && r?.land) {
           const p = worldToScreen(e.x, e.y);
           const from = this.hooks.locate(e.owner);
@@ -291,6 +320,117 @@ export class Vfx {
     }
   }
 
+  /**
+   * What a wind-up shows besides its recipe: the skill's own shape forming on the ground in the
+   * caster's colour (filling as the wind-up runs), a seal growing where a thrown circle will land,
+   * a cast bar under longer wind-ups and channels, and a spell's chant over the caster's head.
+   */
+  private windupMarks(skill: SkillDef, e: Extract<FxEvent, { t: "cast" }>) {
+    const ms = skill.windup * 1000;
+    const chan = skill.channel ? skill.channel.duration * 1000 : 0;
+    const accent = this.hooks.accentOf(e.id);
+    const ramp = rampOf(skill);
+    const sh = skill.shape;
+    const start = this.scene.time.now;
+    const locate = () => this.hooks.locate(e.id);
+    if (ms >= 120 && sh.kind !== "self" && sh.kind !== "projectile") {
+      const g = this.graphics(-9e5, Phaser.BlendModes.NORMAL);
+      this.add({
+        until: start + ms,
+        update: (now) => {
+          const k = Math.min(1, (now - start) / ms);
+          const l = locate();
+          const ox = l ? l.wx : e.x;
+          const oy = l ? l.wy : e.y;
+          g.clear();
+          g.lineStyle(2, accent, 0.25 + 0.5 * k);
+          g.fillStyle(accent, 0.05 + 0.12 * k);
+          if (sh.kind === "cone") {
+            g.fillPoints(wedge(ox, oy, e.aim, sh.range * k, sh.arc), true);
+            g.strokePoints(wedge(ox, oy, e.aim, sh.range, sh.arc), true);
+          } else if (sh.kind === "line") {
+            g.fillPoints(rect(ox, oy, e.aim, sh.length * k, sh.width), true);
+            g.strokePoints(rect(ox, oy, e.aim, sh.length, sh.width), true);
+          } else if (sh.kind === "circle" && sh.at !== "aim") {
+            groundCircle(g, ox, oy, sh.radius * k);
+            groundCircle(g, ox, oy, sh.radius, true);
+          }
+        },
+        destroy: () => g.destroy(),
+      });
+    }
+    // Where a thrown circle will land: a seal forming, and its edge.
+    if (sh.kind === "circle" && sh.at === "aim" && e.ax !== undefined && e.ay !== undefined) {
+      const p = worldToScreen(e.ax, e.ay);
+      this.tools.sigil(p.x, p.y, sh.radius, ramp === "steel" ? "gold" : ramp, { fps: 10, loop: true, duration: ms + 400, alpha: 0.55 });
+      const g = this.graphics(-9e5, Phaser.BlendModes.NORMAL);
+      this.add({
+        until: start + ms + 400,
+        update: (now) => {
+          const k = Math.min(1, (now - start) / Math.max(1, ms));
+          g.clear();
+          g.lineStyle(2, accent, 0.4 + 0.5 * k);
+          groundCircle(g, e.ax!, e.ay!, sh.radius, true);
+          g.fillStyle(accent, 0.18 * k);
+          groundCircle(g, e.ax!, e.ay!, sh.radius * k);
+        },
+        destroy: () => g.destroy(),
+      });
+    }
+    // The cast bar: the wind-up filling, then a channel draining.
+    if (ms >= 250 || chan) {
+      const g = this.graphics(9.65e6, Phaser.BlendModes.NORMAL);
+      this.add({
+        until: start + ms + chan,
+        update: (now) => {
+          const l = locate();
+          g.clear();
+          if (!l) return;
+          const el = now - start;
+          const k = el < ms ? el / ms : 1 - (el - ms) / Math.max(1, chan);
+          const w = 54;
+          const x = Math.round(l.x - w / 2);
+          const y = Math.round(l.y + 10);
+          g.fillStyle(0x000000, 0.65).fillRect(x - 1, y - 1, w + 2, 6);
+          g.fillStyle(el < ms ? accent : RAMP_COLORS[ramp].hot, 0.95).fillRect(x, y, Math.round(w * Math.max(0, Math.min(1, k))), 4);
+        },
+        destroy: () => g.destroy(),
+      });
+    }
+    // A channel: a ring at the caster's feet while it lasts.
+    if (chan) {
+      const l = locate();
+      if (l) this.tools.sigil(l.x, l.y, 1.1, ramp === "steel" ? "gold" : ramp, { fps: 14, loop: true, duration: ms + chan, alpha: 0.7, delay: ms, follow: () => locate() });
+    }
+    // The chant.
+    const words = CHANTS[skill.id];
+    if (words) {
+      this.hooks.playSound(chantSound(ramp), 0.5, worldToScreen(e.x, e.y));
+      const t = this.scene.add
+        .text(0, 0, words, { fontFamily: "Cormorant Garamond", fontSize: "19px", fontStyle: "italic", color: `#${RAMP_COLORS[ramp === "steel" ? "gold" : ramp].hot.toString(16).padStart(6, "0")}`, stroke: "#000", strokeThickness: 4 })
+        .setOrigin(0.5, 1)
+        .setResolution(2)
+        .setDepth(9.7e6)
+        .setAlpha(0);
+      this.layer.add(t);
+      const life = Math.max(1100, ms + chan + 500);
+      this.add({
+        until: start + life,
+        update: (now) => {
+          const l = locate();
+          if (!l) return t.setVisible(false);
+          const el = now - start;
+          const a = Math.min(1, el / 150) * Math.min(1, (life - el) / 300);
+          t.setVisible(true)
+            .setAlpha(a)
+            .setPosition(l.x, l.y - l.height - 22 - el / 60)
+            .setScale(1 / this.scene.cameras.main.zoom);
+        },
+        destroy: () => t.destroy(),
+      });
+    }
+  }
+
   private add(l: Live) {
     this.live.push(l);
   }
@@ -386,6 +526,8 @@ export class Vfx {
     const old = this.spells.projectile(skill, e.vfx || skill?.vfx || "");
     const look = rb && c ? { anim: this.tools.pick(rb.anim.split("/")[0], (rb.anim.split("/")[1] ?? "steel") as Ramp), scale: rb.scale ?? 1, trail: rb.trail ?? null, spin: !!rb.spin, ramp: c.ramp } : old;
     let lastTail = 0;
+    // Projectiles read at a glance: half again the art's size, and they light their way.
+    look.scale *= 1.45;
     const lift = 22;
     const start = this.scene.time.now;
     const shadow = this.scene.add.ellipse(0, 0, 10 * look.scale + 6, 5 * look.scale + 3, 0x000000, 0.35).setDepth(-5e5);
@@ -401,7 +543,7 @@ export class Vfx {
     };
     let last = place(e.x, e.y);
     if (rb?.launch && c) rb.launch(c, last.x, last.y - lift);
-    this.kit.light(last.x, last.y - lift, 110 * Math.min(2, look.scale), 0xffffff, look.trail ? 0.6 : 0, (e.range / e.speed) * 1000, () => (h ? { x: h.sprite.x, y: h.sprite.y } : null));
+    this.kit.light(last.x, last.y - lift, 90 * Math.min(2.4, look.scale), look.trail ? RAMP_COLORS[look.trail as Ramp].hot : 0xffffff, look.trail ? 1 : 0.5, (e.range / e.speed) * 1000, () => (h ? { x: h.sprite.x, y: h.sprite.y } : null));
     let ended = false;
     const live = {
       // A safety end in case the end event is lost: the full range plus a little.

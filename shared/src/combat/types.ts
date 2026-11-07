@@ -70,6 +70,11 @@ export interface SkillDef {
   fire?: boolean;
   /** Set on weapon skills: which weapon tree it comes from (mastery XP goes there). */
   weapon?: WeaponId;
+  /**
+   * A channel: after the wind-up the skill strikes `pulses` times over `duration` seconds (the
+   * damage shared between them, a little more in all for holding on); a dodge breaks it.
+   */
+  channel?: { duration: number; pulses: number };
 }
 
 export interface ResourceDef {

@@ -281,6 +281,16 @@ export class Tools {
     });
   }
 
+  /** Something racing along the ground from a to b: a sprite stamped every few pixels on the way. */
+  runner(x0: number, y0: number, x1: number, y1: number, ms: number, fam: string, ramp: Ramp, every = 26, o: PlayOpts = {}) {
+    const len = Math.hypot(x1 - x0, y1 - y0);
+    const n = Math.max(1, Math.floor(len / every));
+    for (let i = 1; i <= n; i++) {
+      const k = i / n;
+      this.later(ms * k, () => this.sprite(fam, ramp, x0 + (x1 - x0) * k, y0 + (y1 - y0) * k, { fps: 20, add: false, ...o }));
+    }
+  }
+
   // ----------------------------------------------------------------------------- ground marks
 
   scorch(x: number, y: number, Rpx: number) {
