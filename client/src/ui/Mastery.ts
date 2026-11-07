@@ -19,9 +19,7 @@ export class Mastery {
     private readonly sound: (key: string, volume: number) => void,
   ) {
     // Re-render when the server confirms a change (or mastery grows) while the panel is open.
-    window.setInterval(() => {
-      if (this.open) this.render();
-    }, 500);
+    void this.open;
   }
 
   get isOpen() {
@@ -36,7 +34,7 @@ export class Mastery {
       $("mastery").hidden = false;
       // The HUD and key hints would show through the panel; they step back while it's open.
       document.body.classList.add("mastery-open");
-      this.render();
+      this.renderInto($("mastery"));
     }
   }
 
@@ -58,7 +56,9 @@ export class Mastery {
 
   private lastHtml = "";
 
-  private render() {
+  /** The held weapon's tree, drawn into the book's tab (weapons themselves come from the bag). */
+  renderInto(box: HTMLElement) {
+    this.weapon = null;
     const me = this.me();
     if (!me) return;
     const phase = (this.room.state as unknown as { phase: string }).phase;
@@ -75,15 +75,11 @@ export class Mastery {
       /* default */
     }
     picks = validPicks(picks, level);
-    const key = JSON.stringify([shown, held, xp[shown] ?? 0, picks, locked, barOf(me).key]);
-    if (key === this.lastHtml) return;
-    this.lastHtml = key;
+    void barOf;
 
     const path = pathOf(me);
     const acc = ACCENTS[path];
     const w = WEAPONS[shown];
-    const box = $("mastery");
-    box.replaceChildren();
     const head = el("div", "m-head");
     head.append(el("h2", undefined, `Mistrzostwo: ${w.name}`), el("div", "muted", `poziom ${level} / ${BALANCE.mastery.maxLevel}`));
     const bar = el("div", "xp");
@@ -91,29 +87,8 @@ export class Mastery {
     fill.style.width = `${Math.round(prog * 100)}%`;
     bar.append(fill);
     const home = PATHS[path].homeWeapons.includes(shown);
-    box.append(head, bar, el("p", "muted small m-help", `${home ? `Broń twojego ludu: ${PATHS[path].affinity.text} ` : ""}Mistrzostwo rośnie od obrażeń zadanych umiejętnościami tej broni. K albo Esc zamyka.`));
-    if (locked) box.append(el("div", "note", "Podczas fali nie zmienisz broni ani drzewka — tylko między falami."));
-
-    const wsel = el("div", "wsel");
-    for (const id of WEAPON_IDS) {
-      const b = el("button", id === shown ? "on" : undefined, `${WEAPONS[id].name} · ${masteryLevel(xp[id] ?? 0)}${id === held ? " ✦" : ""}`);
-      b.addEventListener("click", () => {
-        this.weapon = id;
-        this.lastHtml = "";
-        this.render();
-      });
-      wsel.append(b);
-    }
-    box.append(wsel);
-    if (shown !== held) {
-      const take = el("button", "primary", `Weź do ręki: ${w.name}`);
-      take.disabled = locked;
-      take.addEventListener("click", () => {
-        this.send(shown, validPicks({}, level));
-        this.weapon = null;
-      });
-      box.append(take);
-    }
+    box.append(head, bar, el("p", "muted small m-help", `${home ? `Broń twojego ludu: ${PATHS[path].affinity.text} ` : ""}Mistrzostwo rośnie od obrażeń zadanych umiejętnościami tej broni. Inną broń założysz w zakładce Postać (I).`));
+    if (locked) box.append(el("div", "note", "Podczas walki drzewka nie zmienisz — tylko między falami."));
 
     const M = BALANCE.mastery;
     const tree = el("div", "tree");

@@ -7,7 +7,7 @@
 
 - [shared](#shared) — 28 files, 7 test files
 - [server](#server) — 11 files, 5 test files
-- [client](#client) — 45 files, 5 test files
+- [client](#client) — 50 files, 5 test files
 - [desktop](#desktop) — 3 files, 1 test files
 - [tools/catalogue](#toolscatalogue) — 1 files, 1 test files
 - [Python tools](#python-tools)
@@ -235,18 +235,22 @@ Phaser 3 + Vite client: rendering, prediction, cinematics, audio, DOM UI.
 | `client/src/fx/scars.ts` | Under the blood, over the ground. | `Scars` | `client/src/fx/fxkit`, @broken-ash/shared, phaser |
 | `client/src/fx/shapes.ts` | Skill visuals as their exact hit shapes: a cone is the wedge the server tests, a line is the rectangle, a circle has the true radius, all flat on the ground in the caster's path accent. | `DEPTH_FX_GROUND`, `DEPTH_FX`, `groundCircle`, `wedge`, `rect`, `ShapePainter` | @broken-ash/shared, phaser |
 | `client/src/fx/spells.ts` | Every skill's effect, built from its data: the element comes from the weapon (a talisman burns, a lantern haunts) or, for a path's own skills, from the path (Ash is fire, Storm lightning, Graves spirit…); the look from t | `PATH_RAMP`, `rampOf`, `Feel`, `SpellFx` | `client/src/fx/fxkit`, @broken-ash/shared |
-| `client/src/main.ts` | The settings panel from the title screen (the same panel as the in-game pause menu). | — | `client/src/desktop`, `client/src/fx/accents`, `client/src/net`, `client/src/net/loadout`, `client/src/scenes/BootScene`, `client/src/scenes/WorldScene`, `client/src/settings`, `client/src/style.css`, `client/src/ui/Mastery`, `client/src/ui/dom`, `client/src/ui/hostReport`, `client/src/ui/menu/Menu`, `client/src/ui/pixelIcons`, @broken-ash/shared, @fontsource/cormorant-garamond, @fontsource/shippori-mincho, phaser |
+| `client/src/main.ts` | The settings panel from the title screen (the same panel as the in-game pause menu). | — | `client/src/desktop`, `client/src/fx/accents`, `client/src/net`, `client/src/net/loadout`, `client/src/scenes/BootScene`, `client/src/scenes/WorldScene`, `client/src/settings`, `client/src/style.css`, `client/src/ui/Book`, `client/src/ui/Mastery`, `client/src/ui/dom`, `client/src/ui/hostReport`, `client/src/ui/menu/Menu`, `client/src/ui/pixelIcons`, @broken-ash/shared, @fontsource/cormorant-garamond, @fontsource/shippori-mincho, phaser |
 | `client/src/net/Interpolation.ts` | Renders a remote player slightly in the past, between the two snapshots around that moment. | `Snapshot`, `Interpolation` | @broken-ash/shared |
 | `client/src/net/Prediction.ts` | Movement multiplier the server will apply (path speed, slows, rooted, downed). | `Intent`, `Prediction` | @broken-ash/shared |
 | `client/src/net/loadout.ts` | The synced fields a player's bar and look are resolved from (server/src/schema/WorldState.ts). | `LoadoutView`, `bonusesOf`, `pathOf`, `weaponOf`, `masteryOf`, `barOf`, `lookOf`, `ALL_SKILLS` | @broken-ash/shared |
 | `client/src/net.ts` | Accepts "host", "host:port", IPv6 (bare or "[addr]:port") or a full ws:// / http:// URL, so players can paste whatever they were given. | `toServerUrl`, `joinWorld` | @broken-ash/shared, colyseus.js |
 | `client/src/scenes/BootScene.ts` | Loads the atlases (rendered by tools/art) and the sounds (tools/audio), with a thin progress line. | `BootScene` | `client/src/audio/AudioDirector`, phaser |
-| `client/src/scenes/WorldScene.ts` | The synced player fields (mirror of server/src/schema/WorldState.ts). | `WorldScene` | `client/src/assets/atlases`, `client/src/audio/AudioDirector`, `client/src/cinematic/CinematicPlayer`, `client/src/entities/Character`, `client/src/entities/UnitSprite`, `client/src/fx/Vfx`, `client/src/fx/accents`, `client/src/net`, `client/src/net/Interpolation`, `client/src/net/Prediction`, `client/src/net/loadout`, `client/src/ui/Hud`, `client/src/ui/dom`, `client/src/world/AreaLife`, `client/src/world/GroundLayer`, `client/src/world/Lighting`, `client/src/world/Petals`, `client/src/world/PropLayer`, @broken-ash/shared, phaser |
+| `client/src/scenes/WorldScene.ts` | The synced player fields (mirror of server/src/schema/WorldState.ts). | `WorldScene` | `client/src/assets/atlases`, `client/src/audio/AudioDirector`, `client/src/cinematic/CinematicPlayer`, `client/src/entities/Character`, `client/src/entities/UnitSprite`, `client/src/fx/Vfx`, `client/src/fx/accents`, `client/src/net`, `client/src/net/Interpolation`, `client/src/net/Prediction`, `client/src/net/loadout`, `client/src/ui/Hud`, `client/src/ui/Progression`, `client/src/ui/dom`, `client/src/world/AreaLife`, `client/src/world/GroundLayer`, `client/src/world/Lighting`, `client/src/world/LootLayer`, `client/src/world/Petals`, `client/src/world/PropLayer`, @broken-ash/shared, phaser |
 | `client/src/settings.ts` | Per-player preferences, kept in localStorage (wrapped: storage can be unavailable). | `Settings`, `settings`, `saveSettings`, `onSettingsChange` | — |
-| `client/src/ui/Hud.ts` | The DOM HUD: your bars and skill bar, your partner, the boss, being downed. | `MeView`, `Hud` | `client/src/fx/accents`, `client/src/ui/dom`, `client/src/ui/pixelIcons`, @broken-ash/shared |
+| `client/src/ui/Book.ts` | What the panels read from a synced player (server/src/schema/WorldState.ts). | `Tab`, `shapeText`, `howToUse`, `skillNumbers`, `Book` | `client/src/fx/accents`, `client/src/net/loadout`, `client/src/ui/Mastery`, `client/src/ui/dom`, `client/src/ui/itemIcons`, `client/src/ui/itemText`, `client/src/ui/menu/Preview`, `client/src/ui/pixelIcons`, @broken-ash/shared, colyseus.js |
+| `client/src/ui/Hud.ts` | The DOM HUD: your bars and skill bar, your partner, the boss, being downed. | `MeView`, `Hud` | `client/src/fx/accents`, `client/src/ui/Book`, `client/src/ui/dom`, `client/src/ui/pixelIcons`, @broken-ash/shared |
 | `client/src/ui/Mastery.ts` | The weapon mastery panel (K): your weapon's level and progress, its tree — RMB and key-1 choices, the passive rows — and switching weapons. | `Mastery` | `client/src/fx/accents`, `client/src/net/loadout`, `client/src/ui/dom`, `client/src/ui/pixelIcons`, @broken-ash/shared, colyseus.js |
+| `client/src/ui/Progression.ts` | A pillar of light on the player (level-up). | `ProgressHooks`, `Progression` | `client/src/fx/accents`, `client/src/net/loadout`, `client/src/ui/Book`, `client/src/ui/dom`, `client/src/ui/pixelIcons`, @broken-ash/shared |
 | `client/src/ui/dom.ts` | Shows a small tooltip next to the cursor while hovering `target`. | `$`, `el`, `tooltip`, `escapeHtml`, `scoped`, `endSession` | — |
 | `client/src/ui/hostReport.ts` | What the partner types (clickable to copy). | `HostLine`, `partnerAddress`, `hostLines`, `renderHostLines` | `client/src/desktop`, `client/src/ui/dom`, @broken-ash/shared |
+| `client/src/ui/itemIcons.ts` | Which gear sprite shows each weapon type (client/src/entities/Character.ts WEAPON_PARTS). | `itemIcon`, `goldIcon` | @broken-ash/shared |
+| `client/src/ui/itemText.ts` | Who a bonus is for, in words. | `bonusText`, `itemKind`, `itemTooltip` | `client/src/net/loadout`, `client/src/ui/dom`, @broken-ash/shared |
 | `client/src/ui/menu/Menu.ts` | The character is ready: show the host / join step. | `MenuHooks`, `Menu` | `client/src/fx/accents`, `client/src/ui/dom`, `client/src/ui/menu/Preview`, `client/src/ui/menu/characters`, `client/src/ui/pixelIcons`, @broken-ash/shared |
 | `client/src/ui/menu/Preview.ts` | The character screen's live preview: a small Phaser game of its own showing the real paper doll — the same body atlas, recolour, armour and gear as in play — idling, running, attacking or rolling, turnable through all ei | `PreviewSpec`, `PreviewMode`, `Preview` | `client/src/audio/AudioDirector`, `client/src/entities/Character`, @broken-ash/shared, phaser |
 | `client/src/ui/menu/characters.ts` | Characters made on this computer: name, path, body, people, weapon and look. | `SavedCharacter`, `listCharacters`, `currentCharacter`, `saveCharacter`, `selectCharacter`, `deleteCharacter`, `newCharacter` | @broken-ash/shared |
@@ -254,6 +258,7 @@ Phaser 3 + Vite client: rendering, prediction, cinematics, audio, DOM UI.
 | `client/src/world/AreaLife.ts` | The living parts of an area beyond the fight: the people you can talk to (drawn as characters, dressed like their path, with a name; "F — rozmowa" when you're close), and the ways out (a glowing threshold with where it l | `AreaLife` | `client/src/audio/AudioDirector`, `client/src/entities/Character`, @broken-ash/shared, phaser |
 | `client/src/world/GroundLayer.ts` | Which ground draws its soft, feathered rim over which: higher priority creeps over lower (moss over flagstones, flagstones over the pond's edge). | `GroundLayer` | `client/src/world/frames`, @broken-ash/shared, phaser |
 | `client/src/world/Lighting.ts` | Screen position (px). | `LightSource`, `DEPTH_LIGHT`, `Lighting` | phaser |
+| `client/src/world/LootLayer.ts` | A piece of loot as synced (server/src/schema/WorldState.ts LootState). | `LootView`, `LootLayer` | `client/src/ui/itemIcons`, @broken-ash/shared, phaser |
 | `client/src/world/Petals.ts` | Red blossom petals drifting down across the view. | `Petals` | phaser |
 | `client/src/world/PropLayer.ts` | Props tall enough to hide a player standing behind them; they fade while someone is back there. | `PropLayer` | `client/src/settings`, `client/src/world/Lighting`, `client/src/world/frames`, @broken-ash/shared, phaser |
 | `client/src/world/frames.ts` | The pivot of an atlas frame in pixels (tools/art writes it into the atlas JSON). | `framePivot`, `hasFrame` | phaser |
@@ -318,13 +323,23 @@ Tests: `client/src/entities/moves.test.ts`, `client/src/fx/recipes/recipes.test.
 - `toServerUrl` (function, `client/src/net.ts`) — Accepts "host", "host:port", IPv6 (bare or "[addr]:port") or a full ws:// / http:// URL, so players can paste whatever they were given.
 - `BootScene` (class, `client/src/scenes/BootScene.ts`) — Loads the atlases (rendered by tools/art) and the sounds (tools/audio), with a thin progress line.
 - `Settings` (interface, `client/src/settings.ts`) — Per-player preferences, kept in localStorage (wrapped: storage can be unavailable).
+- `shapeText` (function, `client/src/ui/Book.ts`) — A skill's hit shape in words: what it covers and where.
+- `howToUse` (function, `client/src/ui/Book.ts`) — How to use a skill, by its shape.
+- `skillNumbers` (function, `client/src/ui/Book.ts`) — The numbers of a skill: damage per hit, statuses, cooldown, cost, wind-up.
+- `Book` (class, `client/src/ui/Book.ts`) — The book (I, K, T, M): your character and bag, your skills, your talents, your weapon's mastery.
 - `Hud` (class, `client/src/ui/Hud.ts`) — The DOM HUD: your bars and skill bar, your partner, the boss, being downed.
 - `Mastery` (class, `client/src/ui/Mastery.ts`) — The weapon mastery panel (K): your weapon's level and progress, its tree — RMB and key-1 choices, the passive rows — and switching weapons.
+- `Progression` (class, `client/src/ui/Progression.ts`) — Character growth on screen: level-ups (banner, light, the new skill introduced on a card with how to use it), what you picked up, a full bag, and the first hour's tutorial, one prompt at a time.
 - `tooltip` (function, `client/src/ui/dom.ts`) — Shows a small tooltip next to the cursor while hovering `target`.
 - `scoped` (const, `client/src/ui/dom.ts`) — Listener options tied to the current game session.
 - `partnerAddress` (function, `client/src/ui/hostReport.ts`) — The address as the partner should type it: the default port is filled in on their side.
 - `hostLines` (function, `client/src/ui/hostReport.ts`) — Every way the partner can reach this host, best first, plus what to fix when the internet way failed.
 - `renderHostLines` (function, `client/src/ui/hostReport.ts`) — Renders the lines; clicking an address copies it.
+- `itemIcon` (function, `client/src/ui/itemIcons.ts`) — A canvas with an item's picture, `cw × ch` CSS pixels (its grid cells × the cell size), on a backing of its rarity.
+- `goldIcon` (function, `client/src/ui/itemIcons.ts`) — A gold coins picture (loot on the ground, the purse).
+- `bonusText` (function, `client/src/ui/itemText.ts`) — One bonus as a line of Polish.
+- `itemKind` (function, `client/src/ui/itemText.ts`) — The kind of thing an item is: "Pierś · Lamelka", "Broń · Glewia", with its tier.
+- `itemTooltip` (function, `client/src/ui/itemText.ts`) — The tooltip of an item: name in its rarity's colour, what it is, its base bonuses, its affixes, a line of story, and (when given) how it compares to what's worn in that slot now.
 - `Menu` (class, `client/src/ui/menu/Menu.ts`) — The title screen and character creation: a real game menu (keyboard and mouse), path cards with full explanations, the weapon trees, appearance with a live preview, saved characters.
 - `PreviewSpec` (interface, `client/src/ui/menu/Preview.ts`) — The character screen's live preview: a small Phaser game of its own showing the real paper doll — the same body atlas, recolour, armour and gear as in play — idling, running, attacking or rolling, turnable through all ei
 - `SavedCharacter` (interface, `client/src/ui/menu/characters.ts`) — Characters made on this computer: name, path, body, people, weapon and look.
@@ -335,6 +350,8 @@ Tests: `client/src/entities/moves.test.ts`, `client/src/fx/recipes/recipes.test.
 - `AreaLife` (class, `client/src/world/AreaLife.ts`) — The living parts of an area beyond the fight: the people you can talk to (drawn as characters, dressed like their path, with a name; "F — rozmowa" when you're close), and the ways out (a glowing threshold with where it l
 - `GroundLayer` (class, `client/src/world/GroundLayer.ts`) — Bakes the whole ground into one render texture once: hard squares first, then soft rims by priority.
 - `Lighting` (class, `client/src/world/Lighting.ts`) — Night: a render texture filled with the ambient colour, with every light stamped in additively, then multiplied over the scene.
+- `LootView` (interface, `client/src/world/LootLayer.ts`) — A piece of loot as synced (server/src/schema/WorldState.ts LootState).
+- `LootLayer` (class, `client/src/world/LootLayer.ts`) — Loot on the ground: the item's picture lying there, a column of light in its rarity's colour (taller for better things, so a rare drop is seen across a fight), its name, and "F" when you're close.
 - `Petals` (class, `client/src/world/Petals.ts`) — Red blossom petals drifting down across the view.
 - `framePivot` (function, `client/src/world/frames.ts`) — The pivot of an atlas frame in pixels (tools/art writes it into the atlas JSON).
 

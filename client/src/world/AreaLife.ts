@@ -13,6 +13,8 @@ export class AreaLife {
   private npcs = new Map<string, { def: Npc; char: Character }>();
   private exits: { g: Phaser.GameObjects.Graphics; label: Phaser.GameObjects.Text; needs?: string }[] = [];
   private prompt: Phaser.GameObjects.Text;
+  /** A soft glint over each chest or body still to be searched. */
+  private readonly glints = new Map<string, Phaser.GameObjects.Graphics>();
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -71,6 +73,29 @@ export class AreaLife {
     }
     // Levers not yet pulled to the end (their group's flag still missing).
     const lever = me && !near ? (this.map.levers ?? []).find((l) => !flags.has(l.flag) && Math.hypot(me.x - l.x, me.y - l.y) <= 1.6) : undefined;
+    // Chests and bodies not yet searched: a glint over each, a prompt close by.
+    const t = this.scene.time.now;
+    let cache: { x: number; y: number; label: string } | undefined;
+    for (const c of this.map.caches ?? []) {
+      const open = flags.has(`loot:${this.map.id}:${c.id}`);
+      let g = this.glints.get(c.id);
+      if (open) {
+        g?.destroy();
+        this.glints.delete(c.id);
+        continue;
+      }
+      if (!g) {
+        g = this.scene.add.graphics().setBlendMode(Phaser.BlendModes.ADD).setDepth(9.6e6);
+        this.layer.add(g);
+        this.glints.set(c.id, g);
+      }
+      const s = worldToScreen(c.x, c.y);
+      const k = 0.5 + 0.5 * Math.sin(t / 380 + c.x);
+      g.clear();
+      g.fillStyle(0xe0c070, 0.12 + 0.12 * k).fillCircle(s.x, s.y - 14, 18 + 4 * k);
+      g.fillStyle(0xfff0b0, 0.5 + 0.4 * k).fillRect(s.x - 1, s.y - 34 - 6 * k, 2, 10).fillRect(s.x - 5, s.y - 30 - 6 * k, 10, 2);
+      if (me && !near && !lever && !cache && Math.hypot(me.x - c.x, me.y - c.y) <= 1.6) cache = c;
+    }
     if (near && !fighting) {
       const s = worldToScreen(near.x, near.y);
       this.prompt.setText("F — rozmowa").setPosition(s.x, s.y - 150).setVisible(true).setScale(1 / this.scene.cameras.main.zoom);
@@ -78,6 +103,9 @@ export class AreaLife {
       const s = worldToScreen(lever.x, lever.y);
       const others = (this.map.levers ?? []).filter((l) => l.group === lever.group).length;
       this.prompt.setText(others > 1 ? "F — dźwignia (razem, w tej samej chwili)" : "F — dźwignia").setPosition(s.x, s.y - 90).setVisible(true).setScale(1 / this.scene.cameras.main.zoom);
+    } else if (cache && !fighting) {
+      const s = worldToScreen(cache.x, cache.y);
+      this.prompt.setText(`F — ${cache.label}`).setPosition(s.x, s.y - 60).setVisible(true).setScale(1 / this.scene.cameras.main.zoom);
     } else this.prompt.setVisible(false);
     for (const x of this.exits) {
       const open = !fighting && (!x.needs || flags.has(x.needs));
@@ -94,5 +122,7 @@ export class AreaLife {
       x.label.destroy();
     }
     this.prompt.destroy();
+    for (const g of this.glints.values()) g.destroy();
+    this.glints.clear();
   }
 }

@@ -30,6 +30,8 @@ import { Hud } from "../ui/Hud";
 import { barOf, lookOf, pathOf, weaponOf } from "../net/loadout";
 import { ACCENTS } from "../fx/accents";
 import { AreaLife } from "../world/AreaLife";
+import { LootLayer, type LootView } from "../world/LootLayer";
+import { Progression } from "../ui/Progression";
 import { GroundLayer } from "../world/GroundLayer";
 import { Lighting, type LightSource } from "../world/Lighting";
 import { Petals } from "../world/Petals";
@@ -59,9 +61,18 @@ interface PlayerView extends Body {
   picks: string;
   mastery: string;
   appearance: string;
+  level: number;
+  xp: number;
+  talents: string;
+  inv: string;
+  equip: string;
+  x: number;
+  y: number;
+  dodgeT: number;
 }
 
 interface StateView {
+  loot: Map<string, LootView>;
   players: Map<string, PlayerView>;
   units: Map<string, UnitView>;
   cinematic: string;
@@ -97,6 +108,8 @@ export class WorldScene extends Phaser.Scene {
   private props!: PropLayer;
   private ground: GroundLayer | null = null;
   private life: AreaLife | null = null;
+  private loot: LootLayer | null = null;
+  private progress: Progression | null = null;
   /** A fixed camera (cell x, y, zoom) for automated screenshots; null in play. */
   testView: { x: number; y: number; zoom: number } | null = null;
   /** Story flags as the server last sent them. */
@@ -179,6 +192,7 @@ export class WorldScene extends Phaser.Scene {
     });
     this.vfx.initGore(this.map.width, this.map.height);
     this.life = new AreaLife(this, this.worldLayer, this.map, this.audio);
+    this.loot = new LootLayer(this, this.worldLayer);
 
     // Fog drifts in screen space on its own camera, so zoom doesn't stretch it.
     const { width, height } = this.scale;
@@ -227,9 +241,15 @@ export class WorldScene extends Phaser.Scene {
       const slot = { Digit1: 2, Digit2: 3, Digit3: 4, Digit4: 5 }[e.code];
       if (slot !== undefined) this.cast(slot);
     });
-    kb.on("keydown-K", () => {
-      if (this.room && !this.cinematic.playing) this.game.events.emit("mastery");
-    });
+    // The book: character and bag (I or C), skills (K), talents (T), weapon mastery (M).
+    const book = (tab: string) => () => {
+      if (this.room && !this.cinematic.playing) this.game.events.emit("book", tab);
+    };
+    kb.on("keydown-I", book("char"));
+    kb.on("keydown-C", book("char"));
+    kb.on("keydown-K", book("skills"));
+    kb.on("keydown-T", book("talents"));
+    kb.on("keydown-M", book("weapon"));
     kb.on("keydown-ESC", () => {
       if (!this.room) return;
       if (this.cinematic.playing) this.room.send(MSG.skip);
@@ -288,7 +308,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private canAct() {
-    return !!this.me && !this.paused && !this.cinematic.playing && !this.me.view.downed;
+    return !!this.me && !this.paused && !this.cinematic.playing && !this.me.view.downed && !document.body.classList.contains("book-open");
   }
 
   private cast(slot: number) {
@@ -355,8 +375,27 @@ export class WorldScene extends Phaser.Scene {
         }
       }
     });
+    // (The state arrives with the first patch: read it lazily.)
+    const myView = () => state.players?.get(room.sessionId) ?? null;
+    this.progress = new Progression(room.sessionId, {
+      banner: (t, s) => this.hud.banner(t, s),
+      sound: (k, v) => this.audio.play(k, v),
+      celebrate: () => {
+        const at = this.me?.char.screen;
+        if (!at) return;
+        const t = this.vfx.tools;
+        t.sprite("pillar", "gold", at.x, at.y, { scale: 1.8, fps: 14 });
+        t.ring(at.x, at.y, 1.6, "gold");
+        t.rise(at.x, at.y, "gold", 40, 50, 1.8);
+        t.light(at.x, at.y - 30, 260, "gold", 1.6, 1200, () => this.me?.char.screen ?? null, true);
+      },
+      glow: (slot, on) => this.hud.glow(slot, on),
+    });
     room.onMessage(MSG.fx, (events: FxEvent[]) => {
-      for (const e of events) this.vfx.handle(e);
+      for (const e of events) {
+        this.vfx.handle(e);
+        this.progress?.handle(e, myView());
+      }
     });
     // The cinematic is synced state: start it (at the partner's moment), end it, show skip votes.
     const syncCinematic = () => {
@@ -527,6 +566,7 @@ export class WorldScene extends Phaser.Scene {
       this.me.char.setLook(lookOf(v));
       this.me.char.setWeapon(weaponOf(v));
       this.hud.updateMe({ ...v, stamina: (100 * b.stamina) / BALANCE.player.staminaMax });
+      this.progress?.update(v, this.flags, this.cinematic.playing, document.body.dataset.book ?? null);
     }
     let partner: Remote | null = null;
     for (const r of this.remotes.values()) {
@@ -609,6 +649,7 @@ export class WorldScene extends Phaser.Scene {
     for (const [id, u] of this.units) this.vfx.statuses(id, u.view.st);
     this.props.update(time, delta, watchers);
     this.life?.update(this.flags, this.state?.phase === "fight", this.me ? this.me.pred.render() : null, delta);
+    if (this.state?.loot) this.loot?.update(this.state.loot.values(), this.me ? this.me.pred.render() : null, time, this.cameras.main.zoom);
     this.petals.update(time, delta);
     this.lighting.render(time, lights);
     for (const [i, f] of this.fog.entries()) {

@@ -1,5 +1,7 @@
 import { PATHS, STATUS_INFO, type PathId, type SkillDef, type StatusId } from "@broken-ash/shared";
-import { $, el } from "./dom";
+import { $, el, escapeHtml, tooltip } from "./dom";
+import { SLOT_UNLOCK, XP_FOR } from "@broken-ash/shared";
+import { howToUse, shapeText, skillNumbers } from "./Book";
 import { skillIcon } from "./pixelIcons";
 import { ACCENTS } from "../fx/accents";
 
@@ -18,6 +20,8 @@ export interface MeView {
   downT: number;
   revive: number;
   stamina: number;
+  level?: number;
+  xp?: number;
 }
 
 /** The DOM HUD: your bars and skill bar, your partner, the boss, being downed. */
@@ -39,8 +43,11 @@ export class Hud {
     box.replaceChildren();
     this.slots = skills.map((s, i) => {
       const d = el("div", "skill");
-      d.title = `${s.name}\n${s.description}${s.cost > 0 ? `\nKoszt: ${s.cost} (${p.resource.name})` : ""}${s.hpCost ? `\nKoszt: ${s.hpCost} życia` : ""}\nOdnowienie: ${s.cooldown} s`;
-      d.append(skillIcon(s, ACCENTS[path]), el("span", "key", KEYS[i]), el("span", "name", s.name), el("div", "cd"), el("div", "cdt"));
+      tooltip(d, () => {
+        const locked = d.classList.contains("locked");
+        return `<div class="it-name">${escapeHtml(s.name)}</div><div class="it-kind">${i <= 2 ? "broń" : "ścieżka"} · ${escapeHtml(shapeText(s))}</div><div class="it-base">${escapeHtml(s.description)}</div><div class="it-aff">${skillNumbers(s, p.resource.name).map(escapeHtml).join(" · ")}</div><div class="it-hint">${locked ? `Otworzy się na poziomie ${SLOT_UNLOCK[i]}` : escapeHtml(howToUse(s, KEYS[i]))}</div>`;
+      });
+      d.append(skillIcon(s, ACCENTS[path]), el("span", "key", KEYS[i]), el("span", "name", s.name), el("div", "cd"), el("div", "cdt"), el("div", "lock", `poz. ${SLOT_UNLOCK[i]}`));
       box.append(d);
       return d;
     });
@@ -49,7 +56,18 @@ export class Hud {
     res.hidden = p.resource.max <= 0;
   }
 
+  /** Makes a slot glow (a skill just learned, until it's first used). */
+  glow(slot: number, on: boolean) {
+    this.slots[slot]?.classList.toggle("new", on);
+  }
+
   updateMe(v: MeView) {
+    const lvl = v.level ?? 1;
+    document.querySelector<HTMLElement>("#me .lvl .n")!.textContent = String(lvl);
+    const a = XP_FOR[lvl] ?? 0;
+    const b = XP_FOR[lvl + 1] ?? a + 1;
+    document.querySelector<HTMLElement>("#me .lvl .xpbar i")!.style.width = `${lvl >= 20 ? 100 : Math.round((100 * ((v.xp ?? 0) - a)) / (b - a))}%`;
+    this.slots.forEach((d, i) => d.classList.toggle("locked", lvl < SLOT_UNLOCK[i]));
     // The key hints are for the first minute; after that they only crowd the screen.
     this.firstSeen ??= performance.now();
     if (performance.now() - this.firstSeen > 60_000) $("hint").classList.add("faded");

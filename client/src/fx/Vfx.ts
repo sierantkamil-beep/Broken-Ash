@@ -196,6 +196,23 @@ export class Vfx {
         this.hooks.playSound("sfx_gore", 0.7, p);
         break;
       }
+      case "cache": {
+        // A chest flung open: a puff of dust and a glitter of what's inside.
+        const p = worldToScreen(e.x, e.y);
+        this.hooks.playSound("sfx_gate_bang", 0.35, p);
+        this.tools.sparks(p.x, p.y - 10, "gold", 18, 140, 16);
+        this.tools.dust(p.x, p.y, 20, 8);
+        this.tools.light(p.x, p.y - 10, 120, "gold", 1, 500, undefined, true);
+        break;
+      }
+      case "loot": {
+        const p = worldToScreen(e.x, e.y);
+        if (e.rarity === "rare" || e.rarity === "ashen") {
+          this.hooks.playSound("sfx_bell", e.rarity === "ashen" ? 0.6 : 0.35, p);
+          this.tools.sparks(p.x, p.y - 10, e.rarity === "ashen" ? "fire" : "lightning", 14, 120, 20);
+        }
+        break;
+      }
       case "lever":
         this.hooks.playSound("sfx_slam", 0.35, undefined);
         break;

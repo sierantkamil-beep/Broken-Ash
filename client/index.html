@@ -29,6 +29,7 @@
       <div id="partner" hidden><div class="pname"></div><div class="ppath"></div><div class="bar hp"><div class="fill"></div></div></div>
       <div id="boss" hidden><div class="bname">Upuszczacz</div><div class="bar"><div class="fill"></div></div></div>
       <div id="me">
+        <div class="lvl"><span class="n">1</span><div class="xpbar"><i></i></div></div>
         <div class="bars">
           <div class="bar hp"><div class="shield"></div><div class="fill"></div><span class="val"></span></div>
           <div class="bar res"><div class="fill"></div><span class="val"></span></div>
@@ -38,7 +39,10 @@
         <div class="statuses"></div>
       </div>
       <div id="downed" hidden><div class="title">Wykrwawiasz się</div><div class="sub"></div><div class="bar"><div class="fill"></div></div></div>
-      <div id="hint">WASD — ruch · LPM/PPM/1–4 — umiejętności · Spacja — przewrót · F — dobij / podnieś partnera · K — mistrzostwo broni · Esc — menu</div>
+      <div id="hint">WASD — ruch · LPM/PPM/1–4 — umiejętności · Spacja — przewrót · F — użyj / podnieś · I — postać · K — umiejętności · T — talenty · Esc — menu</div>
+      <div id="tutorial" hidden></div>
+      <div id="pickups"></div>
+      <div id="newskill" hidden></div>
     </div>
 
     <!-- Esc menu. -->
@@ -151,6 +155,8 @@
 
     <!-- In game: the weapon's mastery tree (K). -->
     <div id="mastery" class="panel" hidden></div>
+    <!-- In game: the book (character and bag, skills, talents, weapon mastery). -->
+    <div id="book" class="panel" hidden></div>
 
     <div id="tooltip" hidden></div>
     <script type="module" src="/src/main.ts"></script>

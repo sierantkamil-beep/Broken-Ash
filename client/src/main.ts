@@ -20,6 +20,7 @@ import { saveSettings, settings } from "./settings";
 import { $ } from "./ui/dom";
 import { Menu } from "./ui/menu/Menu";
 import { Mastery } from "./ui/Mastery";
+import { Book, type Tab } from "./ui/Book";
 import { renderHostLines } from "./ui/hostReport";
 
 const game = new Phaser.Game({
@@ -86,6 +87,7 @@ async function connect(address: string) {
     inGame = true;
     world?.join(room);
     mastery = new Mastery(room, (k, v) => world?.audio.play(k, v));
+    book = new Book(room, mastery, (k, v) => world?.audio.play(k, v));
     room.onLeave((code) => {
       if (code !== 1000) {
         alert("Połączenie z grą zostało przerwane.");
@@ -147,6 +149,7 @@ raids.value = settings.raids;
 raids.addEventListener("change", () => saveSettings({ raids: raids.value as "on" | "off" }));
 
 let mastery: Mastery | null = null;
+let book: Book | null = null;
 
 /** The settings panel from the title screen (the same panel as the in-game pause menu). */
 function openSettings() {
@@ -164,7 +167,10 @@ $("settings-back").addEventListener("click", () => {
 });
 
 function setPause(open: boolean) {
-  if (open) mastery?.close();
+  if (open) {
+    mastery?.close();
+    book?.close();
+  }
   $("pause").hidden = !open;
   world?.setPaused(open);
   if (open) $("host-info").replaceChildren(...(hostReport ? [renderHostLines(hostReport, true)] : []));
@@ -172,10 +178,11 @@ function setPause(open: boolean) {
 game.events.on("escape", () => {
   if (!inGame) return;
   if (mastery?.isOpen) return mastery.close();
+  if (book?.isOpen) return book.close();
   setPause($("pause").hidden);
 });
-game.events.on("mastery", () => {
-  if (inGame && $("pause").hidden) mastery?.toggle();
+game.events.on("book", (tab: Tab) => {
+  if (inGame && $("pause").hidden) book?.toggle(tab);
 });
 $("resume").addEventListener("click", () => {
   click();
