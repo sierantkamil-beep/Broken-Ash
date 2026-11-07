@@ -37,6 +37,14 @@ export class WorldRoom extends Room<WorldState> {
     });
     this.onMessage(MSG.skip, (client) => this.world.voteSkip(client.sessionId));
     this.onMessage(MSG.choice, (client, msg: unknown) => this.world.pickChoice(client.sessionId, msg));
+    this.onMessage(MSG.talent, (client, msg: unknown) => {
+      if (!this.world.setTalents(client.sessionId, msg)) return;
+      const p = this.world.players.get(client.sessionId);
+      if (p) {
+        this.mirrorLoadout(p);
+        this.save(p);
+      }
+    });
     this.onMessage(MSG.loadout, (client, msg: unknown) => {
       if (!this.world.setLoadout(client.sessionId, msg)) return;
       const p = this.world.players.get(client.sessionId);
@@ -85,9 +93,11 @@ export class WorldRoom extends Room<WorldState> {
     if (fx.length) this.broadcast(MSG.fx, fx);
     // A level-up is worth saving at once (a crash shouldn't eat an evening's progress).
     for (const e of fx) {
-      if (e.t !== "mastery") continue;
+      if (e.t !== "mastery" && e.t !== "levelUp") continue;
       const p = this.world.players.get(e.id);
-      if (p) this.save(p);
+      if (!p) continue;
+      this.save(p);
+      if (e.t === "levelUp") this.mirrorLoadout(p);
     }
   }
 
@@ -99,10 +109,12 @@ export class WorldRoom extends Room<WorldState> {
     s.picks = JSON.stringify(p.picks[p.weapon] ?? {});
     s.mastery = JSON.stringify(p.mastery);
     s.appearance = JSON.stringify(p.appearance);
+    s.level = p.level;
+    s.talents = JSON.stringify(p.talents);
   }
 
   private save(p: PlayerSim) {
-    this.profiles?.put({ name: p.name, path: p.path.id, weapon: p.weapon, look: p.appearance, mastery: p.mastery, picks: p.picks });
+    this.profiles?.put({ name: p.name, path: p.path.id, weapon: p.weapon, look: p.appearance, mastery: p.mastery, picks: p.picks, xp: Math.floor(p.xp), talents: p.talents });
   }
 
   private sync() {
@@ -150,6 +162,7 @@ export class WorldRoom extends Room<WorldState> {
       s.st = [...p.statuses.keys()].sort().join(",");
       s.shield = Math.round(p.statuses.get("shield")?.value ?? 0);
       s.downed = p.downed;
+      s.xp = Math.floor(p.xp);
       s.downT = round(p.downT, 0.1);
       s.revive = round(p.reviveHeld / 2, 0.05);
       // Mastery XP grows with every hit: mirror it a few times a second, rounded, not every step.

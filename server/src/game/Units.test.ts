@@ -8,7 +8,7 @@ import { World } from "./World.js";
 /** A world past its intro, no waves: just the players and the enemies placed by a test. */
 function arena(paths: PathId[]) {
   const w = new World("soramei_courtyard");
-  const ps = paths.map((path, i) => w.addPlayer(`p${i}`, { name: `P${i}`, path }));
+  const ps = paths.map((path, i) => w.addPlayer(`p${i}`, { name: `P${i}`, path }, { xp: 1e6 }));
   for (const p of ps) w.voteSkip(p.id);
   // Units only act in a fight; a fight with living enemies doesn't send the next wave.
   w.encounter = true;

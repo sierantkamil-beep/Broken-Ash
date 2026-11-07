@@ -17,6 +17,10 @@ export class PlayerState extends Schema {
   @type("string") weapon = "blades";
   @type("string") picks = "";
   @type("string") mastery = "";
+  /** Experience, level and talents (JSON list): the bar's open slots and bonuses come from these. */
+  @type("number") xp = 0;
+  @type("number") level = 1;
+  @type("string") talents = "[]";
   /** Appearance (CharacterLook as JSON), so the partner sees the same dye and gear. */
   @type("string") appearance = "";
   @type("number") x = 0;

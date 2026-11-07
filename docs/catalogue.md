@@ -5,7 +5,7 @@
 
 ## Contents
 
-- [shared](#shared) — 25 files, 5 test files
+- [shared](#shared) — 26 files, 6 test files
 - [server](#server) — 11 files, 5 test files
 - [client](#client) — 45 files, 5 test files
 - [desktop](#desktop) — 3 files, 1 test files
@@ -34,7 +34,7 @@ Pure game logic and data used by server and client. No Phaser, Colyseus or Node 
 | `shared/src/data/scene.ts` | A line of a scene: who says it (narration when omitted) and where the camera is meanwhile. | `Line`, `SceneSpec`, `readMs`, `scene` | `shared/src/cinematic` |
 | `shared/src/data/weapons.ts` | The nine weapon types (design.md §4 "Weapons and mastery"). | `SkillSlot`, `Mod`, `PassiveDef`, `WeaponDef`, `WEAPONS`, `WEAPON_IDS`, `WEAPON_SKILLS` | `shared/src/combat/build`, `shared/src/combat/types` |
 | `shared/src/i18n.ts` | Polish plural forms: 1 → one, 2–4 (but not 12–14) → few, everything else → many. | `plural`, `count` | — |
-| `shared/src/index.ts` | — | * from "./constants.js", * from "./balance.js", * from "./view.js", * from "./i18n.js", * from "./map.js", * from "./movement.js", * from "./cinematic.js", * from "./data/props.js", * from "./data/cinematics.js", * from "./maps/index.js", * from "./types.js", * from "./combat/types.js", * from "./combat/geometry.js", * from "./data/paths.js", * from "./data/greyed.js", * from "./data/looks.js", * from "./data/weapons.js", * from "./combat/build.js", * from "./loadout.js" | `shared/src/balance`, `shared/src/cinematic`, `shared/src/combat/build`, `shared/src/combat/geometry`, `shared/src/combat/types`, `shared/src/constants`, `shared/src/data/cinematics`, `shared/src/data/greyed`, `shared/src/data/looks`, `shared/src/data/paths`, `shared/src/data/props`, `shared/src/data/weapons`, `shared/src/i18n`, `shared/src/loadout`, `shared/src/map`, `shared/src/maps/index`, `shared/src/movement`, `shared/src/types`, `shared/src/view` |
+| `shared/src/index.ts` | — | * from "./constants.js", * from "./balance.js", * from "./view.js", * from "./i18n.js", * from "./map.js", * from "./movement.js", * from "./cinematic.js", * from "./data/props.js", * from "./data/cinematics.js", * from "./maps/index.js", * from "./types.js", * from "./combat/types.js", * from "./combat/geometry.js", * from "./data/paths.js", * from "./data/greyed.js", * from "./data/looks.js", * from "./data/weapons.js", * from "./combat/build.js", * from "./loadout.js", * from "./progress.js" | `shared/src/balance`, `shared/src/cinematic`, `shared/src/combat/build`, `shared/src/combat/geometry`, `shared/src/combat/types`, `shared/src/constants`, `shared/src/data/cinematics`, `shared/src/data/greyed`, `shared/src/data/looks`, `shared/src/data/paths`, `shared/src/data/props`, `shared/src/data/weapons`, `shared/src/i18n`, `shared/src/loadout`, `shared/src/map`, `shared/src/maps/index`, `shared/src/movement`, `shared/src/progress`, `shared/src/types`, `shared/src/view` |
 | `shared/src/loadout.ts` | A character's skill bar: the weapon's basic, RMB and key-1 skills (from its mastery tree), then the path's three signature skills (design.md §4). | `Picks`, `DEFAULT_PICKS`, `masteryLevel`, `masteryProgress`, `isWeapon`, `validPicks`, `Loadout`, `resolveLoadout`, `allSkills` | `shared/src/balance`, `shared/src/combat/types`, `shared/src/data/weapons` |
 | `shared/src/map.ts` | A rectangle of cells (continuous: x ∈ [x, x + w), y ∈ [y, y + h)). | `Region`, `inRegion`, `Exit`, `Encounter`, `Npc`, `AreaMap`, `GroundType`, `BLOCKING_GROUND`, `PropPlacement`, `CollisionGrid` | `shared/src/combat/types`, `shared/src/data/greyed`, `shared/src/data/props` |
 | `shared/src/maps/act1.ts` | Pień — the bleeding-cells under the keep. | `SORAMEI_CELLS`, `FARMSTEAD`, `SAP_MINE`, `HARROW_ROAD` | `shared/src/data/greyed`, `shared/src/maps/builder` |
@@ -42,10 +42,11 @@ Pure game logic and data used by server and client. No Phaser, Colyseus or Node 
 | `shared/src/maps/index.ts` | Act 1 opens in the bleeding-cells under Soramei Keep. | `MAPS`, `START_MAP` | `shared/src/map`, `shared/src/maps/act1`, `shared/src/maps/soramei` |
 | `shared/src/maps/soramei.ts` | Dziedziniec Soramei — the courtyard of the ruined Soramei Keep, the night of the escape (Act 1). | `SORAMEI_COURTYARD` | `shared/src/data/greyed`, `shared/src/maps/builder` |
 | `shared/src/movement.ts` | One player's movement state. | `Body`, `InputFrame`, `newBody`, `sanitizeInput`, `isInvulnerable`, `stepBody`, `moveWithCollision`, `overlaps`, `copyBody` | `shared/src/balance`, `shared/src/map`, `shared/src/view` |
+| `shared/src/progress.ts` | Total experience needed to reach each level (index = level). | `MAX_LEVEL`, `XP_FOR`, `levelOf`, `levelProgress`, `SLOT_UNLOCK`, `slotOpen`, `KILL_XP`, `CLEAR_XP`, `Target`, `Bonus`, `withBonuses`, `statsOf`, `TalentNode`, `TalentBranch`, `TIER_LEVEL`, `KEYSTONE_LEVEL`, `pointsAt`, `talentTree`, `validTalents`, `talentBonuses` | `shared/src/combat/types` |
 | `shared/src/types.ts` | Options a client sends when joining the room. | `JoinOptions`, `HitCause`, `FxEvent` | — |
 | `shared/src/view.ts` | Top-down 3/4 view (like Dinusie): square cells, the ground drawn flat, characters and props drawn upright as seen slightly from the front. | `CELL`, `Z_PX`, `worldToScreen`, `screenToWorld`, `screenDirToWorld`, `DIRECTIONS`, `directionIndex`, `depthOf` | — |
 
-Tests: `shared/src/cinematic.test.ts`, `shared/src/i18n.test.ts`, `shared/src/maps/maps.test.ts`, `shared/src/movement.test.ts`, `shared/src/view.test.ts`
+Tests: `shared/src/cinematic.test.ts`, `shared/src/i18n.test.ts`, `shared/src/maps/maps.test.ts`, `shared/src/movement.test.ts`, `shared/src/progress.test.ts`, `shared/src/view.test.ts`
 
 <details><summary>Exported symbols</summary>
 
@@ -106,6 +107,20 @@ Tests: `shared/src/cinematic.test.ts`, `shared/src/i18n.test.ts`, `shared/src/ma
 - `moveWithCollision` (function, `shared/src/movement.ts`) — Moves a circle through the grid, sliding along walls.
 - `overlaps` (function, `shared/src/movement.ts`) — Does a circle at (x, y) overlap any blocked cell?
 - `copyBody` (function, `shared/src/movement.ts`) — Copies the fields the client needs to rewind its prediction to a server snapshot.
+- `XP_FOR` (const, `shared/src/progress.ts`) — Total experience needed to reach each level (index = level).
+- `levelProgress` (function, `shared/src/progress.ts`) — Progress towards the next level, 0–1 (1 at the cap).
+- `SLOT_UNLOCK` (const, `shared/src/progress.ts`) — The level that opens each bar slot: basic, RMB, key 1 (weapon), then the path's three skills.
+- `KILL_XP` (const, `shared/src/progress.ts`) — Experience for a kill, by enemy kind (shared: both players get it).
+- `CLEAR_XP` (const, `shared/src/progress.ts`) — Experience for winning an encounter (all its waves).
+- `Target` (type, `shared/src/progress.ts`) — What a bonus applies to: every skill, weapon skills, the path's skills, one slot, or one skill by id.
+- `Bonus` (type, `shared/src/progress.ts`) — A bonus from a talent or an item.
+- `withBonuses` (function, `shared/src/progress.ts`) — A bar skill with the talents' and items' bonuses applied.
+- `statsOf` (function, `shared/src/progress.ts`) — The body's numbers after bonuses: max health, damage taken, run speed, status damage.
+- `TIER_LEVEL` (const, `shared/src/progress.ts`) — The level a tier opens at (tier 0 at 2 … tier 3 at 11); keystones at 14.
+- `pointsAt` (const, `shared/src/progress.ts`) — One talent point per level from 2.
+- `talentTree` (function, `shared/src/progress.ts`) — The path's talent tree.
+- `validTalents` (function, `shared/src/progress.ts`) — Keeps only talents this character may hold: nodes of their path, one per tier, tiers the level has opened, a keystone only under a full branch, and no more than their points.
+- `talentBonuses` (function, `shared/src/progress.ts`) — The bonuses of a set of talents.
 - `JoinOptions` (interface, `shared/src/types.ts`) — Options a client sends when joining the room.
 - `HitCause` (type, `shared/src/types.ts`) — How a blow was dealt: it decides how a body breaks (cut, crushed, burned, shocked, rotted, pierced).
 - `FxEvent` (type, `shared/src/types.ts`) — A transient combat event the server broadcasts for visuals and sound (MSG.fx).
@@ -200,7 +215,7 @@ Phaser 3 + Vite client: rendering, prediction, cinematics, audio, DOM UI.
 | `client/src/main.ts` | The settings panel from the title screen (the same panel as the in-game pause menu). | — | `client/src/desktop`, `client/src/fx/accents`, `client/src/net`, `client/src/net/loadout`, `client/src/scenes/BootScene`, `client/src/scenes/WorldScene`, `client/src/settings`, `client/src/style.css`, `client/src/ui/Mastery`, `client/src/ui/dom`, `client/src/ui/hostReport`, `client/src/ui/menu/Menu`, `client/src/ui/pixelIcons`, @broken-ash/shared, @fontsource/cormorant-garamond, @fontsource/shippori-mincho, phaser |
 | `client/src/net/Interpolation.ts` | Renders a remote player slightly in the past, between the two snapshots around that moment. | `Snapshot`, `Interpolation` | @broken-ash/shared |
 | `client/src/net/Prediction.ts` | Movement multiplier the server will apply (path speed, slows, rooted, downed). | `Intent`, `Prediction` | @broken-ash/shared |
-| `client/src/net/loadout.ts` | The synced fields a player's bar and look are resolved from (server/src/schema/WorldState.ts). | `LoadoutView`, `pathOf`, `weaponOf`, `masteryOf`, `barOf`, `lookOf`, `ALL_SKILLS` | @broken-ash/shared |
+| `client/src/net/loadout.ts` | The synced fields a player's bar and look are resolved from (server/src/schema/WorldState.ts). | `LoadoutView`, `bonusesOf`, `extraBonuses`, `setExtraBonuses`, `pathOf`, `weaponOf`, `masteryOf`, `barOf`, `lookOf`, `ALL_SKILLS` | @broken-ash/shared |
 | `client/src/net.ts` | Accepts "host", "host:port", IPv6 (bare or "[addr]:port") or a full ws:// / http:// URL, so players can paste whatever they were given. | `toServerUrl`, `joinWorld` | @broken-ash/shared, colyseus.js |
 | `client/src/scenes/BootScene.ts` | Loads the atlases (rendered by tools/art) and the sounds (tools/audio), with a thin progress line. | `BootScene` | `client/src/audio/AudioDirector`, phaser |
 | `client/src/scenes/WorldScene.ts` | The synced player fields (mirror of server/src/schema/WorldState.ts). | `WorldScene` | `client/src/assets/atlases`, `client/src/audio/AudioDirector`, `client/src/cinematic/CinematicPlayer`, `client/src/entities/Character`, `client/src/entities/UnitSprite`, `client/src/fx/Vfx`, `client/src/fx/accents`, `client/src/net`, `client/src/net/Interpolation`, `client/src/net/Prediction`, `client/src/net/loadout`, `client/src/ui/Hud`, `client/src/ui/dom`, `client/src/world/AreaLife`, `client/src/world/GroundLayer`, `client/src/world/Lighting`, `client/src/world/Petals`, `client/src/world/PropLayer`, @broken-ash/shared, phaser |
@@ -274,6 +289,8 @@ Tests: `client/src/entities/moves.test.ts`, `client/src/fx/recipes/recipes.test.
 - `Interpolation` (class, `client/src/net/Interpolation.ts`) — Renders a remote player slightly in the past, between the two snapshots around that moment.
 - `Prediction` (class, `client/src/net/Prediction.ts`) — Client-side prediction for your own character.
 - `LoadoutView` (interface, `client/src/net/loadout.ts`) — The synced fields a player's bar and look are resolved from (server/src/schema/WorldState.ts).
+- `bonusesOf` (function, `client/src/net/loadout.ts`) — Talent (and, with items, equipment) bonuses of a synced player, exactly as the server applies them.
+- `extraBonuses` (const, `client/src/net/loadout.ts`) — Equipment bonuses (filled in by the items module).
 - `barOf` (function, `client/src/net/loadout.ts`) — The bar the server built, resolved the same way from the same synced inputs.
 - `ALL_SKILLS` (const, `client/src/net/loadout.ts`) — Every skill that can be on any bar (fx events name a skill id).
 - `toServerUrl` (function, `client/src/net.ts`) — Accepts "host", "host:port", IPv6 (bare or "[addr]:port") or a full ws:// / http:// URL, so players can paste whatever they were given.

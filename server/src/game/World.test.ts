@@ -180,4 +180,37 @@ describe("World", () => {
     expect(w.map.id).toBe("soramei_courtyard");
     expect(w.cinematic?.id).toBe("prolog");
   });
+
+  it("levels both players from kills, opening bar slots; a locked slot can't be cast", () => {
+    const w = new World("soramei_courtyard", 1, ["seen:prolog"]);
+    const a = w.addPlayer("a", "A");
+    const b = w.addPlayer("b", "B");
+    w.encounter = false;
+    expect(a.level).toBe(1);
+    w.queueInputs("a", [{ seq: 1, mx: 0, my: 0, cast: 1 }]);
+    w.step(SIM_DT);
+    expect(a.cast).toBeNull();
+    w.grantXp(1000);
+    expect(a.level).toBeGreaterThanOrEqual(4);
+    expect(b.level).toBe(a.level);
+    const ups = w.drainFx().filter((e) => e.t === "levelUp");
+    expect(ups.length).toBe(2);
+    w.queueInputs("a", [{ seq: 2, mx: 0, my: 0, cast: 1 }]);
+    w.step(SIM_DT);
+    expect(a.cast?.slot ?? a.cds[1]).toBeTruthy();
+  });
+
+  it("takes talents within the rules and only gives them back at a fire", () => {
+    const w = new World("farmstead", 1, ["seen:farm_intro"]);
+    const a = w.addPlayer("a", "A", { xp: 1e6 });
+    const hp0 = a.hpMax;
+    w.setTalents("a", { talents: ["thorn.life.0a", "thorn.life.0b"] });
+    expect(a.talents).toEqual(["thorn.life.0a"]);
+    expect(a.hpMax).toBe(Math.round(hp0 * 1.1));
+    Object.assign(a.body, { x: 1, y: 1 });
+    expect(w.setTalents("a", { talents: [] })).toBe(false);
+    Object.assign(a.body, { x: w.map.bonfire!.x, y: w.map.bonfire!.y + 1 });
+    expect(w.setTalents("a", { talents: [] })).toBe(true);
+    expect(a.hpMax).toBe(hp0);
+  });
 });

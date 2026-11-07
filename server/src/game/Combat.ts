@@ -13,6 +13,7 @@ import {
   type StatusId,
   type WeaponId,
   masteryLevel,
+  slotOpen,
 } from "@broken-ash/shared";
 import type { Fighter, PlayerSim, Status, UnitSim } from "./fighters.js";
 
@@ -178,6 +179,11 @@ export function dealDamage(a: Arena, src: Fighter | undefined, target: Fighter, 
   if (!targetable(target) && !opts.dot) return 0;
   if (target.dead) return 0;
   let dmg = amount * (opts.mult ?? 1);
+  // Talents and items: a player's status ticks hit harder; a player's armour takes some off.
+  const sp1 = src as PlayerSim | undefined;
+  if (sp1?.statusMul && opts.dot) dmg *= 1 + (sp1.statusMul[opts.dot] ?? 0);
+  const tp1 = target as PlayerSim;
+  if (tp1.path && tp1.taken !== undefined) dmg *= tp1.taken;
   // Debuffs make the target take more from everyone: the co-op glue.
   if (target.statuses.has("weaken")) dmg *= 1 + C.weakenBonus;
   if (target.statuses.has("rooted")) dmg *= 1 + C.rootedBonus;
@@ -293,6 +299,8 @@ export function gainResource(p: PlayerSim, amount: number) {
 export function canCast(p: PlayerSim, slot: number): boolean {
   const skill = p.skills[slot];
   if (!skill || p.dead || p.downed || p.cast || p.silenceT > 0 || p.staggerT > 0) return false;
+  // Slots open with the character's level (shared/src/progress.ts).
+  if (!slotOpen(p.level ?? 99, slot)) return false;
   if (p.body.dodgeT > 0) return false;
   if (p.cds[slot] > 0) return false;
   const r = p.path.resource;

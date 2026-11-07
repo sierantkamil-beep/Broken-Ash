@@ -51,6 +51,14 @@ export interface PlayerSim extends Fighter {
   picks: Partial<Record<WeaponId, Picks>>;
   /** The resolved skill bar: weapon basic, RMB, key 1, then the path's three signature skills. */
   skills: SkillDef[];
+  /** Experience, the level it makes, and the talents chosen (shared/src/progress.ts). */
+  xp: number;
+  level: number;
+  talents: string[];
+  /** Damage taken (1 = all; armour lowers it), run speed and status damage, from talents and items. */
+  taken: number;
+  speed: number;
+  statusMul: Partial<Record<StatusId, number>>;
   /** Appearance (skin, dyes, armour and gear pieces). */
   appearance: CharacterLook;
   bodyType: BodyType;

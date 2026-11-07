@@ -15,6 +15,8 @@ export interface Profile {
   look?: CharacterLook;
   mastery: Partial<Record<WeaponId, number>>;
   picks: Partial<Record<WeaponId, Picks>>;
+  xp?: number;
+  talents?: string[];
   updated: string;
 }
 

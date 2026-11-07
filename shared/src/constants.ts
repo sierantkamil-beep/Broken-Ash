@@ -20,6 +20,8 @@ export const MSG = {
   loadout: "loadout",
   /** client → server: pick an option of the running cinematic's choice ({ option: number }). */
   choice: "choice",
+  /** client → server: the talents to hold ({ talents: string[] }); taking any back needs a bonfire. */
+  talent: "talent",
   /** server → client: a batch of FxEvents (hits, casts, deaths...) for visuals and sound. */
   fx: "fx",
 } as const;

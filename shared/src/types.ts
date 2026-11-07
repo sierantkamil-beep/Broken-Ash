@@ -26,6 +26,8 @@ export type FxEvent =
   | { t: "opened"; flag: string }
   /** A lever was pulled (index into the area's levers). */
   | { t: "lever"; i: number }
+  /** A character reached a new level: bar slots opened, talent points unspent. */
+  | { t: "levelUp"; id: string; level: number; slots: number[]; points: number }
   /** A boss crossed into a new phase (a banner and a roar). */
   | { t: "phase"; id: string; title: string; sub: string }
   /** A corpse was eaten (it's gone; blood where it lay). */

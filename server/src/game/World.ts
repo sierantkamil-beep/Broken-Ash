@@ -27,6 +27,16 @@ import {
   resolveLoadout,
   validLook,
   validPicks,
+  CLEAR_XP,
+  KILL_XP,
+  levelOf,
+  slotOpen,
+  statsOf,
+  talentBonuses,
+  validTalents,
+  withBonuses,
+  SLOT_UNLOCK,
+  pointsAt,
 } from "@broken-ash/shared";
 import {
   addStatus,
@@ -80,6 +90,8 @@ export interface JoinRequest {
 export interface SavedProgress {
   mastery?: Partial<Record<WeaponId, number>>;
   picks?: Partial<Record<WeaponId, Partial<Picks>>>;
+  xp?: number;
+  talents?: string[];
 }
 
 /** Burst allowance after a lag spike, in steps. */
@@ -253,8 +265,16 @@ export class World implements Arena {
     for (const [w, xp] of Object.entries(saved.mastery ?? {})) if (isWeapon(w) && typeof xp === "number" && xp >= 0) mastery[w] = Math.min(xp, 1e7);
     const picks: Partial<Record<WeaponId, Picks>> = {};
     for (const [w, pk] of Object.entries(saved.picks ?? {})) if (isWeapon(w)) picks[w] = validPicks(pk, masteryLevel(mastery[w] ?? 0));
+    const xp = typeof saved.xp === "number" && saved.xp >= 0 ? Math.min(saved.xp, 1e7) : 0;
+    const level = levelOf(xp);
     const p: PlayerSim = {
       id,
+      xp,
+      level,
+      talents: validTalents(path, saved.talents, level),
+      taken: 1,
+      speed: path.speed,
+      statusMul: {},
       name: sanitizeName(r.name),
       look,
       path,
@@ -303,14 +323,70 @@ export class World implements Arena {
     return p;
   }
 
-  /** Rebuilds a player's bar from their path, weapon, tree picks and mastery. */
+  /**
+   * Rebuilds a player's bar from their path, weapon, tree picks and mastery, then the talents' (and
+   * items') bonuses on top; and the body's numbers (health, armour, speed) from the same bonuses.
+   * Cooldowns already running keep running.
+   */
   rebuildSkills(p: PlayerSim) {
     const level = masteryLevel(p.mastery[p.weapon] ?? 0);
     const picks = validPicks(p.picks[p.weapon] ?? DEFAULT_PICKS, level);
     p.picks[p.weapon] = picks;
-    p.skills = resolveLoadout(p.path, p.weapon, picks, level).skills;
-    p.cds = p.skills.map(() => 0);
+    const bonuses = this.bonusesOf(p);
+    p.skills = resolveLoadout(p.path, p.weapon, picks, level).skills.map((s, i) => withBonuses(s, i, bonuses));
+    const old = p.cds;
+    p.cds = p.skills.map((_, i) => old?.[i] ?? 0);
     p.cast = null;
+    const stats = statsOf(p.path, bonuses);
+    const ratio = p.hpMax > 0 ? p.hp / p.hpMax : 1;
+    p.hpMax = stats.hpMax;
+    p.hp = Math.min(p.hpMax, Math.max(p.downed ? 0 : 1, Math.round(p.hpMax * ratio)));
+    p.taken = stats.taken;
+    p.speed = stats.speed;
+    p.statusMul = stats.status;
+  }
+
+  /** Everything that adds to a character beyond the path: talents now, equipment too (items.ts). */
+  bonusesOf(p: PlayerSim) {
+    return talentBonuses(p.path, p.talents);
+  }
+
+  /**
+   * Experience for both players (kills and won fights are shared). A new level opens bar slots and
+   * gives a talent point; the client shows both (fx levelUp).
+   */
+  grantXp(amount: number) {
+    if (amount <= 0) return;
+    for (const p of this.players.values()) {
+      const before = p.level;
+      p.xp += amount;
+      p.level = levelOf(p.xp);
+      if (p.level === before) continue;
+      const opened = SLOT_UNLOCK.flatMap((lvl, slot) => (lvl > before && lvl <= p.level ? [slot] : []));
+      this.rebuildSkills(p);
+      this.fx.push({ t: "levelUp", id: p.id, level: p.level, slots: opened, points: pointsAt(p.level) - p.talents.length });
+      this.onStory?.();
+    }
+  }
+
+  /** A player spends or changes talents (MSG.talent): untrusted, checked against the tree and level. */
+  setTalents(id: string, raw: unknown): boolean {
+    const p = this.players.get(id);
+    if (!p || this.phase === "fight") return false;
+    const list = raw && typeof raw === "object" ? (raw as { talents?: unknown }).talents : undefined;
+    const next = validTalents(p.path, list, p.level);
+    // Talents are only added outside a bonfire; taking them back (respec) needs the area's fire.
+    const removes = p.talents.some((t) => !next.includes(t));
+    if (removes && !this.nearBonfire(p)) return false;
+    p.talents = next;
+    this.rebuildSkills(p);
+    return true;
+  }
+
+  /** Standing at the area's fire (where you get up after a wipe): respec, later the belt refill. */
+  nearBonfire(p: PlayerSim) {
+    const b = this.map.bonfire;
+    return !!b && Math.hypot(b.x - p.body.x, b.y - p.body.y) <= 2.5;
   }
 
   /**
@@ -431,7 +507,7 @@ export class World implements Arena {
         const x0 = p.body.x;
         const y0 = p.body.y;
         const free = !p.downed && p.staggerT <= 0 && !p.statuses.has("rooted");
-        stepBody(p.body, f, dt, this.grid, p.downed ? 0.25 : speedOf(p, p.path.speed), free);
+        stepBody(p.body, f, dt, this.grid, p.downed ? 0.25 : speedOf(p, p.speed), free);
         if (p.path.resource.onMove) gainResource(p, Math.hypot(p.body.x - x0, p.body.y - y0) * p.path.resource.onMove);
         if (f.aim !== undefined) p.aim = f.aim;
         if (f.aimDist !== undefined) p.aimDist = f.aimDist;
@@ -604,6 +680,7 @@ export class World implements Arena {
           if (e.wave === e.def.waves.length - 1) {
             this.fx.push({ t: "victory" });
             if (e.def.clearFlag) this.setFlag(e.def.clearFlag);
+            this.grantXp(CLEAR_XP);
             if (e.def.repeat) {
               e.state = "idle";
               e.wave = -1;
@@ -649,6 +726,7 @@ export class World implements Arena {
     }
     const u = victim as UnitSim;
     u.dead = true;
+    if (u.faction === "greyed") this.grantXp(KILL_XP[u.kind] ?? 10);
     const pos = u.pos();
     if (u.grabbed) releaseGrab(this, u);
     if (u.kind !== "thrall") {

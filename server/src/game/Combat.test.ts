@@ -9,7 +9,7 @@ import { World } from "./World.js";
 function arena(paths: PathId[], encounter = false) {
   const w = new World("soramei_courtyard");
   w.encounter = encounter;
-  const ps = paths.map((path, i) => w.addPlayer(`p${i}`, { name: `P${i}`, path }));
+  const ps = paths.map((path, i) => w.addPlayer(`p${i}`, { name: `P${i}`, path }, { xp: 1e6 }));
   for (const p of ps) w.voteSkip(p.id);
   return { w, ps };
 }
