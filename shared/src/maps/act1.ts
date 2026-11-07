@@ -57,6 +57,8 @@ function cells() {
     ambience: "amb_night_wind",
     introCinematic: "cells_intro",
     exits: [{ region: { x: 11, y: 0, w: 2, h: 1.4 }, to: "soramei_courtyard", spawn: 0, label: "Schody na dziedziniec", needs: "cells_cleared" }],
+    // The design's first find: a dead guard's blades (and his purse) in the bleeding hall.
+    caches: [{ id: "guard", x: 18, y: 9.6, items: ["u.guard_blades"], rolls: 1, gold: 15, label: "Przeszukaj martwego strażnika" }],
     encounters: [
       {
         id: "cells",
@@ -91,6 +93,7 @@ function farmstead() {
   for (let y = 2; y < H - 2; y++) if (y < 9 || y > 13) b.prop("palisade_y", 1, y);
   b.prop("house_burnt", 6, 4).prop("house_burnt", 18, 3);
   b.prop("tent", 9, 14).prop("campfire", 15, 15);
+  b.chest(12, 17, "farmstead", "itheru");
   b.prop("cart", 4, 18).prop("barrel", 7, 19, 1).prop("crate", 8, 19);
   b.prop("dead_tree", 22, 14, 0).prop("dead_tree", 4, 14, 1, true);
   // Pines close the east side except where the track leaves for the mine.
@@ -120,6 +123,8 @@ function farmstead() {
       { region: { x: W - 1, y: 9, w: 1, h: 5 }, to: "sap_mine", spawn: 0, label: "Zatopiona Kopalnia Żywicy" },
       { region: { x: 0, y: 9, w: 1, h: 5 }, to: "harrow_road", spawn: 0, label: "Trakt Harrowa", needs: "tapper_dead" },
     ],
+    // Itheru's gift: his own headband, and something for the road.
+    caches: [{ id: "itheru", x: 12.5, y: 17.5, items: ["u.itheru_band"], rolls: 2, luck: 0.15, gold: 40, label: "Otwórz kufer od Itheru" }],
     npcs: [
       { id: "itheru", name: "Itheru z rodu Soramei", x: 13.5, y: 14.8, facing: 0, path: "thorn", body: "male", scene: "itheru_talk", unless: "tapper_dead" },
       { id: "itheru2", name: "Itheru z rodu Soramei", x: 13.5, y: 14.8, facing: 0, path: "thorn", body: "male", scene: "itheru_road", needs: "tapper_dead", unless: "act1_done" },
@@ -170,6 +175,8 @@ function mine() {
   for (let x = 17; x <= 19; x++) b.gate("bars_x", x, 10, "pumps_on");
   // The bleeding room: the Tapper's own pump, braziers, the cages along the north wall.
   b.prop("pump", 21, 3).prop("brazier", 10, 6).prop("brazier", 26, 6).prop("brazier", 17, 2);
+  b.chest(25, 2, "sap_mine", "overseer");
+  b.chest(13, 28, "sap_mine", "shaft");
   for (let x = 10; x <= 14; x++) b.gate("bars_x", x, 3, "tapper_dead");
   b.prop("bars_y", 15, 1).prop("bars_y", 15, 2);
   b.prop("blood_pool", 12, 1, 1).prop("blood_pool", 18, 5, 0).prop("blood_pool", 13, 6, 3).prop("corpse_greyed", 19, 7, 1);
@@ -187,6 +194,10 @@ function mine() {
     introCinematic: "mine_intro",
     bonfire: { x: 4.5, y: 26.5 },
     exits: [{ region: { x: 3, y: 30, w: 5, h: 1 }, to: "farmstead", spawn: 2, label: "Pogorzelisko" }],
+    caches: [
+      { id: "overseer", x: 25.5, y: 3.4, items: ["u.mine_lamp", "relic.drowned_bell"], rolls: 1, gold: 80, label: "Otwórz kufer nadzorcy" },
+      { id: "shaft", x: 14.2, y: 28.5, rolls: 2, gold: 25, label: "Otwórz kufer górników" },
+    ],
     encounters: [
       {
         id: "hall",
@@ -195,6 +206,7 @@ function mine() {
         spawnAt: [{ x: 24.5, y: 28.5 }, { x: 18.5, y: 20.5 }],
         lock: true,
         clearFlag: "mine_hall",
+        reward: { rolls: 2 },
       },
       {
         id: "gallery",
@@ -203,6 +215,7 @@ function mine() {
         spawnAt: [{ x: 7.5, y: 16.5 }, { x: 29.5, y: 16.5 }, { x: 14.5, y: 12.5 }],
         lock: true,
         clearFlag: "mine_gallery",
+        reward: { rolls: 2, luck: 0.1 },
       },
       {
         id: "tapper",
@@ -212,6 +225,7 @@ function mine() {
         spawnAt: [{ x: 18.5, y: 4.5 }, { x: 25.5, y: 7.5 }],
         lock: true,
         clearFlag: "tapper_dead",
+        reward: { items: ["u.tapper_cleaver", "relic.tapper_valve"], rolls: 2, luck: 0.3 },
         clearCinematic: "tapper_dead",
       },
     ],
@@ -246,6 +260,7 @@ function road() {
   for (let y = 2; y < 17; y++) if (y < 8 || y > 12) b.prop("palisade_y", 27, y);
   b.prop("tent", 29, 3).prop("tent", 34, 3).prop("tent", 34, 13);
   b.prop("campfire", 31, 12).prop("cart", 29, 15).prop("crate", 37, 9).prop("crate", 37, 10).prop("barrel", 38, 11, 0);
+  b.chest(37, 15, "harrow_road", "supplies");
   b.prop("torch_post", 28, 8).prop("torch_post", 28, 12).prop("torch_post", 38, 7);
   for (let x = 0; x < W; x++) b.prop("rock", x, H - 1, x % 3);
   for (let x = 28; x < W; x++) b.prop("palisade_x", x, 1);
@@ -264,6 +279,7 @@ function road() {
     introCinematic: "road_intro",
     bonfire: { x: 3.5, y: 10.5 },
     exits: [{ region: { x: 0, y: 8, w: 1, h: 5 }, to: "farmstead", spawn: 4, label: "Pogorzelisko" }],
+    caches: [{ id: "supplies", x: 37.5, y: 16.4, rolls: 2, luck: 0.1, gold: 60, label: "Otwórz skrzynię zapasów Marchii" }],
     encounters: [
       {
         id: "scouts",
@@ -272,6 +288,7 @@ function road() {
         spawnAt: [{ x: 36.5, y: 7.5 }, { x: 36.5, y: 12.5 }],
         lock: true,
         clearFlag: "scouts_beaten",
+        reward: { items: ["u.harrow_crossbow"], rolls: 2, luck: 0.2 },
         clearCinematic: "scouts_choice",
       },
     ],

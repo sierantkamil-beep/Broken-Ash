@@ -1,4 +1,5 @@
 import type { HitCause } from "@broken-ash/shared";
+import type { Inventory } from "@broken-ash/shared";
 import type { Body, BodyType, CharacterLook, EnemyAttack, EnemyDef, Faction, InputFrame, PathDef, PeopleId, Picks, SkillDef, StatusId, WeaponId } from "@broken-ash/shared";
 
 /** A status on a fighter. `value` is dps for damage-over-time, the remaining shield, a % for slow/haste... */
@@ -59,6 +60,8 @@ export interface PlayerSim extends Fighter {
   taken: number;
   speed: number;
   statusMul: Partial<Record<StatusId, number>>;
+  /** The bag, what's worn, and gold (shared/src/inventory.ts). */
+  inv: Inventory;
   /** Appearance (skin, dyes, armour and gear pieces). */
   appearance: CharacterLook;
   bodyType: BodyType;

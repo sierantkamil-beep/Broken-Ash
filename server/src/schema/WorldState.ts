@@ -21,6 +21,9 @@ export class PlayerState extends Schema {
   @type("number") xp = 0;
   @type("number") level = 1;
   @type("string") talents = "[]";
+  /** Bag and gold (JSON; the owner's screens) and what's worn (JSON; bonuses and looks for both). */
+  @type("string") inv = "";
+  @type("string") equip = "";
   /** Appearance (CharacterLook as JSON), so the partner sees the same dye and gear. */
   @type("string") appearance = "";
   @type("number") x = 0;
@@ -52,6 +55,18 @@ export class PlayerState extends Schema {
   @type("number") downT = 0;
   /** Revive progress 0..1. */
   @type("number") revive = 0;
+}
+
+/** An item or gold lying on the ground, until someone picks it up. */
+export class LootState extends Schema {
+  @type("string") id = "";
+  @type("number") x = 0;
+  @type("number") y = 0;
+  /** Item base id ("" for gold), its rarity, its name; gold's amount. */
+  @type("string") base = "";
+  @type("string") rarity = "common";
+  @type("string") name = "";
+  @type("number") gold = 0;
 }
 
 /** A Greyed (or a thrall raised by the Path of Graves). */
@@ -97,4 +112,5 @@ export class WorldState extends Schema {
   @type("int8") chosen = -1;
   @type({ map: PlayerState }) players = new MapSchema<PlayerState>();
   @type({ map: UnitState }) units = new MapSchema<UnitState>();
+  @type({ map: LootState }) loot = new MapSchema<LootState>();
 }

@@ -60,7 +60,8 @@ describe("skills", () => {
       const { w, ps } = arena(["bark", "thorn"]);
       const p = ps[0];
       p.mastery[weapon] = 1e6;
-      expect(w.setLoadout(p.id, { weapon, picks: { rmb, key } })).toBe(true);
+      if (p.weapon !== weapon) expect(w.invOp(p.id, { op: "equip", uid: w.giveItem(p, `${weapon}.1`)!.uid })).toBe(true);
+      expect(w.setLoadout(p.id, { picks: { rmb, key } })).toBe(true);
       expect(p.skills[1].id).toBe(wd.rmb[rmb].id);
       expect(p.skills[2].id).toBe(wd.key[key].id);
       for (const slot of [0, 1, 2]) {

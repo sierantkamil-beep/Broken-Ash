@@ -646,6 +646,22 @@ def build_crate(_v=0):
         box(f"brace{a}", (0.06, 0.04, 0.95), (0, -0.38, 0.35), _wood(), rot=(0, a, 0))
 
 
+def build_chest(v=0):
+    """A lacquered chest with iron bands (variant 0 closed, 1 open and emptied, its lid thrown back)."""
+    lac = material("chest_lacquer", srgb("#8a1a12"), 0.35, srgb("#5a0e0a"), 10.0, coat=0.6, bump=0.15)
+    iron = _iron()
+    box("body", (0.8, 0.55, 0.45), (0, 0, 0.225), lac, bevel=0.03)
+    for x in (-0.28, 0.28):
+        box(f"band{x}", (0.06, 0.58, 0.48), (x, 0, 0.24), iron)
+    if v == 0:
+        box("lid", (0.82, 0.57, 0.16), (0, 0, 0.53), lac, bevel=0.04)
+        box("lock", (0.12, 0.04, 0.14), (0, -0.3, 0.42), material("chest_brass", srgb("#c8a040"), 0.3, metallic=0.9))
+    else:
+        # Thrown back, hinged at the rear edge; the inside dark and empty.
+        box("inside", (0.7, 0.45, 0.02), (0, 0, 0.44), material("chest_inside", srgb("#1a0c08"), 0.9))
+        box("lid", (0.82, 0.16, 0.57), (0, 0.33, 0.73), lac, bevel=0.04, rot=(-0.35, 0, 0))
+
+
 def build_lever(_v=0):
     """The sap pump's lever: an iron handle on a stone block (both have to be pulled together)."""
     box("block", (0.5, 0.5, 0.5), (0, 0, 0.25), stone_material())

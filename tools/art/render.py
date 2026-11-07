@@ -48,6 +48,7 @@ PROPS = {
     "cart": (200, 160, 0.4, lambda v: M.build_cart(v), 1),
     "barrel": (160, 180, 0.3, lambda v: M.build_barrel(v), 2),
     "crate": (160, 180, 0.3, lambda v: M.build_crate(v), 1),
+    "chest": (160, 180, 0.3, lambda v: M.build_chest(v), 2),
     "lever": (150, 160, 0.5, lambda v: M.build_lever(v), 1),
     "pump": (220, 240, 0.8, lambda v: M.build_pump(v), 1),
     "tent": (320, 320, 0.8, lambda v: M.build_tent(v), 1),

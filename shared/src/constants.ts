@@ -22,6 +22,8 @@ export const MSG = {
   choice: "choice",
   /** client → server: the talents to hold ({ talents: string[] }); taking any back needs a bonfire. */
   talent: "talent",
+  /** client → server: bag and equipment ({ op: move|equip|unequip|drop|pickup, uid?, slot?, x?, y?, loot? }). */
+  inv: "inv",
   /** server → client: a batch of FxEvents (hits, casts, deaths...) for visuals and sound. */
   fx: "fx",
 } as const;

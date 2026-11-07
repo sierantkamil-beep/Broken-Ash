@@ -70,6 +70,7 @@ export const PROPS = {
   cart: { name: "Wózek z urobkiem", w: 2, h: 1, blocks: [[0, 0], [1, 0]], light: { z: 0.8, radius: 1.6, color: 0xc87818, intensity: 0.4, hidden: true }, variants: 1 },
   barrel: { name: "Beczka", w: 1, h: 1, blocks: [[0, 0]], variants: 2 },
   crate: { name: "Skrzynia", w: 1, h: 1, blocks: [[0, 0]], variants: 1 },
+  chest: { name: "Kufer", w: 1, h: 1, blocks: [[0, 0]], variants: 2 },
   lever: { name: "Dźwignia pompy", w: 1, h: 1, blocks: [[0, 0]], variants: 1 },
   pump: { name: "Pompa żywicy", w: 2, h: 2, blocks: [[0, 0], [1, 0], [0, 1], [1, 1]], light: { z: 0.8, radius: 2.4, color: 0xc87818, intensity: 0.6, hidden: true }, variants: 1 },
   tent: { name: "Namiot", w: 3, h: 3, blocks: [[1, 1], [0, 1], [2, 1]], variants: 1 },

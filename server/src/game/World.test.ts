@@ -206,11 +206,47 @@ describe("World", () => {
     const hp0 = a.hpMax;
     w.setTalents("a", { talents: ["thorn.life.0a", "thorn.life.0b"] });
     expect(a.talents).toEqual(["thorn.life.0a"]);
-    expect(a.hpMax).toBe(Math.round(hp0 * 1.1));
+    // +10% of the path's health on top of what the worn gear adds.
+    expect(a.hpMax).toBe(hp0 + Math.round(a.path.hp * 0.1));
     Object.assign(a.body, { x: 1, y: 1 });
     expect(w.setTalents("a", { talents: [] })).toBe(false);
     Object.assign(a.body, { x: w.map.bonfire!.x, y: w.map.bonfire!.y + 1 });
     expect(w.setTalents("a", { talents: [] })).toBe(true);
     expect(a.hpMax).toBe(hp0);
+  });
+
+  it("drops loot from kills, picks it up with F into the bag, and gold by walking over it", () => {
+    const w = new World("soramei_courtyard", 3, ["seen:prolog"]);
+    const a = w.addPlayer("a", "A");
+    w.encounter = false;
+    const before = a.inv.bag.length;
+    w.dropLoot(a.body.x, a.body.y, undefined, 17);
+    const gold = [...w.loot.values()].find((l) => !l.item)!;
+    Object.assign(a.body, { x: gold.x, y: gold.y });
+    w.step(SIM_DT);
+    expect(a.inv.gold).toBe(17);
+    const ring = { uid: "r1", base: "ring.ring.1", rarity: "fine" as const, level: 1, affixes: [] as [string, number][] };
+    w.dropLoot(a.body.x, a.body.y, ring);
+    w.queueInputs("a", [{ seq: 1, mx: 0, my: 0, act: true }]);
+    w.step(SIM_DT);
+    expect(a.inv.bag.length).toBe(before + 1);
+    expect(w.loot.size).toBe(0);
+  });
+
+  it("opens a cache once per story", () => {
+    const w = new World("soramei_cells", 1, ["seen:cells_intro"]);
+    const a = w.addPlayer("a", "A");
+    w.encounter = false;
+    const c = w.map.caches![0];
+    Object.assign(a.body, { x: c.x, y: c.y + 1 });
+    w.queueInputs("a", [{ seq: 1, mx: 0, my: 0, act: true }]);
+    w.step(SIM_DT);
+    expect(w.flags.has(`loot:soramei_cells:${c.id}`)).toBe(true);
+    const n = w.loot.size;
+    expect(n).toBeGreaterThan(0);
+    w.loot.clear();
+    w.queueInputs("a", [{ seq: 2, mx: 0, my: 0, act: true }]);
+    w.step(SIM_DT);
+    expect(w.loot.size).toBe(0);
   });
 });

@@ -371,7 +371,7 @@ export class WorldScene extends Phaser.Scene {
     $s(state).listen("flags", (f: string) => {
       this.flags = new Set(f ? f.split(",") : []);
       // A gate opened: the walls the prediction walks against change with it.
-      if (this.map.props.some((p) => p.until)) {
+      if (this.map.props.some((p) => p.until || p.after)) {
         this.grid = CollisionGrid.fromMap(this.map, this.flags);
         this.me?.pred.setGrid(this.grid);
         this.props.setFlags(this.flags);

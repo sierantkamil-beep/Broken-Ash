@@ -28,6 +28,13 @@ export type FxEvent =
   | { t: "lever"; i: number }
   /** A character reached a new level: bar slots opened, talent points unspent. */
   | { t: "levelUp"; id: string; level: number; slots: number[]; points: number }
+  /** Something dropped or picked up (a beam where it lands; a line on screen for the one who took it). */
+  | { t: "loot"; id: string; x: number; y: number; rarity: string }
+  | { t: "pickup"; by: string; name: string; rarity: string; gold: number }
+  /** The bag is full: nothing was picked up. */
+  | { t: "bagFull"; id: string }
+  /** A chest or body was searched. */
+  | { t: "cache"; id: string; x: number; y: number }
   /** A boss crossed into a new phase (a banner and a roar). */
   | { t: "phase"; id: string; title: string; sub: string }
   /** A corpse was eaten (it's gone; blood where it lay). */

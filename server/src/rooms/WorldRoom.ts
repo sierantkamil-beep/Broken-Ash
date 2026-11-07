@@ -1,10 +1,10 @@
 import { Room, type Client } from "@colyseus/core";
-import { MAX_PLAYERS, MSG, PATCH_HZ, SIM_DT, type JoinOptions } from "@broken-ash/shared";
+import { ITEM_BASES, MAX_PLAYERS, MSG, PATCH_HZ, SIM_DT, type JoinOptions } from "@broken-ash/shared";
 import type { Profiles } from "../game/Profiles.js";
 import type { Story } from "../game/Story.js";
 import { World } from "../game/World.js";
 import type { PlayerSim } from "../game/fighters.js";
-import { PlayerState, UnitState, WorldState } from "../schema/WorldState.js";
+import { LootState, PlayerState, UnitState, WorldState } from "../schema/WorldState.js";
 
 const round = (v: number, step: number) => Math.round(v / step) * step;
 
@@ -37,6 +37,13 @@ export class WorldRoom extends Room<WorldState> {
     });
     this.onMessage(MSG.skip, (client) => this.world.voteSkip(client.sessionId));
     this.onMessage(MSG.choice, (client, msg: unknown) => this.world.pickChoice(client.sessionId, msg));
+    this.onMessage(MSG.inv, (client, msg: unknown) => {
+      this.world.invOp(client.sessionId, msg);
+    });
+    this.world.onInventory = (p) => {
+      this.mirrorLoadout(p);
+      this.save(p);
+    };
     this.onMessage(MSG.talent, (client, msg: unknown) => {
       if (!this.world.setTalents(client.sessionId, msg)) return;
       const p = this.world.players.get(client.sessionId);
@@ -108,13 +115,15 @@ export class WorldRoom extends Room<WorldState> {
     s.weapon = p.weapon;
     s.picks = JSON.stringify(p.picks[p.weapon] ?? {});
     s.mastery = JSON.stringify(p.mastery);
-    s.appearance = JSON.stringify(p.appearance);
+    s.appearance = JSON.stringify(this.world.lookOf(p));
+    s.inv = JSON.stringify({ bag: p.inv.bag, gold: p.inv.gold });
+    s.equip = JSON.stringify(p.inv.equip);
     s.level = p.level;
     s.talents = JSON.stringify(p.talents);
   }
 
   private save(p: PlayerSim) {
-    this.profiles?.put({ name: p.name, path: p.path.id, weapon: p.weapon, look: p.appearance, mastery: p.mastery, picks: p.picks, xp: Math.floor(p.xp), talents: p.talents });
+    this.profiles?.put({ name: p.name, path: p.path.id, weapon: p.weapon, look: p.appearance, mastery: p.mastery, picks: p.picks, xp: Math.floor(p.xp), talents: p.talents, inv: p.inv });
   }
 
   private sync() {
@@ -170,6 +179,19 @@ export class WorldRoom extends Room<WorldState> {
       if (s.mastery !== m && (w.time * 4) % 1 < SIM_DT * 4) s.mastery = m;
     }
 
+    for (const id of [...this.state.loot.keys()]) if (!w.loot.has(id)) this.state.loot.delete(id);
+    for (const l of w.loot.values()) {
+      if (this.state.loot.has(l.id)) continue;
+      const s = new LootState();
+      s.id = l.id;
+      s.x = l.x;
+      s.y = l.y;
+      s.base = l.item?.base ?? "";
+      s.rarity = l.item?.rarity ?? "gold";
+      s.name = l.item ? ITEM_BASES[l.item.base]?.name ?? "" : `${l.gold} złota`;
+      s.gold = l.gold ?? 0;
+      this.state.loot.set(l.id, s);
+    }
     for (const id of [...this.state.units.keys()]) if (!w.units.has(id)) this.state.units.delete(id);
     for (const u of w.units.values()) {
       let s = this.state.units.get(u.id);

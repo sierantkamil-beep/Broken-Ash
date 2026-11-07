@@ -37,6 +37,26 @@ import {
   withBonuses,
   SLOT_UNLOCK,
   pointsAt,
+  equip as equipItem,
+  equipBonuses,
+  freeSpot,
+  ITEM_BASES,
+  makeItem,
+  moveInBag,
+  rng,
+  rollItem,
+  startingKit,
+  stow,
+  takeOut,
+  unequip as unequipItem,
+  validInventory,
+  weaponOfInv,
+  wornLook,
+  EQUIP_SLOTS,
+  type CharacterLook,
+  type EquipSlot,
+  type Inventory,
+  type Item,
 } from "@broken-ash/shared";
 import {
   addStatus,
@@ -92,7 +112,30 @@ export interface SavedProgress {
   picks?: Partial<Record<WeaponId, Partial<Picks>>>;
   xp?: number;
   talents?: string[];
+  inv?: unknown;
 }
+
+/** Something on the ground to pick up: an item or gold. */
+export interface Loot {
+  id: string;
+  x: number;
+  y: number;
+  item?: Item;
+  gold?: number;
+}
+
+/** Chance an enemy drops an item, and gold (min–max), by kind. */
+const DROPS: Record<string, { item: number; gold: [number, number] }> = {
+  shambler: { item: 0.08, gold: [0, 3] },
+  runner: { item: 0.08, gold: [0, 3] },
+  bloated: { item: 0.18, gold: [2, 6] },
+  miner: { item: 0.16, gold: [2, 8] },
+  drowned: { item: 0.16, gold: [1, 6] },
+  eater: { item: 0.2, gold: [2, 8] },
+  crossbow: { item: 0.3, gold: [5, 14] },
+  manatarms: { item: 0.35, gold: [6, 16] },
+  tapper: { item: 1, gold: [60, 90] },
+};
 
 /** Burst allowance after a lag spike, in steps. */
 const MAX_CREDIT = 10;
@@ -117,6 +160,9 @@ export class World implements Arena {
   /** When each lever of the area was last pulled (a lever group's flag needs them all within a window). */
   private readonly levers = new Map<number, number>();
   readonly players = new Map<string, PlayerSim>();
+  /** Items and gold lying on the ground in this area. */
+  readonly loot = new Map<string, Loot>();
+  private uidSeq = 0;
   readonly units = new Map<string, UnitSim>();
   projectiles: Projectile[] = [];
   /** Where the dead lie (corpse-eaters go for them), newest last. */
@@ -180,6 +226,19 @@ export class World implements Arena {
     this.map = map;
     this.grid = CollisionGrid.fromMap(map, this.flags);
     this.levers.clear();
+    // Nothing is left behind when a scene carries you off: what lay on the ground goes into the bags
+    // (in turn, where it fits), gold is shared out.
+    const ps = [...this.players.values()];
+    let turn = 0;
+    for (const l of this.loot.values()) {
+      if (!ps.length) break;
+      if (l.item) {
+        for (let k = 0; k < ps.length; k++) if (stow(ps[(turn + k) % ps.length].inv, l.item)) break;
+        turn++;
+      } else for (const p of ps) p.inv.gold += Math.floor((l.gold ?? 0) / ps.length);
+    }
+    if (this.loot.size) for (const p of ps) this.onInventory?.(p);
+    this.loot.clear();
     this.units.clear();
     this.projectiles = [];
     this.zones = [];
@@ -258,20 +317,27 @@ export class World implements Arena {
     const look = [...this.players.values()].some((o) => o.look === "a") ? "b" : "a";
     const pathId: PathId = typeof r.path === "string" && r.path in PATHS ? (r.path as PathId) : "thorn";
     const path = PATHS[pathId];
+    const first: WeaponId = isWeapon(r.weapon) ? r.weapon : path.homeWeapons[0];
     const body = newBody(spawn.x, spawn.y);
-    // The path's first home weapon unless the player brought another one.
-    const weapon: WeaponId = isWeapon(r.weapon) ? r.weapon : path.homeWeapons[0];
+    // The weapon in hand is the one equipped: weapons come from the bag, not from a menu.
+    const weapon: WeaponId = first;
     const mastery: Partial<Record<WeaponId, number>> = {};
     for (const [w, xp] of Object.entries(saved.mastery ?? {})) if (isWeapon(w) && typeof xp === "number" && xp >= 0) mastery[w] = Math.min(xp, 1e7);
     const picks: Partial<Record<WeaponId, Picks>> = {};
     for (const [w, pk] of Object.entries(saved.picks ?? {})) if (isWeapon(w)) picks[w] = validPicks(pk, masteryLevel(mastery[w] ?? 0));
     const xp = typeof saved.xp === "number" && saved.xp >= 0 ? Math.min(saved.xp, 1e7) : 0;
     const level = levelOf(xp);
+    const appearance = validLook(r.look, pathId);
+    // The bag from the save, or a new character's kit (the path's weapon, the clothes chosen).
+    // A new character starts with the weapon picked at creation (one of the path's own by default).
+    const inv = validInventory(saved.inv) ?? startingKit({ ...path, homeWeapons: [first] }, appearance, (k) => this.uid(k));
+    if (!inv.equip.weapon) inv.equip.weapon = makeItem(`${first}.1`, this.uid("w"));
     const p: PlayerSim = {
       id,
       xp,
       level,
       talents: validTalents(path, saved.talents, level),
+      // (weapon is set from the bag right after, in rebuildSkills)
       taken: 1,
       speed: path.speed,
       statusMul: {},
@@ -282,7 +348,8 @@ export class World implements Arena {
       mastery,
       picks,
       skills: [],
-      appearance: validLook(r.look, pathId),
+      appearance,
+      inv,
       bodyType: r.body === "female" ? "female" : ("male" as BodyType),
       people: (PEOPLES.some((x) => x.id === r.people) ? r.people : path.people) as PeopleId,
       body,
@@ -329,6 +396,7 @@ export class World implements Arena {
    * Cooldowns already running keep running.
    */
   rebuildSkills(p: PlayerSim) {
+    p.weapon = weaponOfInv(p.inv, p.weapon);
     const level = masteryLevel(p.mastery[p.weapon] ?? 0);
     const picks = validPicks(p.picks[p.weapon] ?? DEFAULT_PICKS, level);
     p.picks[p.weapon] = picks;
@@ -348,7 +416,154 @@ export class World implements Arena {
 
   /** Everything that adds to a character beyond the path: talents now, equipment too (items.ts). */
   bonusesOf(p: PlayerSim) {
-    return talentBonuses(p.path, p.talents);
+    return [...talentBonuses(p.path, p.talents), ...equipBonuses(p.inv.equip)];
+  }
+
+  /** The look a player shows: the chosen dyes and skin, the armour and head pieces they wear. */
+  lookOf(p: PlayerSim): CharacterLook {
+    return wornLook(p.appearance, p.inv.equip);
+  }
+
+  // ------------------------------------------------------------------------- items
+
+  uid(kind = "i") {
+    return `${kind}${(Date.now() % 1e8).toString(36)}${(this.uidSeq++).toString(36)}${Math.floor(this.random() * 1296).toString(36)}`;
+  }
+
+  /** Puts an item of a base in a player's bag (story rewards, tests). */
+  giveItem(p: PlayerSim, base: string): Item | null {
+    if (!ITEM_BASES[base]) return null;
+    const it = makeItem(base, this.uid());
+    if (!stow(p.inv, it)) return null;
+    this.onInventory?.(p);
+    return it;
+  }
+
+  /** The level loot is rolled at: the higher of the two players'. */
+  private lootLevel() {
+    return Math.max(1, ...[...this.players.values()].map((p) => p.level));
+  }
+
+  /** Puts loot on the ground near a point, spread a little so piles don't stack. */
+  dropLoot(x: number, y: number, item?: Item, gold = 0) {
+    const a = this.random() * Math.PI * 2;
+    const r = 0.3 + this.random() * 0.6;
+    let lx = x + Math.cos(a) * r;
+    let ly = y + Math.sin(a) * r;
+    if (this.grid.blocked(Math.floor(lx), Math.floor(ly))) {
+      lx = x;
+      ly = y;
+    }
+    const l: Loot = { id: this.uid("l"), x: lx, y: ly, item, gold: item ? 0 : gold };
+    this.loot.set(l.id, l);
+    this.fx.push({ t: "loot", id: l.id, x: lx, y: ly, rarity: item?.rarity ?? "gold" });
+  }
+
+  /** A roll of `n` random items (and set bases) around a point. */
+  private spill(x: number, y: number, o: { items?: string[]; rolls?: number; luck?: number; gold?: number }) {
+    const level = this.lootLevel();
+    const rand = rng(Math.floor(this.random() * 2 ** 31));
+    for (const b of o.items ?? []) if (ITEM_BASES[b]) this.dropLoot(x, y, makeItem(b, this.uid(), ITEM_BASES[b].slot === "relic" || b.startsWith("u.") ? "ashen" : "rare", level));
+    for (let i = 0; i < (o.rolls ?? 0); i++) this.dropLoot(x, y, rollItem(rand, level, this.uid(), { luck: o.luck ?? 0 }));
+    if (o.gold) this.dropLoot(x, y, undefined, o.gold);
+  }
+
+  /** What an enemy leaves when it dies. */
+  private dropFor(u: UnitSim) {
+    const d = DROPS[u.kind];
+    if (!d) return;
+    const pos = u.pos();
+    if (this.random() < d.item) this.spill(pos.x, pos.y, { rolls: 1, luck: u.def.boss ? 0.3 : 0 });
+    const gold = Math.round(d.gold[0] + this.random() * (d.gold[1] - d.gold[0]));
+    if (gold > 0 && this.random() < 0.6) this.dropLoot(pos.x, pos.y, undefined, gold);
+  }
+
+  /** A cache (chest, body) opened with F: its items once per story. */
+  private openCache(p: PlayerSim): boolean {
+    const c = (this.map.caches ?? []).find((k) => !this.flags.has(`loot:${this.map.id}:${k.id}`) && Math.hypot(k.x - p.body.x, k.y - p.body.y) <= C.talkRange);
+    if (!c) return false;
+    this.setFlag(`loot:${this.map.id}:${c.id}`);
+    this.spill(c.x, c.y, c);
+    this.fx.push({ t: "cache", id: c.id, x: c.x, y: c.y });
+    return true;
+  }
+
+  /** F next to loot picks up the nearest; gold is picked up by walking over it. */
+  private pickNear(p: PlayerSim, forItems: boolean): boolean {
+    let best: Loot | null = null;
+    let bd = forItems ? 1.3 : 0.7;
+    for (const l of this.loot.values()) {
+      if (forItems !== !!l.item) continue;
+      const d = Math.hypot(l.x - p.body.x, l.y - p.body.y);
+      if (d <= bd) {
+        bd = d;
+        best = l;
+      }
+    }
+    return best ? this.pickup(p, best.id) : false;
+  }
+
+  pickup(p: PlayerSim, id: string): boolean {
+    const l = this.loot.get(id);
+    if (!l || Math.hypot(l.x - p.body.x, l.y - p.body.y) > 1.6) return false;
+    if (l.item) {
+      if (!stow(p.inv, l.item)) {
+        this.fx.push({ t: "bagFull", id: p.id });
+        return false;
+      }
+    } else p.inv.gold += l.gold ?? 0;
+    this.loot.delete(id);
+    this.fx.push({ t: "pickup", by: p.id, name: l.item ? ITEM_BASES[l.item.base]?.name ?? "" : "", rarity: l.item?.rarity ?? "gold", gold: l.gold ?? 0 });
+    this.onInventory?.(p);
+    return true;
+  }
+
+  /** Called when a player's bag or gear changed (the host saves and mirrors it). */
+  onInventory?: (p: PlayerSim) => void;
+
+  /**
+   * The bag and gear (MSG.inv). Untrusted: every op is checked by the inventory's rules; weapons can't
+   * be swapped mid-fight.
+   */
+  invOp(id: string, raw: unknown): boolean {
+    const p = this.players.get(id);
+    if (!p || !raw || typeof raw !== "object") return false;
+    const r = raw as { op?: unknown; uid?: unknown; slot?: unknown; x?: unknown; y?: unknown; loot?: unknown };
+    const uid = typeof r.uid === "string" ? r.uid : "";
+    const slot = typeof r.slot === "string" && (EQUIP_SLOTS as string[]).includes(r.slot) ? (r.slot as EquipSlot) : undefined;
+    const at = Number.isInteger(r.x) && Number.isInteger(r.y) ? { x: r.x as number, y: r.y as number } : undefined;
+    let ok = false;
+    switch (r.op) {
+      case "move":
+        ok = !!at && moveInBag(p.inv, uid, at.x, at.y);
+        break;
+      case "equip": {
+        const it = p.inv.bag.find((q) => q.item.uid === uid)?.item;
+        const isWeapon = !!it && ITEM_BASES[it.base]?.slot === "weapon";
+        if (isWeapon && this.phase === "fight") return false;
+        ok = equipItem(p.inv, uid, slot);
+        break;
+      }
+      case "unequip":
+        ok = !!slot && unequipItem(p.inv, slot, at);
+        break;
+      case "drop": {
+        const it = takeOut(p.inv, uid);
+        if (it) {
+          this.dropLoot(p.body.x, p.body.y, it);
+          ok = true;
+        }
+        break;
+      }
+      case "pickup":
+        ok = typeof r.loot === "string" && this.pickup(p, r.loot);
+        break;
+    }
+    if (ok) {
+      this.rebuildSkills(p);
+      this.onInventory?.(p);
+    }
+    return ok;
   }
 
   /**
@@ -396,8 +611,8 @@ export class World implements Arena {
   setLoadout(id: string, raw: unknown): boolean {
     const p = this.players.get(id);
     if (!p || this.phase === "fight" || !raw || typeof raw !== "object") return false;
-    const r = raw as { weapon?: unknown; picks?: unknown };
-    if (isWeapon(r.weapon)) p.weapon = r.weapon;
+    // The weapon is whatever's equipped (items); this only changes the tree picks for it.
+    const r = raw as { picks?: unknown };
     if (r.picks && typeof r.picks === "object") p.picks[p.weapon] = validPicks(r.picks as Partial<Picks>, masteryLevel(p.mastery[p.weapon] ?? 0));
     this.rebuildSkills(p);
     return true;
@@ -572,6 +787,8 @@ export class World implements Arena {
         }
         continue;
       }
+      // Gold is picked up by walking over it.
+      if (!p.downed) this.pickNear(p, false);
       if (!p.act) continue;
       // F next to someone with something to say plays their scene (when no one is fighting).
       const npc = !this.encs.some((e) => e.state === "active") ? this.npcs().find((n) => n.scene && Math.hypot(n.x - p.body.x, n.y - p.body.y) <= C.talkRange) : undefined;
@@ -580,6 +797,8 @@ export class World implements Arena {
         return;
       }
       if (this.pullLever(p)) continue;
+      if (this.openCache(p)) continue;
+      if (this.pickNear(p, true)) continue;
       const victim = [...this.units.values()].find((u) => !u.dead && u.faction === "greyed" && u.staggerT > 0 && near(p, u, C.interactRange + u.radius));
       if (victim) {
         this.fx.push({ t: "execute", by: p.id, id: victim.id });
@@ -681,6 +900,12 @@ export class World implements Arena {
             this.fx.push({ t: "victory" });
             if (e.def.clearFlag) this.setFlag(e.def.clearFlag);
             this.grantXp(CLEAR_XP);
+            // The fight's reward lies where its last enemy fell (or at the first player).
+            if (e.def.reward) {
+              const last = [...this.units.values()].filter((u) => u.dead && u.faction === "greyed").pop();
+              const at = last ? last.pos() : [...this.players.values()][0]?.body;
+              if (at) this.spill(at.x, at.y, e.def.reward);
+            }
             if (e.def.repeat) {
               e.state = "idle";
               e.wave = -1;
@@ -726,7 +951,10 @@ export class World implements Arena {
     }
     const u = victim as UnitSim;
     u.dead = true;
-    if (u.faction === "greyed") this.grantXp(KILL_XP[u.kind] ?? 10);
+    if (u.faction === "greyed") {
+      this.grantXp(KILL_XP[u.kind] ?? 10);
+      this.dropFor(u);
+    }
     const pos = u.pos();
     if (u.grabbed) releaseGrab(this, u);
     if (u.kind !== "thrall") {

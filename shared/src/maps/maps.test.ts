@@ -5,6 +5,7 @@ import { BALANCE } from "../balance.js";
 import { overlaps } from "../movement.js";
 import { MAPS } from "./index.js";
 import { CINEMATICS } from "../data/cinematics.js";
+import { ITEM_BASES } from "../data/items.js";
 
 /** Cells reachable on foot from a start cell (4-connected over unblocked cells). */
 function reachable(grid: CollisionGrid, sx: number, sy: number): Set<number> {
@@ -86,10 +87,18 @@ describe.each(Object.values(MAPS))("map $id", (map) => {
       expect(ok, `lever ${l.x},${l.y}`).toBe(true);
     }
     if (map.bonfire) expect(overlaps(map.bonfire.x, map.bonfire.y, BALANCE.player.radius, grid)).toBe(false);
+    for (const c of map.caches ?? []) {
+      let ok = false;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (at(c.x + dx, c.y + dy) && Math.hypot(dx, dy) <= BALANCE.combat.talkRange) ok = true;
+      expect(ok, `cache ${c.id}`).toBe(true);
+      for (const b of c.items ?? []) expect(ITEM_BASES[b], b).toBeDefined();
+    }
+    for (const e of map.encounters ?? []) for (const b of e.reward?.items ?? []) expect(ITEM_BASES[b], b).toBeDefined();
   });
 
   it("closes its gates until their flag is set", () => {
-    const gates = map.props.filter((p) => p.until);
+    // (A chest's closed lid is a gate whose open twin takes the same cell, so it stays blocked.)
+    const gates = map.props.filter((p) => p.until && !map.props.some((q) => q.after === p.until && q.x === p.x && q.y === p.y));
     const closed = CollisionGrid.fromMap(map);
     for (const g of gates) expect(closed.blocked(g.x, g.y)).toBe(true);
     for (const g of gates) expect(CollisionGrid.fromMap(map, new Set([g.until!])).blocked(g.x, g.y)).toBe(false);

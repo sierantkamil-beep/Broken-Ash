@@ -5,7 +5,7 @@
 
 ## Contents
 
-- [shared](#shared) — 26 files, 6 test files
+- [shared](#shared) — 28 files, 7 test files
 - [server](#server) — 11 files, 5 test files
 - [client](#client) — 45 files, 5 test files
 - [desktop](#desktop) — 3 files, 1 test files
@@ -28,13 +28,15 @@ Pure game logic and data used by server and client. No Phaser, Colyseus or Node 
 | `shared/src/data/act1scenes.ts` | Pień, the first thing you see: the title over your cell, then the dead begin to move. | `ACT1_SCENES` | `shared/src/cinematic`, `shared/src/data/scene` |
 | `shared/src/data/cinematics.ts` | Prolog — plays the first time the two of you come up into the Soramei courtyard from the cells. | `CINEMATICS` | `shared/src/cinematic`, `shared/src/data/act1scenes` |
 | `shared/src/data/greyed.ts` | Every enemy kind. | `GreyedKind`, `EnemyAttack`, `EnemyDef`, `GREYED`, `Wave`, `CELL_BREAK`, `GATE_ASSAULT`, `MINE_HALL`, `MINE_GALLERY`, `TAPPER_FIGHT`, `HARROW_SCOUTS` | `shared/src/combat/types` |
+| `shared/src/data/items.ts` | Size in the bag's grid (cells). | `ItemSlot`, `EquipSlot`, `EQUIP_SLOTS`, `slotOf`, `SLOT_NAMES`, `Rarity`, `RARITY`, `ItemBase`, `ITEM_BASES`, `AffixDef`, `AFFIXES`, `AFFIX`, `Item`, `itemBase`, `itemBonuses`, `affixText`, `rng`, `rollItem`, `makeItem`, `validItem` | `shared/src/combat/types`, `shared/src/data/looks`, `shared/src/progress` |
 | `shared/src/data/looks.ts` | How a path dresses the shared male/female body (a "look"): colour ramps, dark to light, that replace the body's cloth and leather-trim colours. | `Look`, `PATH_LOOKS`, `DYES`, `SKIN_TONES`, `ArmourId`, `HeadId`, `ShoulderId`, `ARMOURS`, `HEADS`, `SHOULDERS`, `CharacterLook`, `DEFAULT_LOOKS`, `validLook` | `shared/src/combat/types` |
 | `shared/src/data/paths.ts` | The eight paths (design.md §4): 2 melee, 4 magic, 2 ranged. | `PATHS`, `PATH_IDS`, `PEOPLES` | `shared/src/combat/build`, `shared/src/combat/types` |
 | `shared/src/data/props.ts` | Prop catalogue: gameplay facts only (footprint, what blocks, lights). | `PropDef`, `PROPS`, `PropKind`, `PROP_KINDS` | — |
 | `shared/src/data/scene.ts` | A line of a scene: who says it (narration when omitted) and where the camera is meanwhile. | `Line`, `SceneSpec`, `readMs`, `scene` | `shared/src/cinematic` |
 | `shared/src/data/weapons.ts` | The nine weapon types (design.md §4 "Weapons and mastery"). | `SkillSlot`, `Mod`, `PassiveDef`, `WeaponDef`, `WEAPONS`, `WEAPON_IDS`, `WEAPON_SKILLS` | `shared/src/combat/build`, `shared/src/combat/types` |
 | `shared/src/i18n.ts` | Polish plural forms: 1 → one, 2–4 (but not 12–14) → few, everything else → many. | `plural`, `count` | — |
-| `shared/src/index.ts` | — | * from "./constants.js", * from "./balance.js", * from "./view.js", * from "./i18n.js", * from "./map.js", * from "./movement.js", * from "./cinematic.js", * from "./data/props.js", * from "./data/cinematics.js", * from "./maps/index.js", * from "./types.js", * from "./combat/types.js", * from "./combat/geometry.js", * from "./data/paths.js", * from "./data/greyed.js", * from "./data/looks.js", * from "./data/weapons.js", * from "./combat/build.js", * from "./loadout.js", * from "./progress.js" | `shared/src/balance`, `shared/src/cinematic`, `shared/src/combat/build`, `shared/src/combat/geometry`, `shared/src/combat/types`, `shared/src/constants`, `shared/src/data/cinematics`, `shared/src/data/greyed`, `shared/src/data/looks`, `shared/src/data/paths`, `shared/src/data/props`, `shared/src/data/weapons`, `shared/src/i18n`, `shared/src/loadout`, `shared/src/map`, `shared/src/maps/index`, `shared/src/movement`, `shared/src/progress`, `shared/src/types`, `shared/src/view` |
+| `shared/src/index.ts` | — | * from "./constants.js", * from "./balance.js", * from "./view.js", * from "./i18n.js", * from "./map.js", * from "./movement.js", * from "./cinematic.js", * from "./data/props.js", * from "./data/cinematics.js", * from "./maps/index.js", * from "./types.js", * from "./combat/types.js", * from "./combat/geometry.js", * from "./data/paths.js", * from "./data/greyed.js", * from "./data/looks.js", * from "./data/weapons.js", * from "./combat/build.js", * from "./loadout.js", * from "./progress.js", * from "./data/items.js", * from "./inventory.js" | `shared/src/balance`, `shared/src/cinematic`, `shared/src/combat/build`, `shared/src/combat/geometry`, `shared/src/combat/types`, `shared/src/constants`, `shared/src/data/cinematics`, `shared/src/data/greyed`, `shared/src/data/items`, `shared/src/data/looks`, `shared/src/data/paths`, `shared/src/data/props`, `shared/src/data/weapons`, `shared/src/i18n`, `shared/src/inventory`, `shared/src/loadout`, `shared/src/map`, `shared/src/maps/index`, `shared/src/movement`, `shared/src/progress`, `shared/src/types`, `shared/src/view` |
+| `shared/src/inventory.ts` | Does an item fit at (x, y), ignoring the item `except` (the one being moved)? | `BAG_W`, `BAG_H`, `Placed`, `Inventory`, `fits`, `freeSpot`, `stow`, `moveInBag`, `slotFor`, `equip`, `unequip`, `takeOut`, `weaponOfInv`, `equipBonuses`, `wornLook`, `startingKit`, `validInventory` | `shared/src/combat/types`, `shared/src/data/items`, `shared/src/data/looks`, `shared/src/progress` |
 | `shared/src/loadout.ts` | A character's skill bar: the weapon's basic, RMB and key-1 skills (from its mastery tree), then the path's three signature skills (design.md §4). | `Picks`, `DEFAULT_PICKS`, `masteryLevel`, `masteryProgress`, `isWeapon`, `validPicks`, `Loadout`, `resolveLoadout`, `allSkills` | `shared/src/balance`, `shared/src/combat/types`, `shared/src/data/weapons` |
 | `shared/src/map.ts` | A rectangle of cells (continuous: x ∈ [x, x + w), y ∈ [y, y + h)). | `Region`, `inRegion`, `Exit`, `Encounter`, `Npc`, `AreaMap`, `GroundType`, `BLOCKING_GROUND`, `PropPlacement`, `CollisionGrid` | `shared/src/combat/types`, `shared/src/data/greyed`, `shared/src/data/props` |
 | `shared/src/maps/act1.ts` | Pień — the bleeding-cells under the keep. | `SORAMEI_CELLS`, `FARMSTEAD`, `SAP_MINE`, `HARROW_ROAD` | `shared/src/data/greyed`, `shared/src/maps/builder` |
@@ -46,7 +48,7 @@ Pure game logic and data used by server and client. No Phaser, Colyseus or Node 
 | `shared/src/types.ts` | Options a client sends when joining the room. | `JoinOptions`, `HitCause`, `FxEvent` | — |
 | `shared/src/view.ts` | Top-down 3/4 view (like Dinusie): square cells, the ground drawn flat, characters and props drawn upright as seen slightly from the front. | `CELL`, `Z_PX`, `worldToScreen`, `screenToWorld`, `screenDirToWorld`, `DIRECTIONS`, `directionIndex`, `depthOf` | — |
 
-Tests: `shared/src/cinematic.test.ts`, `shared/src/i18n.test.ts`, `shared/src/maps/maps.test.ts`, `shared/src/movement.test.ts`, `shared/src/progress.test.ts`, `shared/src/view.test.ts`
+Tests: `shared/src/cinematic.test.ts`, `shared/src/i18n.test.ts`, `shared/src/inventory.test.ts`, `shared/src/maps/maps.test.ts`, `shared/src/movement.test.ts`, `shared/src/progress.test.ts`, `shared/src/view.test.ts`
 
 <details><summary>Exported symbols</summary>
 
@@ -71,6 +73,13 @@ Tests: `shared/src/cinematic.test.ts`, `shared/src/i18n.test.ts`, `shared/src/ma
 - `GATE_ASSAULT` (const, `shared/src/data/greyed.ts`) — The night of the escape: the Greyed break through Soramei's vermilion gate in waves until Itheru's men can get you out.
 - `MINE_HALL` (const, `shared/src/data/greyed.ts`) — The Drowned Sap-Mine: the shaft hall, the flooded gallery, the Tapper's bleeding room.
 - `HARROW_SCOUTS` (const, `shared/src/data/greyed.ts`) — Harrow's scouts on the forest road: the first humans of the Iron March.
+- `Item` (interface, `shared/src/data/items.ts`) — An item: its base, rarity, level and rolled affixes ([affix id, value]).
+- `itemBonuses` (function, `shared/src/data/items.ts`) — Every bonus an item gives: its base's and its affixes'.
+- `affixText` (function, `shared/src/data/items.ts`) — An affix's line, with its value written out.
+- `rng` (function, `shared/src/data/items.ts`) — A small deterministic random source (mulberry32), so rolls are testable and the host decides them.
+- `rollItem` (function, `shared/src/data/items.ts`) — Rolls a new item: a base for the slot (any slot when not given), a rarity (better with `luck`), and affixes from the slot's pool, each different, stronger at higher levels.
+- `makeItem` (function, `shared/src/data/items.ts`) — A specific item (a starting weapon, a story reward): common unless told, no affixes unless given.
+- `validItem` (function, `shared/src/data/items.ts`) — Checks an item from a save or a client: known base, known affixes, sane values.
 - `Look` (interface, `shared/src/data/looks.ts`) — How a path dresses the shared male/female body (a "look"): colour ramps, dark to light, that replace the body's cloth and leather-trim colours.
 - `DYES` (const, `shared/src/data/looks.ts`) — Dyes a player can choose for cloth, trim and cape (character screen).
 - `SKIN_TONES` (const, `shared/src/data/looks.ts`) — Skin tones (light to dark), replacing the bodies' skin ramp.
@@ -86,6 +95,18 @@ Tests: `shared/src/cinematic.test.ts`, `shared/src/i18n.test.ts`, `shared/src/ma
 - `WEAPON_SKILLS` (const, `shared/src/data/weapons.ts`) — Every weapon skill by id (for clients resolving a fx event to its skill).
 - `plural` (function, `shared/src/i18n.ts`) — Polish plural forms: 1 → one, 2–4 (but not 12–14) → few, everything else → many.
 - `count` (function, `shared/src/i18n.ts`) — "3 sekundy", "5 sekund".
+- `fits` (function, `shared/src/inventory.ts`) — Does an item fit at (x, y), ignoring the item `except` (the one being moved)?
+- `freeSpot` (function, `shared/src/inventory.ts`) — The first free spot for an item (reading order), or null when the bag is full for it.
+- `stow` (function, `shared/src/inventory.ts`) — Puts an item in the bag where it fits (or at a given spot).
+- `slotFor` (function, `shared/src/inventory.ts`) — Which equipment slot an item goes to (a ring takes the free ring slot, else the first).
+- `equip` (function, `shared/src/inventory.ts`) — Wears an item from the bag.
+- `unequip` (function, `shared/src/inventory.ts`) — Takes an item off into the bag.
+- `takeOut` (function, `shared/src/inventory.ts`) — Takes an item out of the bag (to drop it on the ground).
+- `weaponOfInv` (function, `shared/src/inventory.ts`) — The weapon in hand (the equipped weapon's type).
+- `equipBonuses` (function, `shared/src/inventory.ts`) — Everything worn adds up.
+- `wornLook` (function, `shared/src/inventory.ts`) — The look as worn: the chest piece decides the armour and shoulders, the head piece the head.
+- `startingKit` (function, `shared/src/inventory.ts`) — What a new character starts with: the path's own weapon and the clothes they were chosen in.
+- `validInventory` (function, `shared/src/inventory.ts`) — An inventory from a save: unknown items dropped, overlaps resolved by re-stowing.
 - `Picks` (interface, `shared/src/loadout.ts`) — Which skill of each choice is picked.
 - `masteryLevel` (function, `shared/src/loadout.ts`) — Mastery level for an amount of weapon-skill damage dealt.
 - `masteryProgress` (function, `shared/src/loadout.ts`) — Progress towards the next level, 0–1 (1 at max).
@@ -144,11 +165,11 @@ Colyseus server. `game/` is the network-free simulation; `rooms/` forwards messa
 | `server/src/game/Profiles.ts` | What the host remembers about each character between sessions: weapon mastery, tree picks and the last weapon, path and look. | `Profile`, `Profiles` | @broken-ash/shared, node:fs, node:path |
 | `server/src/game/Story.ts` | The shared story the host remembers between sessions: the flags (choices made, areas cleared, scenes seen) and the area you were in. | `StorySave`, `Story` | node:fs, node:path |
 | `server/src/game/Units.ts` | A thrall raised by the Path of Graves: a Shambler's body fighting on the players' side. | `thrallDef`, `makeUnit`, `tickUnits` | `server/src/game/Combat`, `server/src/game/Pathing`, `server/src/game/fighters`, @broken-ash/shared |
-| `server/src/game/World.ts` | Each player's pick for the scene's choice (option index), and whether it's been decided. | `RunningCinematic`, `JoinRequest`, `SavedProgress`, `Phase`, `World`, `sanitizeName` | `server/src/game/Combat`, `server/src/game/Pathing`, `server/src/game/Units`, `server/src/game/fighters`, @broken-ash/shared |
+| `server/src/game/World.ts` | Each player's pick for the scene's choice (option index), and whether it's been decided. | `RunningCinematic`, `JoinRequest`, `SavedProgress`, `Loot`, `Phase`, `World`, `sanitizeName` | `server/src/game/Combat`, `server/src/game/Pathing`, `server/src/game/Units`, `server/src/game/fighters`, @broken-ash/shared |
 | `server/src/game/fighters.ts` | A status on a fighter. | `Status`, `Fighter`, `CastState`, `PlayerSim`, `UnitSim`, `fighterPos` | @broken-ash/shared |
 | `server/src/index.ts` | — | — | `server/src/startServer`, @broken-ash/shared |
 | `server/src/rooms/WorldRoom.ts` | Thin network layer: forwards validated messages to the World and mirrors its state into the schema. | `WorldRoom` | `server/src/game/Profiles`, `server/src/game/Story`, `server/src/game/World`, `server/src/game/fighters`, `server/src/schema/WorldState`, @broken-ash/shared, @colyseus/core |
-| `server/src/schema/WorldState.ts` | Synced player state. | `PlayerState`, `UnitState`, `WorldState` | @colyseus/schema |
+| `server/src/schema/WorldState.ts` | Synced player state. | `PlayerState`, `LootState`, `UnitState`, `WorldState` | @colyseus/schema |
 | `server/src/startServer.ts` | Where the host keeps saved characters (the desktop app passes its userData folder). | `RunningServer`, `ServerOptions`, `startServer` | `server/src/game/Profiles`, `server/src/game/Story`, `server/src/rooms/WorldRoom`, @broken-ash/shared, @colyseus/core, @colyseus/ws-transport, node:http, node:os, node:path |
 
 Tests: `server/src/game/Combat.test.ts`, `server/src/game/Mastery.test.ts`, `server/src/game/Units.test.ts`, `server/src/game/World.test.ts`, `server/src/game/sim.test.ts`
@@ -173,11 +194,13 @@ Tests: `server/src/game/Combat.test.ts`, `server/src/game/Mastery.test.ts`, `ser
 - `thrallDef` (function, `server/src/game/Units.ts`) — A thrall raised by the Path of Graves: a Shambler's body fighting on the players' side.
 - `tickUnits` (function, `server/src/game/Units.ts`) — The Greyed's (and thralls') behaviour: pick the nearest foe, walk the flow field to them, and when an attack is in range, lock its aim and telegraph it for its wind-up before it lands.
 - `SavedProgress` (interface, `server/src/game/World.ts`) — What the host remembers about a character between sessions (server/src/game/Profiles.ts).
+- `Loot` (interface, `server/src/game/World.ts`) — Something on the ground to pick up: an item or gold.
 - `World` (class, `server/src/game/World.ts`) — The authoritative simulation for one area.
 - `Status` (interface, `server/src/game/fighters.ts`) — A status on a fighter.
 - `Fighter` (interface, `server/src/game/fighters.ts`) — Anything that can be hit: players, the Greyed, thralls.
 - `WorldRoom` (class, `server/src/rooms/WorldRoom.ts`) — Thin network layer: forwards validated messages to the World and mirrors its state into the schema.
 - `PlayerState` (class, `server/src/schema/WorldState.ts`) — Synced player state.
+- `LootState` (class, `server/src/schema/WorldState.ts`) — An item or gold lying on the ground, until someone picks it up.
 - `UnitState` (class, `server/src/schema/WorldState.ts`) — A Greyed (or a thrall raised by the Path of Graves).
 - `startServer` (function, `server/src/startServer.ts`) — Starts the authoritative game server.
 
@@ -215,7 +238,7 @@ Phaser 3 + Vite client: rendering, prediction, cinematics, audio, DOM UI.
 | `client/src/main.ts` | The settings panel from the title screen (the same panel as the in-game pause menu). | — | `client/src/desktop`, `client/src/fx/accents`, `client/src/net`, `client/src/net/loadout`, `client/src/scenes/BootScene`, `client/src/scenes/WorldScene`, `client/src/settings`, `client/src/style.css`, `client/src/ui/Mastery`, `client/src/ui/dom`, `client/src/ui/hostReport`, `client/src/ui/menu/Menu`, `client/src/ui/pixelIcons`, @broken-ash/shared, @fontsource/cormorant-garamond, @fontsource/shippori-mincho, phaser |
 | `client/src/net/Interpolation.ts` | Renders a remote player slightly in the past, between the two snapshots around that moment. | `Snapshot`, `Interpolation` | @broken-ash/shared |
 | `client/src/net/Prediction.ts` | Movement multiplier the server will apply (path speed, slows, rooted, downed). | `Intent`, `Prediction` | @broken-ash/shared |
-| `client/src/net/loadout.ts` | The synced fields a player's bar and look are resolved from (server/src/schema/WorldState.ts). | `LoadoutView`, `bonusesOf`, `extraBonuses`, `setExtraBonuses`, `pathOf`, `weaponOf`, `masteryOf`, `barOf`, `lookOf`, `ALL_SKILLS` | @broken-ash/shared |
+| `client/src/net/loadout.ts` | The synced fields a player's bar and look are resolved from (server/src/schema/WorldState.ts). | `LoadoutView`, `bonusesOf`, `pathOf`, `weaponOf`, `masteryOf`, `barOf`, `lookOf`, `ALL_SKILLS` | @broken-ash/shared |
 | `client/src/net.ts` | Accepts "host", "host:port", IPv6 (bare or "[addr]:port") or a full ws:// / http:// URL, so players can paste whatever they were given. | `toServerUrl`, `joinWorld` | @broken-ash/shared, colyseus.js |
 | `client/src/scenes/BootScene.ts` | Loads the atlases (rendered by tools/art) and the sounds (tools/audio), with a thin progress line. | `BootScene` | `client/src/audio/AudioDirector`, phaser |
 | `client/src/scenes/WorldScene.ts` | The synced player fields (mirror of server/src/schema/WorldState.ts). | `WorldScene` | `client/src/assets/atlases`, `client/src/audio/AudioDirector`, `client/src/cinematic/CinematicPlayer`, `client/src/entities/Character`, `client/src/entities/UnitSprite`, `client/src/fx/Vfx`, `client/src/fx/accents`, `client/src/net`, `client/src/net/Interpolation`, `client/src/net/Prediction`, `client/src/net/loadout`, `client/src/ui/Hud`, `client/src/ui/dom`, `client/src/world/AreaLife`, `client/src/world/GroundLayer`, `client/src/world/Lighting`, `client/src/world/Petals`, `client/src/world/PropLayer`, @broken-ash/shared, phaser |
@@ -290,7 +313,6 @@ Tests: `client/src/entities/moves.test.ts`, `client/src/fx/recipes/recipes.test.
 - `Prediction` (class, `client/src/net/Prediction.ts`) — Client-side prediction for your own character.
 - `LoadoutView` (interface, `client/src/net/loadout.ts`) — The synced fields a player's bar and look are resolved from (server/src/schema/WorldState.ts).
 - `bonusesOf` (function, `client/src/net/loadout.ts`) — Talent (and, with items, equipment) bonuses of a synced player, exactly as the server applies them.
-- `extraBonuses` (const, `client/src/net/loadout.ts`) — Equipment bonuses (filled in by the items module).
 - `barOf` (function, `client/src/net/loadout.ts`) — The bar the server built, resolved the same way from the same synced inputs.
 - `ALL_SKILLS` (const, `client/src/net/loadout.ts`) — Every skill that can be on any bar (fx events name a skill id).
 - `toServerUrl` (function, `client/src/net.ts`) — Accepts "host", "host:port", IPv6 (bare or "[addr]:port") or a full ws:// / http:// URL, so players can paste whatever they were given.
@@ -364,7 +386,7 @@ Tests: `tools/catalogue/catalogue.test.ts`
 | `tools/art/materials.py` | Procedural materials (Cycles). | `srgb`, `material`, `image_material` |
 | `tools/art/mh.py` | Builds skinned elf bodies in Blender from the MakeHuman CC0 base mesh (tools/art/mh_fetch.py). | `morph`, `to_blender`, `build`, `reset_pose`, `rotate`, `shift` |
 | `tools/art/mh_fetch.py` | Fetches the MakeHuman assets the character pipeline uses into tools/art/.mh (gitignored). | `main` |
-| `tools/art/models.py` | Procedural models for props and characters. | `link`, `mesh_obj`, `box`, `cyl`, `sphere`, `empty`, `modifier`, `curved_roof`, `tiled_roof_material`, `rocky`, `stone_material`, `mossy_stone_material`, `build_stone_lantern`, `build_paper_lantern`, `build_gate`, `build_blossom_tree`, `build_shrine`, `build_wall`, `build_rock`, `build_bamboo`, `build_banner`, `build_humanoid`, `pose`, `build_bars`, `build_rockwall`, `build_brazier`, `build_torch_post`, `build_support`, `build_cart`, `build_barrel`, `build_crate`, `build_lever`, `build_pump`, `build_tent`, `build_palisade`, `build_house_burnt`, `build_campfire`, `build_dead_tree`, `build_pine` |
+| `tools/art/models.py` | Procedural models for props and characters. | `link`, `mesh_obj`, `box`, `cyl`, `sphere`, `empty`, `modifier`, `curved_roof`, `tiled_roof_material`, `rocky`, `stone_material`, `mossy_stone_material`, `build_stone_lantern`, `build_paper_lantern`, `build_gate`, `build_blossom_tree`, `build_shrine`, `build_wall`, `build_rock`, `build_bamboo`, `build_banner`, `build_humanoid`, `pose`, `build_bars`, `build_rockwall`, `build_brazier`, `build_torch_post`, `build_support`, `build_cart`, `build_barrel`, `build_crate`, `build_chest`, `build_lever`, `build_pump`, `build_tent`, `build_palisade`, `build_house_burnt`, `build_campfire`, `build_dead_tree`, `build_pine` |
 | `tools/art/outfits.py` | Outfits, hair and weapons for the eight paths, built on a MakeHuman body from mh.py. | `cloth`, `silk`, `leather`, `lacquer`, `lamellar`, `metal`, `skin_material`, `hair_material`, `region_shell`, `robe`, `attach`, `joint`, `bone_head`, `bone_tail`, `palm`, `grip_axes`, `oriented`, `curve_blade`, `join`, `hold`, `scalp_filter`, `hair`, `base_layers`, `sash`, `wide_sleeves`, `mask`, `plate`, `build_path`, `war_fan`, `spirit_lantern`, `longbow`, `palette`, `build_human`, `build_greyed` |
 | `tools/art/pixelate.py` | The map's pixel-art pass: takes the Blender-rendered prop and ground atlases and turns every frame into pixel art that matches the PixelLab characters (one art pixel = 2×2 screen pixels), keeping the detail and the baked | `pixelate`, `run`, `run_chars` |
 | `tools/art/render.py` | Renders every sprite with Blender (bpy) and packs them into atlases for the client. | `render_frame`, `props` |

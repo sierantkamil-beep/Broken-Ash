@@ -21,6 +21,8 @@ export class PropLayer {
   private readonly objects: Phaser.GameObjects.GameObject[] = [];
   /** Gates: props that stand only until a story flag is set. */
   private readonly gates: { img: Phaser.GameObjects.Image; until: string }[] = [];
+  /** Props that appear once a flag is set (an opened chest). */
+  private readonly reveals: { img: Phaser.GameObjects.Image; after: string }[] = [];
 
   constructor(private readonly scene: Phaser.Scene, map: AreaMap, layer: Phaser.GameObjects.Layer, flags: ReadonlySet<string> = new Set()) {
     map.props.forEach((p, i) => {
@@ -29,6 +31,7 @@ export class PropLayer {
       const frame = `${p.kind}_${p.variant ?? 0}`;
       if (!hasFrame(scene, "props", frame)) return;
       if (p.until && flags.has(p.until)) return;
+      const hidden = !!p.after && !flags.has(p.after);
       const cx = p.x + def.w / 2;
       const cy = p.y + def.h / 2;
       const s = worldToScreen(cx, cy);
@@ -38,6 +41,10 @@ export class PropLayer {
       this.objects.push(img);
       if (OCCLUDERS.has(p.kind)) this.occluders.push({ img, depth });
       if (p.until) this.gates.push({ img, until: p.until });
+      if (hidden) {
+        img.setVisible(false);
+        this.reveals.push({ img, after: p.after! });
+      }
       if (def.light) {
         const l = worldToScreen(cx, cy, def.light.z);
         this.lights.push({ x: l.x, y: s.y - def.light.z * Z_PX * 0.2, radius: def.light.radius * CELL, color: def.light.color, intensity: def.light.intensity ?? 1, flicker: def.light.flicker, seed: i * 7.3 });
@@ -53,10 +60,21 @@ export class PropLayer {
 
   /** The story moved on: gates whose flag is now set sink and fade away. */
   setFlags(flags: ReadonlySet<string>) {
+    for (let i = this.reveals.length - 1; i >= 0; i--) {
+      const r = this.reveals[i];
+      if (!flags.has(r.after)) continue;
+      this.reveals.splice(i, 1);
+      r.img.setVisible(true);
+    }
     for (let i = this.gates.length - 1; i >= 0; i--) {
       const g = this.gates[i];
       if (!flags.has(g.until)) continue;
       this.gates.splice(i, 1);
+      // A chest is swapped for its open twin at once; gates and bars sink away.
+      if (g.img.frame.name.startsWith("chest_")) {
+        g.img.setVisible(false);
+        continue;
+      }
       this.scene.tweens.add({ targets: g.img, alpha: 0, y: g.img.y + 24, duration: 900, ease: "Cubic.easeIn", onComplete: () => g.img.setVisible(false) });
     }
   }

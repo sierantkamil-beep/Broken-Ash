@@ -49,6 +49,14 @@ export class MapBuilder {
     return this;
   }
 
+  /** A chest to search (F): closed until it's opened, then open and empty; `cache` is its map entry id. */
+  chest(x: number, y: number, area: string, cache: string): this {
+    const flag = `loot:${area}:${cache}`;
+    this.props.push({ kind: "chest", x, y, variant: 0, until: flag });
+    this.props.push({ kind: "chest", x, y, variant: 1, after: flag });
+    return this;
+  }
+
   /** A gate: a prop that stands (and blocks) only until the story flag is set. */
   gate(kind: PropKind, x: number, y: number, until: string, variant = 0): this {
     return this.prop(kind, x, y, variant, false, until);

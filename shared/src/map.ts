@@ -43,6 +43,8 @@ export interface Encounter {
   needs?: string;
   /** The first wave bangs the gate (the courtyard's assault). */
   gate?: boolean;
+  /** Items dropped where the last enemy fell when it's won (set bases, then random rolls). */
+  reward?: { items?: string[]; rolls?: number; luck?: number };
 }
 
 /** Someone to talk to: drawn as a character; F nearby plays their scene. */
@@ -95,6 +97,11 @@ export interface AreaMap {
    * each other (two players, two levers), the group's flag is set.
    */
   levers?: { x: number; y: number; group: string; flag: string }[];
+  /**
+   * Chests and bodies to search (F): opened once per story (a flag `loot:<area>:<id>`), each gives
+   * set items (`items`: item base ids, e.g. a story's unique) and `rolls` random ones.
+   */
+  caches?: { id: string; x: number; y: number; items?: string[]; rolls?: number; luck?: number; gold?: number; label: string }[];
 }
 
 export type GroundType = "paving" | "moss" | "gravel" | "dirt" | "water" | "void" | "slabs" | "rock" | "planks" | "mud" | "sap" | "scorched" | "grass";
@@ -113,6 +120,8 @@ export interface PropPlacement {
   flip?: boolean;
   /** A gate: stands (and blocks) only until this story flag is set. */
   until?: string;
+  /** The other way round: appears (and blocks) only once this flag is set (an opened chest). */
+  after?: string;
 }
 
 /** Which cells block movement. Built once per map; out-of-bounds is always blocked. */
@@ -137,6 +146,7 @@ export class CollisionGrid {
     }
     for (const p of map.props) {
       if (p.until && (flags === "open" || flags.has(p.until))) continue;
+      if (p.after && flags !== "open" && !flags.has(p.after)) continue;
       for (const [dx, dy] of PROPS[p.kind].blocks) grid.set(p.x + dx, p.y + dy, true);
     }
     return grid;

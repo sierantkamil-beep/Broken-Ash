@@ -1,3 +1,4 @@
+import { equipBonuses, type EquipSlot, type Item } from "@broken-ash/shared";
 import { DEFAULT_PICKS, PATHS, allSkills, isWeapon, masteryLevel, resolveLoadout, talentBonuses, validLook, withBonuses, type Bonus, type CharacterLook, type PathId, type Picks, type SkillDef, type WeaponId } from "@broken-ash/shared";
 
 /** The synced fields a player's bar and look are resolved from (server/src/schema/WorldState.ts). */
@@ -18,10 +19,9 @@ export function bonusesOf(v: LoadoutView): Bonus[] {
   return [...talentBonuses(PATHS[pathOf(v)], parse<string[]>(v.talents ?? "", [])), ...extraBonuses(v)];
 }
 
-/** Equipment bonuses (filled in by the items module). */
-export let extraBonuses: (v: LoadoutView) => Bonus[] = () => [];
-export function setExtraBonuses(fn: (v: LoadoutView) => Bonus[]) {
-  extraBonuses = fn;
+/** Equipment bonuses, from the synced worn items. */
+function extraBonuses(v: LoadoutView): Bonus[] {
+  return equipBonuses(parse<Partial<Record<EquipSlot, Item>>>(v.equip ?? "", {}));
 }
 
 const parse = <T>(s: string, fallback: T): T => {

@@ -18,3 +18,5 @@ export * from "./data/weapons.js";
 export * from "./combat/build.js";
 export * from "./loadout.js";
 export * from "./progress.js";
+export * from "./data/items.js";
+export * from "./inventory.js";

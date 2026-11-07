@@ -62,15 +62,22 @@ describe("mastery in the world", () => {
     expect(w.drainFx().some((e) => e.t === "mastery" && e.level === 3)).toBe(true);
   });
 
-  it("refuses loadout changes during a wave and validates them otherwise", () => {
+  it("takes weapons only from the bag, never mid-fight, and validates tree picks", () => {
     const w = new World("soramei_courtyard");
     w.encounter = false;
     const p = w.addPlayer("a", { name: "A", path: "ash" });
     expect(p.weapon).toBe("talismans");
-    expect(w.setLoadout("a", { weapon: "bow", picks: { rmb: 1 } })).toBe(true);
-    expect(p.skills[1].id).toBe("bow_hunter"); // rmb 1 needs mastery 3
+    expect(w.setLoadout("a", { weapon: "bow" })).toBe(true);
+    expect(p.weapon).toBe("talismans");
+    const bow = w.giveItem(p, "bow.1")!;
+    expect(w.invOp("a", { op: "equip", uid: bow.uid })).toBe(true);
+    expect(p.weapon).toBe("bow");
+    expect(w.setLoadout("a", { picks: { rmb: 1 } })).toBe(true);
+    expect(p.skills[1].id).toBe("bow_arrow".replace("arrow", "hunter")); // rmb 1 needs mastery 3: falls back
+    const fan = w.giveItem(p, "fan.1")!;
     w.phase = "fight";
-    expect(w.setLoadout("a", { weapon: "fan" })).toBe(false);
+    expect(w.invOp("a", { op: "equip", uid: fan.uid })).toBe(false);
+    expect(w.setLoadout("a", { picks: {} })).toBe(false);
     expect(p.weapon).toBe("bow");
     expect(w.setLoadout("a", "nonsense")).toBe(false);
   });

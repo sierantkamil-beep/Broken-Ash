@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import type { CharacterLook, PathId, Picks, WeaponId } from "@broken-ash/shared";
+import type { CharacterLook, Inventory, PathId, Picks, WeaponId } from "@broken-ash/shared";
 
 /**
  * What the host remembers about each character between sessions: weapon mastery, tree picks and the
@@ -17,6 +17,8 @@ export interface Profile {
   picks: Partial<Record<WeaponId, Picks>>;
   xp?: number;
   talents?: string[];
+  /** The bag, what's worn and gold (validated on load: shared/src/inventory.ts). */
+  inv?: Inventory;
   updated: string;
 }
 
